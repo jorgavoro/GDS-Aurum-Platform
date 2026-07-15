@@ -1,0 +1,150 @@
+###########################################################
+# GDS Aurum AI
+# Development Environment
+###########################################################
+
+spring:
+
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+
+    url: jdbc:postgresql://localhost:5432/aurumdb
+
+    username: aurum
+
+    password: aurum
+
+    driver-class-name: org.postgresql.Driver
+
+    hikari:
+
+      pool-name: AurumPool
+
+      minimum-idle: 5
+
+      maximum-pool-size: 20
+
+      idle-timeout: 30000
+
+      connection-timeout: 30000
+
+      max-lifetime: 1800000
+
+  jpa:
+
+    open-in-view: false
+
+    show-sql: true
+
+    hibernate:
+
+      ddl-auto: validate
+
+    properties:
+
+      hibernate:
+
+        format_sql: true
+
+        jdbc.time_zone: UTC
+
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+        generate_statistics: false
+
+  flyway:
+
+    enabled: true
+
+    baseline-on-migrate: true
+
+    validate-on-migrate: true
+
+    locations:
+
+      - classpath:db/migration
+
+server:
+
+  port: 8080
+
+  servlet:
+
+    context-path: /api
+
+  error:
+
+    include-message: always
+
+    include-binding-errors: always
+
+management:
+
+  endpoints:
+
+    web:
+
+      exposure:
+
+        include: "*"
+
+  endpoint:
+
+    health:
+
+      show-details: always
+
+logging:
+
+  level:
+
+    root: INFO
+
+    org.springframework: INFO
+
+    org.hibernate.SQL: DEBUG
+
+    org.hibernate.orm.jdbc.bind: TRACE
+
+    org.flywaydb: INFO
+
+    com.globaldynamicssystems: DEBUG
+
+  pattern:
+
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{36} - %msg%n"
+
+aurum:
+
+  security:
+
+    jwt:
+
+      secret: CHANGE_ME_IN_PRODUCTION
+
+      expiration: 3600000
+
+  audit:
+
+    enabled: true
+
+  metadata:
+
+    cache-enabled: true
+
+  dto:
+
+    dynamic-enabled: true
+
+  engine:
+
+    validation-enabled: true
+
+    rule-cache-size: 500
+
+  api:
+
+    version: v1
