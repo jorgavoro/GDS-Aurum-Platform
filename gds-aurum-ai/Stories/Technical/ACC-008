@@ -1,0 +1,1158 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-008
+CIERRE ANUAL — YEAR END CLOSING / RETAINED EARNINGS
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+Stack:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+El módulo aurum-accounting contiene:
+
+ChartOfAccounts
+Account
+AccountType
+AccountNature
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+LedgerEntry
+TrialBalance
+BalanceSheet
+IncomeStatement
+
+El circuito contable actual es:
+
+ChartOfAccounts
+       ↓
+Account
+       ↓
+FiscalPeriod
+       ↓
+JournalEntry
+       ↓
+Validation
+       ↓
+Posting
+       ↓
+Ledger
+       ↓
+Trial Balance
+       ↓
+Financial Statements
+       ↓
+Period Closing
+
+ACC-008 implementa el cierre anual.
+
+=========================================================================
+
+OBJETIVO
+
+=========================================================================
+
+Implementar el proceso de cierre de ejercicio fiscal.
+
+El cierre anual debe:
+
+1. verificar que todos los períodos del ejercicio estén cerrados
+2. calcular el resultado acumulado del ejercicio
+3. identificar Revenue y Expense
+4. calcular Net Income
+5. generar el asiento de cierre
+6. trasladar el resultado a una cuenta de patrimonio
+7. contabilizar el asiento de cierre
+8. garantizar que el ejercicio no pueda cerrarse nuevamente
+9. preparar el siguiente ejercicio fiscal
+
+=========================================================================
+
+PRINCIPIO CONTABLE
+
+=========================================================================
+
+Al finalizar un ejercicio:
+
+Revenue
++
+Expense
+
+deben quedar cerrados contra una cuenta de resultados acumulados.
+
+El resultado del ejercicio se determina:
+
+Net Income = Revenue - Expense
+
+Si:
+
+Revenue > Expense
+
+existe utilidad.
+
+Si:
+
+Expense > Revenue
+
+existe pérdida.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Esta historia NO implementa:
+
+Multi-Currency
+
+Currency Revaluation
+
+Consolidation
+
+Intercompany
+
+Tax Closing
+
+Budget Closing
+
+Cost Center Closing
+
+Profit Center Closing
+
+Cash Flow
+
+Financial Ratios
+
+AI Financial Analysis
+
+Fiscal Year Reopening
+
+Automatic Account Creation
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FiscalYearClosingResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Integer fiscalYear
+
+BigDecimal totalRevenue
+
+BigDecimal totalExpense
+
+BigDecimal netIncome
+
+Long closingJournalEntryId
+
+Boolean successful
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalYearClosingService.java
+
+Crear interfaz.
+
+Métodos:
+
+FiscalYearClosingResult closeYear(
+    Long chartOfAccountsId,
+    Integer fiscalYear,
+    Long retainedEarningsAccountId
+);
+
+boolean canCloseYear(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+=========================================================================
+
+ARCHIVO 3
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalYearClosingService.java
+
+Implementar:
+
+FiscalYearClosingService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+AccountRepository
+
+JournalEntryRepository
+
+LedgerEntryRepository
+
+FinancialStatementService
+
+PostingService
+
+FiscalYearClosingValidator
+
+Utilizar Constructor Injection.
+
+El método closeYear() debe ser:
+
+@Transactional
+
+=========================================================================
+
+REGLAS DE closeYear()
+
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. fiscalYear obligatorio.
+
+3. retainedEarningsAccountId obligatorio.
+
+4. El ChartOfAccounts debe existir.
+
+5. Deben existir períodos fiscales para el ejercicio.
+
+6. Todos los períodos del ejercicio deben estar CLOSED.
+
+7. No debe existir ningún período OPEN.
+
+8. No debe existir ningún JournalEntry DRAFT.
+
+9. No debe existir ningún JournalEntry VALIDATED.
+
+10. El Balance Sheet debe ser consistente.
+
+11. El Income Statement debe ser consistente.
+
+12. La cuenta de Retained Earnings debe existir.
+
+13. Debe pertenecer al mismo ChartOfAccounts.
+
+14. Debe estar activa.
+
+15. Debe ser postable.
+
+16. Debe ser de tipo:
+
+    EQUITY
+
+17. No debe existir previamente un asiento de cierre para el ejercicio.
+
+18. Calcular:
+
+    totalRevenue
+
+    totalExpense
+
+    netIncome
+
+19. Crear JournalEntry de cierre.
+
+20. Crear JournalEntryLine correspondientes.
+
+21. Validar el JournalEntry.
+
+22. Postear el JournalEntry.
+
+23. Retornar FiscalYearClosingResult.
+
+=========================================================================
+
+REGLA SOBRE PERÍODOS
+
+=========================================================================
+
+Todos los FiscalPeriod del ejercicio deben estar:
+
+CLOSED
+
+Ejemplo:
+
+2026-01 → CLOSED
+2026-02 → CLOSED
+...
+2026-12 → CLOSED
+
+Entonces:
+
+Year Closing = permitido
+
+Si:
+
+2026-07 → OPEN
+
+entonces:
+
+Year Closing = rechazado
+
+=========================================================================
+
+REGLA SOBRE RETAINED EARNINGS
+
+=========================================================================
+
+La cuenta indicada por:
+
+retainedEarningsAccountId
+
+debe:
+
+existir
+
+pertenecer al ChartOfAccounts
+
+estar activa
+
+ser postable
+
+tener:
+
+AccountType = EQUITY
+
+Si no cumple alguna condición:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA SOBRE NET INCOME
+
+=========================================================================
+
+Utilizar:
+
+IncomeStatement
+
+del ejercicio completo.
+
+Calcular:
+
+netIncome =
+totalRevenue - totalExpense
+
+=========================================================================
+
+EJEMPLO DE UTILIDAD
+
+=========================================================================
+
+Revenue:
+
+100000.00
+
+Expense:
+
+70000.00
+
+Net Income:
+
+30000.00
+
+El asiento de cierre debe:
+
+Debitar las cuentas de Revenue:
+
+100000.00
+
+Acreditar las cuentas de Expense:
+
+70000.00
+
+La diferencia:
+
+30000.00
+
+debe trasladarse a:
+
+Retained Earnings
+
+=========================================================================
+
+EJEMPLO DE PÉRDIDA
+
+=========================================================================
+
+Revenue:
+
+70000.00
+
+Expense:
+
+100000.00
+
+Net Income:
+
+-30000.00
+
+El asiento debe cerrar las cuentas de Revenue y Expense y trasladar
+el resultado negativo contra Retained Earnings.
+
+La suma de débitos debe ser igual a la suma de créditos.
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+
+=========================================================================
+
+El JournalEntry de cierre debe cumplir:
+
+TOTAL DEBIT = TOTAL CREDIT
+
+No se permite crear un asiento de cierre desequilibrado.
+
+=========================================================================
+
+ARCHIVO 4
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalYearClosingValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    Long chartOfAccountsId,
+    Integer fiscalYear,
+    Long retainedEarningsAccountId
+);
+
+=========================================================================
+
+ARCHIVO 5
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalYearClosingValidator.java
+
+Implementar:
+
+FiscalYearClosingValidator
+
+Validaciones:
+
+1. ChartOfAccounts existe.
+
+2. FiscalYear válido.
+
+3. Retained Earnings Account existe.
+
+4. Retained Earnings pertenece al ChartOfAccounts.
+
+5. Retained Earnings está activa.
+
+6. Retained Earnings es postable.
+
+7. Retained Earnings es EQUITY.
+
+8. Existen períodos del ejercicio.
+
+9. Todos los períodos están CLOSED.
+
+10. No existen JournalEntry DRAFT.
+
+11. No existen JournalEntry VALIDATED.
+
+12. No existe previamente un cierre anual.
+
+=========================================================================
+
+ARCHIVO 6
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+FiscalYearClosingRepository.java
+
+Crear interfaz.
+
+Métodos:
+
+long countPeriodsByFiscalYear(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+long countClosedPeriodsByFiscalYear(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+boolean existsClosingEntry(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+=========================================================================
+
+REGLA DE IMPLEMENTACIÓN
+
+=========================================================================
+
+Utilizar mecanismos estándar de Spring Data.
+
+No utilizar:
+
+EntityManager
+
+SQL nativo
+
+JDBC
+
+=========================================================================
+
+ARCHIVO 7
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ClosingEntryType.java
+
+Crear enum.
+
+Valores:
+
+YEAR_END
+
+No utilizar otras variantes todavía.
+
+=========================================================================
+
+ARCHIVO 8
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ClosingEntryMetadata.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+ClosingEntryType type
+
+Integer fiscalYear
+
+Long sourceChartOfAccountsId
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 9
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+YearEndResultCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateNetIncome(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+BigDecimal calculateRevenue(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+BigDecimal calculateExpense(
+    Long chartOfAccountsId,
+    Integer fiscalYear
+);
+
+=========================================================================
+
+ARCHIVO 10
+
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultYearEndResultCalculator.java
+
+Implementar:
+
+YearEndResultCalculator
+
+Utilizar:
+
+FinancialStatementService
+
+No acceder directamente a:
+
+EntityManager
+
+JDBC
+
+SQL
+
+=========================================================================
+
+REGLA SOBRE CUENTAS DE RESULTADO
+
+=========================================================================
+
+Las cuentas:
+
+REVENUE
+
+EXPENSE
+
+se consideran cuentas temporales.
+
+El cierre anual debe dejar su saldo en cero mediante el asiento
+de cierre.
+
+Las cuentas:
+
+ASSET
+
+LIABILITY
+
+EQUITY
+
+NO se cierran mediante este proceso.
+
+=========================================================================
+
+REGLA SOBRE RETAINED EARNINGS
+
+=========================================================================
+
+Retained Earnings es una cuenta permanente.
+
+No debe cerrarse.
+
+El asiento de cierre transfiere el resultado hacia ella.
+
+=========================================================================
+
+REGLA SOBRE LEDGER
+
+=========================================================================
+
+El cierre anual NO debe modificar LedgerEntry existente.
+
+Debe crear nuevas LedgerEntry mediante:
+
+JournalEntry
+      ↓
+Validation
+      ↓
+Posting
+
+El Ledger histórico permanece intacto.
+
+=========================================================================
+
+REGLA SOBRE JOURNAL ENTRY DE CIERRE
+
+=========================================================================
+
+El JournalEntry de cierre debe:
+
+status = DRAFT
+
+durante construcción.
+
+Después:
+
+VALIDATED
+
+Después de Posting:
+
+POSTED
+
+Debe tener:
+
+documentNumber único.
+
+Descripción explícita:
+
+"Year End Closing YYYY"
+
+Ejemplo:
+
+"Year End Closing 2026"
+
+=========================================================================
+
+REGLA DE IDENTIFICACIÓN
+
+=========================================================================
+
+El sistema debe poder identificar un cierre anual de forma
+determinística.
+
+No utilizar solamente:
+
+description
+
+como mecanismo de identificación.
+
+La implementación puede utilizar una estrategia de identificación
+basada en:
+
+chartOfAccountsId
+
+fiscalYear
+
+ClosingEntryType
+
+No crear columnas adicionales en JournalEntry en esta historia.
+
+=========================================================================
+
+IDEMPOTENCIA
+
+=========================================================================
+
+Si ya existe un cierre anual para:
+
+ChartOfAccounts + FiscalYear
+
+el proceso debe fallar.
+
+No crear un segundo asiento.
+
+Lanzar:
+
+IllegalStateException
+
+=========================================================================
+
+REGLA SOBRE PERIOD CLOSING
+
+=========================================================================
+
+El cierre anual requiere:
+
+todos los períodos CLOSED
+
+Pero el cierre anual no debe modificar:
+
+FiscalPeriod
+
+ni cambiar:
+
+CLOSED → otra cosa.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+PostingService
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Fiscal Year Reopening
+
+Opening Balance Generation
+
+Carry Forward Automation
+
+Tax Closing
+
+Currency Revaluation
+
+Multi-Currency Closing
+
+Consolidation
+
+Intercompany Closing
+
+Cash Flow Closing
+
+Budget Closing
+
+Cost Center Closing
+
+Profit Center Closing
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Un ejercicio con períodos OPEN no puede cerrarse.
+
+2. Un ejercicio con JournalEntry DRAFT no puede cerrarse.
+
+3. Un ejercicio con JournalEntry VALIDATED no puede cerrarse.
+
+4. Un ejercicio completamente cerrado puede procesarse.
+
+5. El Net Income se calcula correctamente.
+
+6. Revenue se cierra correctamente.
+
+7. Expense se cierra correctamente.
+
+8. El resultado se transfiere a Retained Earnings.
+
+9. El asiento de cierre está balanceado.
+
+10. El asiento pasa por VALIDATED.
+
+11. El asiento pasa por POSTED.
+
+12. El Ledger conserva los movimientos históricos.
+
+13. Las cuentas Revenue quedan con saldo cero después del cierre.
+
+14. Las cuentas Expense quedan con saldo cero después del cierre.
+
+15. Retained Earnings recibe el resultado correspondiente.
+
+16. No se puede ejecutar dos veces el cierre del mismo ejercicio.
+
+17. No se modifica ningún LedgerEntry existente.
+
+18. No se modifican los períodos cerrados.
+
+19. No existe SQL nativo.
+
+20. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+El cierre anual es una TRANSACCIÓN CONTABLE.
+
+No es una operación administrativa que simplemente modifica un flag.
+
+Debe producir un JournalEntry real.
+
+El flujo obligatorio es:
+
+Financial Statements
+        ↓
+Net Income
+        ↓
+Closing Journal Entry
+        ↓
+Validation
+        ↓
+Posting
+        ↓
+Ledger
+
+=========================================================================
+
+ARQUITECTURA CONTABLE ACTUALIZADA
+
+                    AURUM ACCOUNTING
+                           │
+                           ▼
+                    ChartOfAccounts
+                           │
+                           ▼
+                        Account
+                           │
+                           ▼
+                     FiscalPeriod
+                           │
+                           ▼
+                     JournalEntry
+                           │
+                           ▼
+                       Posting
+                           │
+                           ▼
+                     LedgerEntry
+                           │
+              ┌────────────┼─────────────┐
+              ▼            ▼             ▼
+        Trial Balance  Balance Sheet  Income Statement
+                                          │
+                                          ▼
+                                       Net Income
+                                          │
+                                          ▼
+                                   Year End Closing
+                                          │
+                                          ▼
+                                  Closing Journal Entry
+                                          │
+                                          ▼
+                                       Posting
+                                          │
+                                          ▼
+                                       Ledger
+                                          │
+                                          ▼
+                                  Retained Earnings
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-009
+
+OPENING BALANCES / NEW FISCAL YEAR
+
+Crear el proceso para generar los saldos iniciales del nuevo ejercicio
+a partir del cierre anterior.
+
+=========================================================================
