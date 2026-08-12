@@ -1,0 +1,1260 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-011
+DIMENSIONES ANALÍTICAS — COST CENTERS
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+Stack:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+El módulo aurum-accounting contiene:
+
+ChartOfAccounts
+Account
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+LedgerEntry
+TrialBalance
+BalanceSheet
+IncomeStatement
+FiscalYearClosing
+OpeningBalance
+
+El flujo contable actual es:
+
+ChartOfAccounts
+       ↓
+Account
+       ↓
+FiscalPeriod
+       ↓
+JournalEntry
+       ↓
+JournalEntryLine
+       ↓
+Validation
+       ↓
+Posting
+       ↓
+LedgerEntry
+       ↓
+Financial Reporting
+
+ACC-011 introduce dimensiones analíticas.
+
+La primera dimensión implementada será:
+
+COST CENTER
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Permitir asociar una línea contable a una dimensión analítica.
+
+La primera implementación será:
+
+CostCenter
+
+Un CostCenter representa una unidad analítica utilizada para
+clasificar y analizar movimientos contables.
+
+Ejemplos:
+
+ADMIN
+SALES
+IT
+OPERATIONS
+MARKETING
+
+La dimensión debe ser independiente de:
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Account responde:
+
+"¿Qué tipo de operación contable es?"
+
+CostCenter responde:
+
+"¿A qué unidad analítica pertenece?"
+
+Por tanto:
+
+Account
+    ≠
+CostCenter
+
+No agregar:
+
+costCenterId
+
+directamente a Account.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+ChartOfAccounts
+       │
+       ▼
+    Account
+       │
+       ▼
+JournalEntry
+       │
+       ▼
+JournalEntryLine
+       │
+       ├───────────────┐
+       ▼               ▼
+   Account         CostCenter
+                       │
+                       ▼
+                Analytical Dimension
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal para importes.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+CostCenterStatus.java
+
+Crear enum.
+
+Valores:
+
+ACTIVE
+
+INACTIVE
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+CostCenter.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_cost_center
+
+Campos:
+
+Long id
+
+String code
+
+String name
+
+String description
+
+CostCenterStatus status
+
+ChartOfAccounts chartOfAccounts
+
+Boolean active
+
+Restricciones:
+
+code obligatorio
+
+name obligatorio
+
+status obligatorio
+
+chartOfAccounts obligatorio
+
+active obligatorio
+
+=========================================================================
+
+REGLAS DE COST CENTER
+=========================================================================
+
+code:
+
+obligatorio
+
+único dentro del ChartOfAccounts
+
+name:
+
+obligatorio
+
+status:
+
+obligatorio
+
+active:
+
+obligatorio
+
+Un CostCenter INACTIVE:
+
+no puede utilizarse en nuevos JournalEntryLine.
+
+Los movimientos históricos asociados al CostCenter permanecen
+intactos.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalDimensionType.java
+
+Crear enum.
+
+Valor:
+
+COST_CENTER
+
+No agregar otras dimensiones todavía.
+
+La arquitectura debe permitir futuras dimensiones:
+
+PROFIT_CENTER
+
+PROJECT
+
+BUSINESS_UNIT
+
+REGION
+
+CHANNEL
+
+etc.
+
+Pero NO implementarlas en esta historia.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalDimension.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+AnalyticalDimensionType type
+
+Long dimensionId
+
+String code
+
+String name
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Modificar:
+
+JournalEntryLine.java
+
+Agregar:
+
+CostCenter costCenter
+
+Relación:
+
+@ManyToOne(fetch = FetchType.LAZY)
+
+@JoinColumn(
+    name = "cost_center_id"
+)
+
+El CostCenter debe ser opcional.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No todas las cuentas requieren CostCenter.
+
+Por defecto:
+
+costCenter = null
+
+es válido.
+
+=========================================================================
+
+REGLA DE OBLIGATORIEDAD
+
+=========================================================================
+
+En esta historia:
+
+CostCenter es opcional.
+
+La obligatoriedad de dimensiones será implementada posteriormente
+mediante Business Rules / Metadata.
+
+No agregar:
+
+nullable = false
+
+a costCenter_id.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+CostCenterRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<CostCenter, Long>
+
+Métodos:
+
+Optional<CostCenter> findByChartOfAccountsIdAndCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+List<CostCenter> findByChartOfAccountsId(
+    Long chartOfAccountsId
+);
+
+List<CostCenter> findByChartOfAccountsIdAndStatus(
+    Long chartOfAccountsId,
+    CostCenterStatus status
+);
+
+boolean existsByChartOfAccountsIdAndCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CostCenterService.java
+
+Crear interfaz.
+
+Métodos:
+
+CostCenter create(
+    Long chartOfAccountsId,
+    CostCenter costCenter
+);
+
+Optional<CostCenter> findById(
+    Long id
+);
+
+List<CostCenter> findByChartOfAccounts(
+    Long chartOfAccountsId
+);
+
+void deactivate(
+    Long id
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCostCenterService.java
+
+Implementar:
+
+CostCenterService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+CostCenterRepository
+
+ChartOfAccountsRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DE CREATE COST CENTER
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. ChartOfAccounts debe existir.
+
+3. costCenter no puede ser null.
+
+4. code obligatorio.
+
+5. name obligatorio.
+
+6. code debe ser único dentro del ChartOfAccounts.
+
+7. status inicial:
+
+   ACTIVE
+
+8. active inicial:
+
+   true
+
+=========================================================================
+
+REGLA DE DEACTIVATE
+=========================================================================
+
+deactivate(id):
+
+1. CostCenter debe existir.
+
+2. Cambiar:
+
+   status = INACTIVE
+
+3. Cambiar:
+
+   active = false
+
+4. No eliminar el CostCenter.
+
+Los movimientos históricos permanecen.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CostCenterValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    CostCenter costCenter
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCostCenterValidator.java
+
+Implementar:
+
+CostCenterValidator
+
+Validar:
+
+1. CostCenter obligatorio.
+
+2. code obligatorio.
+
+3. name obligatorio.
+
+4. ChartOfAccounts obligatorio.
+
+5. status obligatorio.
+
+6. active obligatorio.
+
+Si falla:
+
+IllegalArgumentException
+
+=========================================================================
+
+=========================================================================
+
+INTEGRACIÓN CON JOURNAL ENTRY
+=========================================================================
+
+La existencia de CostCenter en JournalEntryLine debe respetar:
+
+Si:
+
+costCenter != null
+
+entonces:
+
+CostCenter debe existir.
+
+CostCenter debe pertenecer al mismo ChartOfAccounts del JournalEntry.
+
+CostCenter debe estar ACTIVE.
+
+CostCenter.active debe ser true.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Modificar:
+
+JournalEntryValidator.java
+
+Agregar validación de CostCenter.
+
+No crear un segundo validador específico para JournalEntryLine.
+
+La validación debe integrarse en:
+
+DefaultJournalEntryValidator
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Para cada JournalEntryLine:
+
+if costCenter != null
+
+entonces:
+
+validar CostCenter.
+
+No exigir CostCenter.
+
+=========================================================================
+
+INTEGRACIÓN CON POSTING
+=========================================================================
+
+Cuando un JournalEntryLine contiene:
+
+CostCenter
+
+la correspondiente LedgerEntry debe conservarlo.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Modificar:
+
+LedgerEntry.java
+
+Agregar:
+
+CostCenter costCenter
+
+Relación:
+
+@ManyToOne(fetch = FetchType.LAZY)
+
+@JoinColumn(
+    name = "cost_center_id"
+)
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+
+=========================================================================
+
+El CostCenter debe viajar con el movimiento:
+
+JournalEntryLine
+       ↓
+Posting
+       ↓
+LedgerEntry
+
+No reconstruirlo posteriormente.
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+Modificar:
+
+DefaultPostingService.java
+
+Durante Posting:
+
+LedgerEntry.costCenter
+
+debe recibir:
+
+JournalEntryLine.costCenter
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+JournalEntryLine.costCenter == null
+
+entonces:
+
+LedgerEntry.costCenter == null
+
+Si existe:
+
+LedgerEntry debe conservar la misma referencia.
+
+=========================================================================
+
+REPORTING
+
+=========================================================================
+
+Los reportes existentes:
+
+Trial Balance
+
+Balance Sheet
+
+Income Statement
+
+NO deben cambiar su comportamiento general.
+
+CostCenter no debe alterar los totales globales.
+
+Ejemplo:
+
+Account 510505
+
+Debit = 1000
+
+CostCenter = IT
+
+continúa contribuyendo:
+
+Debit = 1000
+
+al Trial Balance general.
+
+=========================================================================
+
+NUEVA CAPACIDAD ANALÍTICA
+
+=========================================================================
+
+Agregar soporte para consultar movimientos por CostCenter.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CostCenterLedgerService.java
+
+Crear interfaz.
+
+Métodos:
+
+List<LedgerEntry> findEntries(
+    Long costCenterId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateDebit(
+    Long costCenterId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateCredit(
+    Long costCenterId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateBalance(
+    Long costCenterId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 15
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCostCenterLedgerService.java
+
+Implementar:
+
+CostCenterLedgerService
+
+Dependencia:
+
+LedgerEntryRepository
+
+CostCenterRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA DE BALANCE
+
+=========================================================================
+
+balance:
+
+debit - credit
+
+Utilizar:
+
+BigDecimal
+
+=========================================================================
+
+REPOSITORY LEDGER
+
+=========================================================================
+
+Modificar:
+
+LedgerEntryRepository
+
+Agregar:
+
+List<LedgerEntry> findByCostCenterIdAndFiscalPeriodId(
+    Long costCenterId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+REGLA DE FILTRO
+
+=========================================================================
+
+Los movimientos deben pertenecer simultáneamente a:
+
+CostCenter
+
+y:
+
+FiscalPeriod
+
+No mezclar períodos.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Cuenta:
+
+510505
+
+Expense
+
+Movimiento:
+
+Debit = 5000
+
+CostCenter:
+
+IT
+
+=========================================================================
+
+Consulta:
+
+CostCenter = IT
+
+FiscalPeriod = 2027-01
+
+Resultado:
+
+Debit = 5000
+
+Credit = 0
+
+Balance = 5000
+
+=========================================================================
+
+EJEMPLO CON DOS CENTROS
+
+=========================================================================
+
+Account:
+
+510505
+
+Expense
+
+Movimiento 1:
+
+Debit = 5000
+
+CostCenter = IT
+
+Movimiento 2:
+
+Debit = 3000
+
+CostCenter = SALES
+
+Resultado IT:
+
+5000
+
+Resultado SALES:
+
+3000
+
+Resultado total Account:
+
+8000
+
+=========================================================================
+
+REGLA DE CONSISTENCIA
+
+=========================================================================
+
+La suma de:
+
+CostCenter A
+
++
+
+CostCenter B
+
++
+
+CostCenter N
+
+debe ser igual a los movimientos de la cuenta cuando todos los
+movimientos tienen CostCenter.
+
+Pero esta igualdad NO se garantiza cuando existen movimientos sin
+CostCenter.
+
+No inventar asignaciones automáticas.
+
+=========================================================================
+
+REGLA SOBRE MOVIMIENTOS HISTÓRICOS
+
+=========================================================================
+
+Agregar CostCenter no requiere modificar LedgerEntry existentes.
+
+Los movimientos anteriores pueden tener:
+
+costCenter = null
+
+Esto es válido.
+
+=========================================================================
+
+REGLA SOBRE INACTIVACIÓN
+
+=========================================================================
+
+Un CostCenter INACTIVE:
+
+NO puede utilizarse en nuevos JournalEntry.
+
+Pero:
+
+SÍ puede aparecer en LedgerEntry históricos.
+
+SÍ puede consultarse.
+
+SÍ puede utilizarse en reportes históricos.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+FiscalYearClosing
+
+OpeningBalance
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Profit Center
+
+Project
+
+Business Unit
+
+Region
+
+Channel
+
+Segment
+
+Budget Dimension
+
+Tax Dimension
+
+Inventory Dimension
+
+Multi-Dimensional Allocation
+
+Dimension Hierarchies
+
+Dimension Rules
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar exactamente los archivos nuevos indicados y modificar
+únicamente los archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede crear un CostCenter.
+
+2. El CostCenter pertenece a un ChartOfAccounts.
+
+3. El código es único dentro del ChartOfAccounts.
+
+4. Un CostCenter puede desactivarse.
+
+5. Un CostCenter INACTIVE no puede utilizarse en nuevos JournalEntry.
+
+6. JournalEntryLine puede tener CostCenter null.
+
+7. JournalEntryLine puede tener un CostCenter válido.
+
+8. El CostCenter debe pertenecer al mismo ChartOfAccounts.
+
+9. El CostCenter debe estar activo.
+
+10. Posting conserva el CostCenter.
+
+11. LedgerEntry conserva el CostCenter.
+
+12. Se pueden consultar LedgerEntry por CostCenter y FiscalPeriod.
+
+13. Se pueden calcular débitos por CostCenter.
+
+14. Se pueden calcular créditos por CostCenter.
+
+15. Se puede calcular el saldo por CostCenter.
+
+16. Los reportes financieros existentes no cambian su comportamiento
+    general.
+
+17. Los movimientos históricos sin CostCenter siguen siendo válidos.
+
+18. Desactivar un CostCenter no elimina información histórica.
+
+19. No se modifica Account para incorporar CostCenter.
+
+20. No existe SQL nativo.
+
+21. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+Account = dimensión contable.
+
+CostCenter = dimensión analítica.
+
+FiscalPeriod = dimensión temporal.
+
+ChartOfAccounts = contexto contable.
+
+LedgerEntry = fuente de verdad transaccional.
+
+La arquitectura debe permitir agregar nuevas dimensiones sin modificar
+Account.
+
+=========================================================================
+
+MODELO
+
+=========================================================================
+
+                    JournalEntry
+                          │
+                          ▼
+                  JournalEntryLine
+                    /          \
+                   /            \
+                  ▼              ▼
+              Account        CostCenter
+                  \              /
+                   \            /
+                    ▼          ▼
+                       LedgerEntry
+                            │
+              ┌─────────────┴─────────────┐
+              ▼                           ▼
+       Financial Reporting        Analytical Reporting
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-012
+
+DIMENSION FRAMEWORK / PROFIT CENTER
+
+La siguiente historia deberá evolucionar el concepto de dimensión
+analítica para soportar múltiples dimensiones sin crear una explosión
+de campos dentro de JournalEntryLine.
+
+=========================================================================
