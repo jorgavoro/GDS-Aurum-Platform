@@ -1,0 +1,1130 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-010
+CONTROL DE PERÍODOS CONTABLES — ACCOUNTING PERIOD CONTROL
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+El núcleo contable de Aurum ya dispone de:
+
+ChartOfAccounts
+Account
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+LedgerEntry
+TrialBalance
+BalanceSheet
+IncomeStatement
+Year End Closing
+Opening Balance
+
+El ciclo actual es:
+
+OPEN PERIOD
+     ↓
+Journal Entry
+     ↓
+Validation
+     ↓
+Posting
+     ↓
+Ledger
+     ↓
+Financial Reporting
+     ↓
+Period Closing
+     ↓
+CLOSED PERIOD
+
+ACC-010 establece una política única y centralizada para determinar
+si una operación contable puede ejecutarse dentro de un FiscalPeriod.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar un mecanismo transversal que permita determinar:
+
+- si un período está abierto
+- si un período está cerrado
+- si una fecha contable es válida
+- si una operación puede ejecutarse
+- si un período puede recibir nuevos Journal Entries
+- si un período puede recibir nuevos Postings
+
+El objetivo es evitar que cada servicio implemente su propia versión
+de la regla:
+
+"FiscalPeriod debe estar OPEN".
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+FiscalPeriod es la autoridad sobre el estado operativo del período.
+
+OPEN:
+
+Permite operaciones contables.
+
+CLOSED:
+
+Bloquea nuevas operaciones contables.
+
+No debe existir una segunda fuente de verdad para este estado.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingPeriodControlService.java
+
+Crear interfaz.
+
+Métodos:
+
+boolean isOpen(
+    Long fiscalPeriodId
+);
+
+boolean isClosed(
+    Long fiscalPeriodId
+);
+
+void validateOpen(
+    Long fiscalPeriodId
+);
+
+void validateAccountingDate(
+    Long fiscalPeriodId,
+    LocalDate accountingDate
+);
+
+void validateTransactionAllowed(
+    Long fiscalPeriodId,
+    LocalDate accountingDate
+);
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingPeriodControlService.java
+
+Implementar:
+
+AccountingPeriodControlService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+FiscalPeriodRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA isOpen()
+
+=========================================================================
+
+Debe devolver:
+
+true
+
+únicamente cuando:
+
+FiscalPeriod.status == OPEN
+
+Debe devolver:
+
+false
+
+cuando:
+
+FiscalPeriod.status == CLOSED
+
+Si el FiscalPeriod no existe:
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA isClosed()
+
+=========================================================================
+
+Debe devolver:
+
+true
+
+únicamente cuando:
+
+FiscalPeriod.status == CLOSED
+
+Debe devolver:
+
+false
+
+cuando:
+
+FiscalPeriod.status == OPEN
+
+Si el FiscalPeriod no existe:
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA validateOpen()
+
+=========================================================================
+
+Debe:
+
+1. verificar fiscalPeriodId
+2. obtener FiscalPeriod
+3. verificar existencia
+4. verificar status
+
+Si:
+
+status == OPEN
+
+la operación termina correctamente.
+
+Si:
+
+status == CLOSED
+
+debe lanzar:
+
+AccountingPeriodClosedException
+
+=========================================================================
+
+REGLA validateAccountingDate()
+
+=========================================================================
+
+Debe verificar:
+
+accountingDate != null
+
+y:
+
+accountingDate >= startDate
+
+y:
+
+accountingDate <= endDate
+
+Las fechas son inclusivas.
+
+Ejemplo:
+
+startDate = 2027-01-01
+endDate   = 2027-01-31
+
+Fecha válida:
+
+2027-01-01
+
+Fecha válida:
+
+2027-01-31
+
+Fecha inválida:
+
+2026-12-31
+
+Fecha inválida:
+
+2027-02-01
+
+=========================================================================
+
+REGLA validateTransactionAllowed()
+
+=========================================================================
+
+Debe verificar:
+
+1. FiscalPeriod existe.
+
+2. FiscalPeriod está OPEN.
+
+3. accountingDate no es null.
+
+4. accountingDate pertenece al período.
+
+Si todas las condiciones se cumplen:
+
+operación permitida.
+
+Si alguna falla:
+
+operación rechazada.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.exception
+
+Archivo:
+
+AccountingPeriodClosedException.java
+
+Crear:
+
+public class AccountingPeriodClosedException
+        extends RuntimeException
+
+Constructores:
+
+AccountingPeriodClosedException(
+    String message
+)
+
+AccountingPeriodClosedException(
+    String message,
+    Throwable cause
+)
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.exception
+
+Archivo:
+
+AccountingPeriodValidationException.java
+
+Crear:
+
+public class AccountingPeriodValidationException
+        extends RuntimeException
+
+Constructores:
+
+AccountingPeriodValidationException(
+    String message
+)
+
+AccountingPeriodValidationException(
+    String message,
+    Throwable cause
+)
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingOperationType.java
+
+Crear enum.
+
+Valores:
+
+JOURNAL_ENTRY_CREATE
+
+JOURNAL_ENTRY_VALIDATE
+
+POSTING
+
+OPENING_BALANCE
+
+YEAR_END_CLOSING
+
+TRIAL_BALANCE
+
+FINANCIAL_REPORT
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+TRIAL_BALANCE
+
+FINANCIAL_REPORT
+
+son operaciones de lectura.
+
+No deben ser bloqueadas por un período CLOSED.
+
+Las operaciones:
+
+JOURNAL_ENTRY_CREATE
+
+JOURNAL_ENTRY_VALIDATE
+
+POSTING
+
+OPENING_BALANCE
+
+YEAR_END_CLOSING
+
+están sujetas a reglas específicas de escritura y/o estado.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingPeriodOperation.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long fiscalPeriodId
+
+LocalDate accountingDate
+
+AccountingOperationType operationType
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingOperationValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    AccountingPeriodOperation operation
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingOperationValidator.java
+
+Implementar:
+
+AccountingOperationValidator
+
+Dependencia:
+
+AccountingPeriodControlService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DEL VALIDATOR
+
+=========================================================================
+
+1. operation no puede ser null.
+
+2. fiscalPeriodId obligatorio.
+
+3. operationType obligatorio.
+
+4. accountingDate obligatoria cuando la operación represente
+   una transacción contable.
+
+5. Para:
+
+   JOURNAL_ENTRY_CREATE
+
+   JOURNAL_ENTRY_VALIDATE
+
+   POSTING
+
+   OPENING_BALANCE
+
+   debe verificarse:
+
+   período OPEN
+
+   fecha válida
+
+6. Para:
+
+   TRIAL_BALANCE
+
+   FINANCIAL_REPORT
+
+   no exigir período OPEN.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingPeriodGuard.java
+
+Crear interfaz.
+
+Métodos:
+
+void guardJournalEntry(
+    Long fiscalPeriodId,
+    LocalDate accountingDate
+);
+
+void guardPosting(
+    Long fiscalPeriodId,
+    LocalDate accountingDate
+);
+
+void guardOpeningBalance(
+    Long fiscalPeriodId,
+    LocalDate accountingDate
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingPeriodGuard.java
+
+Implementar:
+
+AccountingPeriodGuard
+
+Dependencia:
+
+AccountingPeriodControlService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA DEL GUARD
+
+=========================================================================
+
+guardJournalEntry()
+
+debe llamar al control centralizado.
+
+No duplicar:
+
+status == OPEN
+
+dentro del método.
+
+Debe utilizar:
+
+validateTransactionAllowed()
+
+=========================================================================
+
+guardPosting()
+
+Debe aplicar exactamente la misma política de período.
+
+No permitir:
+
+POSTING
+
+sobre:
+
+CLOSED
+
+=========================================================================
+
+guardOpeningBalance()
+
+Debe permitir Opening Balance solamente cuando:
+
+target FiscalPeriod == OPEN
+
+y:
+
+accountingDate pertence ao período.
+
+=========================================================================
+
+INTEGRACIÓN CON SERVICIOS EXISTENTES
+=========================================================================
+
+IMPORTANTE:
+
+Esta historia requiere actualizar las implementaciones existentes:
+
+DefaultJournalEntryService
+
+DefaultJournalEntryValidator
+
+DefaultPostingService
+
+DefaultPostingValidator
+
+DefaultOpeningBalanceService
+
+DefaultFiscalYearClosingService
+
+para utilizar:
+
+AccountingPeriodControlService
+
+o:
+
+AccountingPeriodGuard
+
+en lugar de duplicar la lógica de validación de estado.
+
+=========================================================================
+
+REGLA DE NO DUPLICACIÓN
+=========================================================================
+
+No dejar código como:
+
+if (fiscalPeriod.getStatus() != FiscalPeriodStatus.OPEN) {
+    ...
+}
+
+repetido en múltiples servicios.
+
+La decisión debe centralizarse en:
+
+AccountingPeriodControlService
+
+=========================================================================
+
+REGLA PARA JOURNAL ENTRY
+=========================================================================
+
+Crear un JournalEntry:
+
+requiere:
+
+OPEN
+
+Validar un JournalEntry:
+
+requiere:
+
+OPEN
+
+Esto evita que un documento existente pueda ser llevado a
+VALIDATED dentro de un período cerrado.
+
+=========================================================================
+
+REGLA PARA POSTING
+=========================================================================
+
+Posting requiere:
+
+FiscalPeriod OPEN
+
+Aunque el JournalEntry esté:
+
+VALIDATED
+
+No basta con validar el estado del JournalEntry.
+
+También debe validarse nuevamente el período.
+
+Esto evita que ocurra:
+
+1. JournalEntry → VALIDATED
+2. FiscalPeriod → CLOSED
+3. JournalEntry → POSTED
+
+El paso 3 debe ser rechazado.
+
+=========================================================================
+
+REGLA PARA CIERRE
+=========================================================================
+
+El cierre de período es una operación especial.
+
+El propio:
+
+FiscalPeriodClosingService
+
+puede cambiar:
+
+OPEN → CLOSED
+
+porque esa operación representa precisamente el cierre.
+
+No debe pasar por:
+
+guardJournalEntry()
+
+ni:
+
+guardPosting()
+
+=========================================================================
+
+REGLA PARA REPORTES
+=========================================================================
+
+Un período CLOSED puede consultarse.
+
+Por tanto:
+
+Trial Balance
+
+Balance Sheet
+
+Income Statement
+
+deben continuar funcionando para períodos CLOSED.
+
+CLOSED significa:
+
+NO WRITE
+
+No significa:
+
+NO READ
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+FiscalPeriod:
+
+2027-01
+
+Status:
+
+OPEN
+
+JournalEntry:
+
+permitido
+
+Posting:
+
+permitido
+
+Trial Balance:
+
+permitido
+
+Financial Statement:
+
+permitido
+
+=========================================================================
+
+DESPUÉS DEL CIERRE
+
+=========================================================================
+
+FiscalPeriod:
+
+2027-01
+
+Status:
+
+CLOSED
+
+JournalEntry:
+
+RECHAZADO
+
+Posting:
+
+RECHAZADO
+
+Opening Balance:
+
+RECHAZADO
+
+Trial Balance:
+
+PERMITIDO
+
+Financial Statement:
+
+PERMITIDO
+
+=========================================================================
+
+REGLA DE FECHA
+
+=========================================================================
+
+Una fecha fuera del FiscalPeriod debe ser rechazada aunque el período
+esté OPEN.
+
+Ejemplo:
+
+FiscalPeriod:
+
+2027-01-01
+2027-01-31
+
+AccountingDate:
+
+2027-02-01
+
+Resultado:
+
+RECHAZADO
+
+=========================================================================
+
+REGLA DE CONSISTENCIA
+
+=========================================================================
+
+No debe ser posible crear un JournalEntry utilizando:
+
+FiscalPeriod A
+
+y:
+
+accountingDate
+
+perteneciente a:
+
+FiscalPeriod B
+
+Debe rechazarse.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+LedgerEntry
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+FinancialStatementLine
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Period Reopening
+
+Approval Workflow
+
+Audit Workflow
+
+User Authorization
+
+Role Based Access Control
+
+Multi-Currency
+
+Tax Periods
+
+Inventory Periods
+
+Payroll Periods
+
+Budget Periods
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar exactamente DIEZ archivos.
+
+Además:
+
+actualizar las implementaciones existentes que actualmente
+validan manualmente el estado del FiscalPeriod.
+
+No crear lógica duplicada.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Un período OPEN permite crear JournalEntry.
+
+2. Un período CLOSED no permite crear JournalEntry.
+
+3. Un período OPEN permite Posting.
+
+4. Un período CLOSED no permite Posting.
+
+5. Un JournalEntry VALIDATED no puede saltarse el control del
+   FiscalPeriod.
+
+6. Un período CLOSED permite Trial Balance.
+
+7. Un período CLOSED permite Financial Statements.
+
+8. Una fecha fuera del período es rechazada.
+
+9. Una fecha dentro del período es aceptada.
+
+10. El estado del FiscalPeriod se consulta desde una única
+    implementación central.
+
+11. No existen múltiples implementaciones de:
+
+    status == OPEN
+
+12. El cierre de período sigue funcionando.
+
+13. Opening Balance respeta el estado del período.
+
+14. No se modifica LedgerEntry existente.
+
+15. No se almacenan estados paralelos.
+
+16. No existe SQL nativo.
+
+17. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+FiscalPeriod representa el control temporal de la contabilidad.
+
+AccountingPeriodControlService representa la política de acceso
+operativo al período.
+
+AccountingPeriodGuard protege las operaciones que modifican
+información contable.
+
+Los reportes solamente leen.
+
+La regla central es:
+
+                    FISCAL PERIOD
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+            OPEN                  CLOSED
+              │                     │
+       ┌──────┼──────┐        ┌─────┴─────┐
+       ▼      ▼      ▼        ▼           ▼
+    Create  Validate Post    Read        Report
+       │      │      │
+       └──────┴──────┘
+              │
+           ALLOWED
+
+                         CLOSED
+                           │
+                  ┌────────┴────────┐
+                  ▼                 ▼
+                WRITE             READ
+                  │                 │
+                BLOCK              ALLOW
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-011
+
+ACCOUNTING DIMENSIONS / COST CENTERS
+
+La siguiente historia incorporará dimensiones analíticas al asiento
+contable sin contaminar Account ni crear una implementación específica
+para cada dimensión.
+
+=========================================================================
