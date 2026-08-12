@@ -1,0 +1,262 @@
+==========================================================================
+HISTORIA TÉCNICA: INF-005
+==========================================================================
+
+Proyecto Maven:
+aurum-engine
+
+Objetivo:
+
+Construir el núcleo del Metadata Engine del ERP GDS Aurum AI.
+
+Este motor será responsable de administrar todas las definiciones
+de entidades, campos y relaciones cargadas desde aurum-metadata.
+
+No debe existir ninguna dependencia de módulos de negocio.
+
+Debe seguir Clean Architecture.
+
+Java 21
+
+Spring Boot 3.5.x
+
+SOLID
+
+Código listo para producción.
+
+No generar código de ejemplo.
+
+==========================================================================
+
+ARCHIVO 1
+
+Proyecto Maven:
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.metadata
+
+Archivo:
+
+MetadataRegistry.java
+
+Descripción:
+
+Crear una interfaz.
+
+Responsabilidad:
+
+Registrar las definiciones de entidades.
+
+Debe declarar:
+
+void register(EntityDefinition entityDefinition);
+
+Optional<EntityDefinition> findByCode(String code);
+
+List<EntityDefinition> findAll();
+
+boolean exists(String code);
+
+void unregister(String code);
+
+==========================================================================
+
+ARCHIVO 2
+
+Proyecto Maven:
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.metadata.impl
+
+Archivo:
+
+InMemoryMetadataRegistry.java
+
+Descripción:
+
+Crear una implementación temporal.
+
+Debe utilizar:
+
+ConcurrentHashMap<String, EntityDefinition>
+
+Debe implementar MetadataRegistry.
+
+Debe ser un @Component.
+
+No utilizar base de datos.
+
+No utilizar caché distribuida.
+
+Toda la información permanecerá en memoria.
+
+==========================================================================
+
+ARCHIVO 3
+
+Proyecto Maven:
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.metadata
+
+Archivo:
+
+MetadataLoader.java
+
+Descripción:
+
+Crear una interfaz.
+
+Responsabilidad:
+
+Cargar las definiciones del sistema.
+
+Debe declarar:
+
+void load();
+
+==========================================================================
+
+ARCHIVO 4
+
+Proyecto Maven:
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.metadata.impl
+
+Archivo:
+
+DefaultMetadataLoader.java
+
+Descripción:
+
+Implementar MetadataLoader.
+
+Debe utilizar Constructor Injection.
+
+Debe recibir:
+
+MetadataRegistry
+
+No cargar todavía desde la base de datos.
+
+Simplemente dejar preparada la infraestructura.
+
+Debe estar anotada con:
+
+@Service
+
+==========================================================================
+
+ARCHIVO 5
+
+Proyecto Maven:
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.metadata
+
+Archivo:
+
+MetadataManager.java
+
+Descripción:
+
+Crear una interfaz.
+
+Debe declarar:
+
+EntityDefinition getEntity(String code);
+
+List<FieldDefinition> getFields(String entityCode);
+
+FieldDefinition getField(String entityCode, String fieldCode);
+
+boolean exists(String entityCode);
+
+==========================================================================
+
+ARCHIVO 6
+
+Proyecto Maven:
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.metadata.impl
+
+Archivo:
+
+DefaultMetadataManager.java
+
+Descripción:
+
+Implementar MetadataManager.
+
+Debe utilizar:
+
+MetadataRegistry
+
+Constructor Injection.
+
+No utilizar Reflection.
+
+No utilizar consultas SQL.
+
+Debe obtener la información desde MetadataRegistry.
+
+==========================================================================
+
+REQUISITOS GENERALES
+
+Java 21
+
+Spring Boot 3.5.x
+
+Constructor Injection
+
+Interfaces separadas de las implementaciones
+
+Utilizar:
+
+Optional
+
+Collections
+
+ConcurrentHashMap
+
+No utilizar campos estáticos.
+
+No utilizar Singletons manuales.
+
+No utilizar Reflection.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No generar pruebas unitarias.
+
+No generar controladores REST.
+
+No generar repositorios.
+
+No generar DTO.
+
+No generar clases adicionales.
+
+Si alguna dependencia fuera necesaria,
+únicamente listarla al final bajo:
+
+DEPENDENCIAS PENDIENTES
+
+==========================================================================
