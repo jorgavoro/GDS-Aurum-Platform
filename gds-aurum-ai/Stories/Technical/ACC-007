@@ -1,0 +1,1405 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-007
+ESTADOS FINANCIEROS — BALANCE SHEET + INCOME STATEMENT
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+Stack:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+Infraestructura existente:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El módulo aurum-accounting contiene actualmente:
+
+ChartOfAccounts
+Account
+AccountType
+AccountNature
+FiscalPeriod
+FiscalPeriodStatus
+JournalEntry
+JournalEntryLine
+JournalEntryStatus
+LedgerEntry
+TrialBalance
+TrialBalanceLine
+
+El circuito contable actual es:
+
+ChartOfAccounts
+       ↓
+Account
+       ↓
+FiscalPeriod
+       ↓
+JournalEntry
+       ↓
+JournalEntryLine
+       ↓
+Validation
+       ↓
+VALIDATED
+       ↓
+Posting
+       ↓
+LedgerEntry
+       ↓
+Trial Balance
+       ↓
+Period Closing
+
+ACC-007 incorpora los primeros estados financieros derivados
+directamente del Ledger.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar dos estados financieros básicos:
+
+1. BALANCE SHEET
+   Estado de Situación Financiera.
+
+2. INCOME STATEMENT
+   Estado de Resultados.
+
+Ambos reportes deben obtener sus datos exclusivamente desde:
+
+LedgerEntry
+
+y desde la clasificación estructural de:
+
+Account
+
+No deben existir saldos financieros almacenados adicionalmente.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+LedgerEntry es la fuente de verdad contable.
+
+Los estados financieros son READ MODELS.
+
+La arquitectura debe ser:
+
+LedgerEntry
+     │
+     ├───────────────┐
+     │               │
+     ▼               ▼
+Balance Sheet   Income Statement
+     │               │
+     ▼               ▼
+Financial Data  Financial Data
+
+No:
+
+Account.balance
+
+No:
+
+FiscalPeriod.balance
+
+No:
+
+FinancialStatement.balance almacenado en BD.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa:
+
+Cash Flow Statement
+
+Statement of Changes in Equity
+
+Notes to Financial Statements
+
+Consolidation
+
+Intercompany
+
+Multi-Currency
+
+Tax Reporting
+
+Budget
+
+Forecast
+
+Financial Ratios
+
+AI Financial Analysis
+
+Management Accounting
+
+Cost Centers
+
+Profit Centers
+
+Comparative Statements
+
+Year End Closing
+
+Retained Earnings Closing
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* solamente cuando sea necesario.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+NO utilizar double.
+
+NO utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialStatementLine.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+NO extender AuditableEntity.
+
+Representa una línea genérica de un estado financiero.
+
+Campos:
+
+Long accountId
+
+String accountCode
+
+String accountName
+
+AccountType accountType
+
+AccountNature nature
+
+BigDecimal debit
+
+BigDecimal credit
+
+BigDecimal balance
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+BalanceSheet.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String chartOfAccountsCode
+
+String fiscalPeriodName
+
+List<FinancialStatementLine> assets
+
+List<FinancialStatementLine> liabilities
+
+List<FinancialStatementLine> equity
+
+BigDecimal totalAssets
+
+BigDecimal totalLiabilities
+
+BigDecimal totalEquity
+
+BigDecimal liabilitiesAndEquity
+
+Boolean balanced
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DEL BALANCE SHEET
+=========================================================================
+
+El estado debe cumplir:
+
+Assets = Liabilities + Equity
+
+Por tanto:
+
+totalAssets
+
+debe ser igual a:
+
+totalLiabilities + totalEquity
+
+Comparar utilizando:
+
+BigDecimal.compareTo()
+
+No utilizar:
+
+equals()
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+IncomeStatement.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String chartOfAccountsCode
+
+String fiscalPeriodName
+
+List<FinancialStatementLine> revenues
+
+List<FinancialStatementLine> expenses
+
+BigDecimal totalRevenue
+
+BigDecimal totalExpense
+
+BigDecimal netIncome
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DEL INCOME STATEMENT
+=========================================================================
+
+Net Income debe calcularse como:
+
+totalRevenue - totalExpense
+
+Utilizar:
+
+BigDecimal.subtract()
+
+No utilizar double.
+
+No almacenar netIncome en base de datos.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialStatementService.java
+
+Crear interfaz.
+
+Métodos:
+
+BalanceSheet generateBalanceSheet(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+IncomeStatement generateIncomeStatement(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialStatementService.java
+
+Implementar:
+
+FinancialStatementService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+LedgerEntryRepository
+
+ChartOfAccountsRepository
+
+FiscalPeriodRepository
+
+Debe utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS GENERALES
+
+1. chartOfAccountsId no puede ser null.
+
+2. fiscalPeriodId no puede ser null.
+
+3. El ChartOfAccounts debe existir.
+
+4. El FiscalPeriod debe existir.
+
+5. El FiscalPeriod debe pertenecer al ChartOfAccounts.
+
+6. Obtener únicamente LedgerEntry del FiscalPeriod.
+
+7. Obtener únicamente cuentas pertenecientes al ChartOfAccounts.
+
+8. No mezclar movimientos de otros períodos.
+
+9. No mezclar movimientos de otros Planes de Cuentas.
+
+10. Utilizar únicamente movimientos contabilizados.
+
+11. No utilizar JournalEntry DRAFT.
+
+12. No utilizar JournalEntry VALIDATED.
+
+=========================================================================
+
+REGLA DE ACCOUNT TYPE
+=========================================================================
+
+La clasificación se basa en:
+
+AccountType
+
+ASSET
+LIABILITY
+EQUITY
+REVENUE
+EXPENSE
+OTHER
+
+Balance Sheet utiliza:
+
+ASSET
+LIABILITY
+EQUITY
+
+Income Statement utiliza:
+
+REVENUE
+EXPENSE
+
+Las cuentas:
+
+OTHER
+
+NO deben incluirse automáticamente en ninguno de los dos estados.
+
+No inventar una clasificación financiera para OTHER.
+
+=========================================================================
+
+BALANCE SHEET — ASSETS
+=========================================================================
+
+Incluir cuentas:
+
+accountType == ASSET
+
+Para cada cuenta:
+
+obtener sus LedgerEntry.
+
+Calcular:
+
+debit - credit
+
+El resultado debe representar el saldo contable de la cuenta.
+
+Agregar a:
+
+assets
+
+=========================================================================
+
+BALANCE SHEET — LIABILITIES
+=========================================================================
+
+Incluir:
+
+accountType == LIABILITY
+
+Calcular el movimiento neto de la cuenta.
+
+Agregar a:
+
+liabilities
+
+=========================================================================
+
+BALANCE SHEET — EQUITY
+=========================================================================
+
+Incluir:
+
+accountType == EQUITY
+
+Calcular el movimiento neto.
+
+Agregar a:
+
+equity
+
+=========================================================================
+
+REGLA DE NATURALEZA CONTABLE
+=========================================================================
+
+El cálculo del saldo base será:
+
+debit - credit
+
+No alterar todavía el signo basándose en:
+
+AccountNature
+
+AccountNature se conserva en FinancialStatementLine para que una capa
+posterior pueda interpretar la presentación financiera.
+
+No duplicar ni invertir movimientos en Ledger.
+
+=========================================================================
+
+TOTAL ASSETS
+=========================================================================
+
+totalAssets =
+
+SUM(balance de cuentas ASSET)
+
+=========================================================================
+
+TOTAL LIABILITIES
+=========================================================================
+
+totalLiabilities =
+
+SUM(balance de cuentas LIABILITY)
+
+=========================================================================
+
+TOTAL EQUITY
+=========================================================================
+
+totalEquity =
+
+SUM(balance de cuentas EQUITY)
+
+=========================================================================
+
+LIABILITIES + EQUITY
+=========================================================================
+
+liabilitiesAndEquity =
+
+totalLiabilities + totalEquity
+
+=========================================================================
+
+BALANCE
+=========================================================================
+
+balanced =
+
+totalAssets.compareTo(
+    liabilitiesAndEquity
+) == 0
+
+=========================================================================
+
+INCOME STATEMENT — REVENUE
+=========================================================================
+
+Incluir cuentas:
+
+accountType == REVENUE
+
+Calcular:
+
+debit - credit
+
+El servicio debe convertir la presentación del resultado a una
+representación financiera coherente.
+
+Para Revenue:
+
+revenueAmount =
+credit - debit
+
+Los valores de Revenue deben representarse como importes positivos
+cuando el resultado normal de la cuenta sea acreedor.
+
+=========================================================================
+
+INCOME STATEMENT — EXPENSE
+=========================================================================
+
+Incluir:
+
+accountType == EXPENSE
+
+Calcular:
+
+debit - credit
+
+Para Expense:
+
+expenseAmount =
+debit - credit
+
+Los gastos deben representarse como importes positivos cuando el
+resultado normal de la cuenta sea deudor.
+
+=========================================================================
+
+TOTAL REVENUE
+=========================================================================
+
+totalRevenue =
+
+SUM(revenueAmount)
+
+=========================================================================
+
+TOTAL EXPENSE
+=========================================================================
+
+totalExpense =
+
+SUM(expenseAmount)
+
+=========================================================================
+
+NET INCOME
+=========================================================================
+
+netIncome =
+
+totalRevenue - totalExpense
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialStatementValidator.java
+
+Crear interfaz.
+
+Métodos:
+
+void validateBalanceSheet(
+    BalanceSheet balanceSheet
+);
+
+void validateIncomeStatement(
+    IncomeStatement incomeStatement
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialStatementValidator.java
+
+Implementar:
+
+FinancialStatementValidator
+
+Validar BalanceSheet:
+
+1. No puede ser null.
+
+2. totalAssets no puede ser null.
+
+3. totalLiabilities no puede ser null.
+
+4. totalEquity no puede ser null.
+
+5. liabilitiesAndEquity no puede ser null.
+
+6. totalAssets >= 0.
+
+7. totalLiabilities >= 0.
+
+8. totalEquity >= 0.
+
+9. Debe cumplirse:
+
+   totalAssets =
+   totalLiabilities + totalEquity
+
+Validar IncomeStatement:
+
+1. No puede ser null.
+
+2. totalRevenue no puede ser null.
+
+3. totalExpense no puede ser null.
+
+4. netIncome no puede ser null.
+
+5. totalRevenue >= 0.
+
+6. totalExpense >= 0.
+
+7. Debe cumplirse:
+
+   netIncome =
+   totalRevenue - totalExpense
+
+Si falla una validación:
+
+IllegalArgumentException
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialStatementCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateAccountBalance(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateRevenue(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateExpense(
+    List<LedgerEntry> entries
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialStatementCalculator.java
+
+Implementar:
+
+FinancialStatementCalculator
+
+No debe acceder a la base de datos.
+
+No debe utilizar repositories.
+
+Debe trabajar exclusivamente con:
+
+List<LedgerEntry>
+
+Utilizar:
+
+BigDecimal.ZERO
+
+Utilizar:
+
+BigDecimal.add()
+
+Utilizar:
+
+BigDecimal.subtract()
+
+=========================================================================
+
+REGLAS DEL CALCULATOR
+=========================================================================
+
+calculateAccountBalance():
+
+debit - credit
+
+calculateRevenue():
+
+credit - debit
+
+calculateExpense():
+
+debit - credit
+
+No aplicar reglas adicionales de presentación.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.exception
+
+Archivo:
+
+FinancialStatementException.java
+
+Crear:
+
+public class FinancialStatementException
+        extends RuntimeException
+
+Constructores:
+
+FinancialStatementException(String message)
+
+FinancialStatementException(
+    String message,
+    Throwable cause
+)
+
+=========================================================================
+
+REGLA DE FUENTE DE DATOS
+=========================================================================
+
+Financial Statements deben utilizar exclusivamente:
+
+LedgerEntry
+
+como fuente de movimientos.
+
+Account solamente aporta:
+
+code
+name
+accountType
+nature
+postable
+
+FiscalPeriod aporta:
+
+year
+period
+startDate
+endDate
+status
+
+ChartOfAccounts aporta:
+
+code
+name
+id
+
+No utilizar:
+
+JournalEntryLine.debit
+
+como fuente directa.
+
+No utilizar:
+
+JournalEntryLine.credit
+
+como fuente directa.
+
+Una vez contabilizado, el Ledger es la fuente de verdad.
+
+=========================================================================
+
+REGLA DE PERÍODO
+=========================================================================
+
+Los estados financieros deben generarse para un:
+
+fiscalPeriodId
+
+específico.
+
+No mezclar períodos.
+
+Ejemplo:
+
+FiscalPeriod 2026-01
+
+solo debe utilizar:
+
+LedgerEntry.fiscalPeriod = 2026-01
+
+=========================================================================
+
+REGLA DE PLAN DE CUENTAS
+=========================================================================
+
+Solo incluir cuentas del:
+
+chartOfAccountsId
+
+solicitado.
+
+No mezclar cuentas pertenecientes a otro Plan de Cuentas.
+
+=========================================================================
+
+CUENTAS SIN MOVIMIENTO
+=========================================================================
+
+Las cuentas sin movimientos pueden aparecer con:
+
+debit = 0
+credit = 0
+balance = 0
+
+Siempre que sean cuentas:
+
+postable = true
+
+No generar líneas para cuentas:
+
+postable = false
+
+en esta primera versión.
+
+=========================================================================
+
+ORDEN
+=========================================================================
+
+Las líneas deben ordenarse por:
+
+accountCode
+
+ascendente.
+
+Ejemplo:
+
+110505
+111005
+130505
+210505
+310505
+
+=========================================================================
+
+EJEMPLO — BALANCE SHEET
+=========================================================================
+
+Ledger:
+
+Cuenta 110505
+Debit = 1000
+Credit = 0
+
+Cuenta 210505
+Debit = 0
+Credit = 400
+
+Cuenta 310505
+Debit = 0
+Credit = 600
+
+Resultado:
+
+Assets:
+
+1000
+
+Liabilities:
+
+400
+
+Equity:
+
+600
+
+Liabilities + Equity:
+
+1000
+
+Balanced:
+
+true
+
+=========================================================================
+
+EJEMPLO — INCOME STATEMENT
+=========================================================================
+
+Ledger:
+
+Revenue:
+
+Debit = 0
+Credit = 5000
+
+Expense:
+
+Debit = 3000
+Credit = 0
+
+Resultado:
+
+Revenue = 5000
+
+Expense = 3000
+
+Net Income = 2000
+
+=========================================================================
+
+REGLA SOBRE INGRESOS Y GASTOS
+=========================================================================
+
+Income Statement debe representar:
+
+Revenue como valores positivos.
+
+Expense como valores positivos.
+
+Net Income:
+
+Revenue - Expense
+
+No mostrar gastos como números negativos en esta primera versión.
+
+La presentación de signos negativos queda para una futura capa de
+reporting.
+
+=========================================================================
+
+REGLA SOBRE EQUITY Y NET INCOME
+=========================================================================
+
+NO incorporar automáticamente:
+
+Net Income
+
+dentro de:
+
+totalEquity
+
+en ACC-007.
+
+El Balance Sheet utiliza exclusivamente:
+
+AccountType.EQUITY
+
+para calcular:
+
+totalEquity
+
+El cierre de resultados y la transferencia de utilidad/pérdida a
+patrimonio serán responsabilidad de una futura historia de:
+
+Year End Closing.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+TrialBalance
+
+PostingService
+
+TrialBalanceService
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Cash Flow
+
+Statement of Changes in Equity
+
+Notes
+
+Consolidation
+
+Intercompany
+
+Year End Closing
+
+Retained Earnings
+
+Opening Balances
+
+Currency Revaluation
+
+Taxes
+
+Multi-Currency
+
+Budget
+
+Forecast
+
+Financial Ratios
+
+AI Financial Analysis
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Repositories adicionales
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede generar un Balance Sheet.
+
+2. Se puede generar un Income Statement.
+
+3. Ambos utilizan LedgerEntry como fuente de movimientos.
+
+4. No se utilizan JournalEntryLine como fuente financiera.
+
+5. Los movimientos se filtran por FiscalPeriod.
+
+6. Los movimientos se filtran por ChartOfAccounts.
+
+7. Las cuentas se clasifican mediante AccountType.
+
+8. Assets se calculan correctamente.
+
+9. Liabilities se calculan correctamente.
+
+10. Equity se calcula correctamente.
+
+11. Revenue se calcula correctamente.
+
+12. Expense se calcula correctamente.
+
+13. Net Income se calcula correctamente.
+
+14. Balance Sheet determina correctamente si:
+
+    Assets = Liabilities + Equity
+
+15. Income Statement determina correctamente:
+
+    Net Income = Revenue - Expense
+
+16. Los cálculos utilizan BigDecimal.
+
+17. No se almacenan saldos financieros adicionales.
+
+18. No existe SQL nativo.
+
+19. No se modifica LedgerEntry.
+
+20. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+Financial Statements son READ MODELS.
+
+LedgerEntry es la fuente de verdad.
+
+Account proporciona la clasificación.
+
+FiscalPeriod define el contexto temporal.
+
+ChartOfAccounts define el contexto contable.
+
+Los reportes no deben convertirse en una segunda fuente de verdad.
+
+=========================================================================
+
+ARQUITECTURA CONTABLE ACTUALIZADA
+
+                    AURUM ACCOUNTING
+                           │
+                           ▼
+                    ChartOfAccounts
+                           │
+                           ▼
+                        Account
+                           │
+                           ▼
+                     FiscalPeriod
+                           │
+                           ▼
+                     JournalEntry
+                           │
+                           ▼
+                  JournalEntryLine
+                           │
+                           ▼
+                       VALIDATED
+                           │
+                           ▼
+                        POSTING
+                           │
+                           ▼
+                     LedgerEntry
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+       Trial Balance   Balance Sheet  Income Statement
+                           │             │
+                           ▼             ▼
+                       Assets /       Revenue /
+                       Liabilities    Expense
+                       / Equity          │
+                           │             ▼
+                           │         Net Income
+                           │
+                           ▼
+                  Financial Reporting
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-008
+
+YEAR END CLOSING / RETAINED EARNINGS
+
+La siguiente historia implementará el cierre anual, incluyendo la
+transferencia del resultado del período hacia patrimonio y la
+preparación del siguiente período fiscal.
+
+=========================================================================
