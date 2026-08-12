@@ -1,0 +1,795 @@
+=========================================================================
+HISTORIA TÉCNICA: INF-011
+BUSINESS RULES ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+=========================================================================
+
+CONTEXTO DEL PROYECTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+La plataforma está diseñada para que las capacidades funcionales
+puedan ser reutilizadas por diferentes módulos del ERP.
+
+Arquitectura principal:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+Metadata Driven Architecture
+
+Los módulos principales actualmente son:
+
+aurum-common
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+aurum-api
+aurum-security
+aurum-accounting
+aurum-customers
+aurum-products
+aurum-sales
+aurum-reporting
+aurum-bootstrap
+
+=========================================================================
+
+ESTADO ACTUAL DEL FRAMEWORK
+=========================================================================
+
+aurum-framework
+
+Contiene las entidades base y capacidades transversales del framework.
+
+aurum-model
+
+Contiene el modelo común de metadatos.
+
+Actualmente contiene, entre otras:
+
+EntityDefinition
+FieldDefinition
+RelationshipDefinition
+
+aurum-engine
+
+Contiene los motores genéricos de la plataforma.
+
+Actualmente se están construyendo:
+
+Metadata Engine
+Validation Engine
+Dynamic Form Engine
+Dynamic Query Engine
+
+=========================================================================
+
+OBJETIVO DE INF-011
+=========================================================================
+
+Construir la infraestructura inicial del Business Rules Engine.
+
+El Business Rules Engine permitirá evaluar reglas de negocio
+independientemente de los módulos funcionales.
+
+Ejemplos futuros:
+
+Una factura no puede contabilizarse si no tiene fecha.
+
+Una cuenta contable debe estar activa.
+
+Una orden de venta no puede confirmarse sin cliente.
+
+Un documento contable debe estar balanceado.
+
+Un producto no puede venderse si está bloqueado.
+
+IMPORTANTE:
+
+INF-011 NO implementará reglas específicas de Contabilidad,
+Ventas, Clientes o Inventario.
+
+INF-011 solamente construirá el framework genérico para registrar,
+evaluar y devolver el resultado de reglas.
+
+=========================================================================
+
+PRINCIPIO ARQUITECTÓNICO
+=========================================================================
+
+Las reglas de negocio NO deben quedar acopladas a:
+
+Controllers
+REST
+JPA
+Hibernate
+PostgreSQL
+SQL
+Repositories
+EntityManager
+Spring Data
+
+El Business Rules Engine debe funcionar sobre objetos Java y
+contextos de ejecución.
+
+=========================================================================
+
+REGLAS DE DESARROLLO
+=========================================================================
+
+No utilizar javax.*
+
+Utilizar jakarta.* solamente cuando sea estrictamente necesario.
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL.
+
+No utilizar Spring Data.
+
+No utilizar Controllers.
+
+No utilizar REST.
+
+No crear DTO REST.
+
+No crear Repositories.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No agregar dependencias Maven.
+
+Constructor Injection cuando exista una dependencia.
+
+Todos los getters y setters deben escribirse manualmente.
+
+Todos los constructores deben escribirse manualmente.
+
+JavaDoc para las interfaces y clases públicas.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-engine
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+BusinessRule.java
+
+Crear una interfaz.
+
+Representa una regla de negocio genérica.
+
+Métodos:
+
+String getCode();
+
+boolean supports(RuleContext context);
+
+RuleResult evaluate(RuleContext context);
+
+La interfaz NO debe conocer ninguna entidad específica del ERP.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+RuleContext.java
+
+Crear una clase.
+
+Representa el contexto utilizado durante la evaluación de una regla.
+
+Campos:
+
+String entityCode
+
+Map<String, Object> values
+
+Map<String, Object> attributes
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+No utilizar Lombok.
+
+El contexto debe permitir transportar información genérica
+de cualquier módulo del ERP.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+RuleResult.java
+
+Crear una clase.
+
+Representa el resultado de la evaluación de una regla.
+
+Campos:
+
+boolean valid
+
+String ruleCode
+
+String message
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+Método:
+
+static RuleResult success(String ruleCode)
+
+Método:
+
+static RuleResult failure(
+    String ruleCode,
+    String message
+)
+
+Método:
+
+boolean isValid()
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+BusinessRulesResult.java
+
+Crear una clase.
+
+Representa el resultado global de la ejecución de múltiples reglas.
+
+Campos:
+
+boolean valid
+
+List<RuleResult> results
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+Método:
+
+void addResult(RuleResult result)
+
+Método:
+
+boolean hasFailures()
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+BusinessRuleEngine.java
+
+Crear una interfaz.
+
+Método:
+
+BusinessRulesResult evaluate(
+    RuleContext context
+);
+
+Esta interfaz representa el contrato principal del Business Rules
+Engine.
+
+No implementar lógica dentro de la interfaz.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules.impl
+
+Archivo:
+
+DefaultBusinessRuleEngine.java
+
+Implementar:
+
+BusinessRuleEngine
+
+Debe ser:
+
+@Component
+
+Debe recibir las reglas mediante Constructor Injection:
+
+List<BusinessRule>
+
+Funcionamiento:
+
+1. Recibir RuleContext.
+
+2. Crear BusinessRulesResult.
+
+3. Recorrer las BusinessRule disponibles.
+
+4. Verificar supports(context).
+
+5. Ejecutar evaluate(context) para las reglas compatibles.
+
+6. Agregar cada RuleResult al resultado global.
+
+7. Si una regla falla, el resultado global debe quedar como inválido.
+
+No detener la evaluación al encontrar el primer error.
+
+Todas las reglas aplicables deben evaluarse.
+
+No utilizar base de datos.
+
+No utilizar SQL.
+
+No utilizar EntityManager.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules.impl
+
+Archivo:
+
+DefaultBusinessRule.java
+
+Crear una implementación mínima de BusinessRule.
+
+Debe estar anotada:
+
+@Component
+
+Código de regla:
+
+DEFAULT_RULE
+
+Debe soportar cualquier RuleContext válido.
+
+La evaluación debe devolver:
+
+RuleResult.success("DEFAULT_RULE")
+
+Esta clase existe solamente para demostrar que el motor puede
+descubrir y ejecutar una regla.
+
+No implementar lógica de negocio real.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+BusinessRuleValidator.java
+
+Crear una interfaz.
+
+Método:
+
+void validate(RuleContext context);
+
+El objetivo es validar que el contexto necesario para ejecutar reglas
+sea estructuralmente válido.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules.impl
+
+Archivo:
+
+DefaultBusinessRuleValidator.java
+
+Implementar:
+
+BusinessRuleValidator
+
+Validaciones mínimas:
+
+1. RuleContext no puede ser null.
+
+2. entityCode no puede ser null.
+
+3. entityCode no puede estar vacío.
+
+4. values no puede ser null.
+
+Si una validación falla:
+
+lanzar IllegalArgumentException.
+
+No utilizar Bean Validation.
+
+No utilizar Spring Validation.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Proyecto Maven:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.rules
+
+Archivo:
+
+RuleExecutionException.java
+
+Crear una excepción runtime:
+
+public class RuleExecutionException
+        extends RuntimeException
+
+Debe contener:
+
+Constructor con message.
+
+Constructor con message y cause.
+
+=========================================================================
+
+DEPENDENCIAS ENTRE CLASES
+=========================================================================
+
+BusinessRule
+      │
+      ▼
+RuleContext
+      │
+      ▼
+RuleResult
+
+BusinessRuleEngine
+      │
+      ├── BusinessRule
+      │
+      └── RuleContext
+              │
+              ▼
+      BusinessRulesResult
+
+BusinessRuleValidator
+      │
+      ▼
+RuleContext
+
+=========================================================================
+
+COMPORTAMIENTO ESPERADO
+=========================================================================
+
+Ejemplo conceptual:
+
+RuleContext context =
+    new RuleContext();
+
+context.setEntityCode("CUSTOMER");
+
+BusinessRulesResult result =
+    businessRuleEngine.evaluate(context);
+
+El resultado debe contener las reglas aplicables.
+
+Para el MVP:
+
+DEFAULT_RULE
+
+debe devolver:
+
+valid = true
+
+=========================================================================
+
+MANEJO DE ERRORES
+=========================================================================
+
+Si una BusinessRule lanza una excepción durante evaluate():
+
+el DefaultBusinessRuleEngine debe convertir la situación en
+RuleResult inválido.
+
+Debe utilizar:
+
+RuleExecutionException
+
+No debe ocultar completamente la causa original.
+
+Debe conservar el cause de la excepción.
+
+La evaluación de las demás reglas debe continuar.
+
+=========================================================================
+
+NO IMPLEMENTAR TODAVÍA
+=========================================================================
+
+No implementar:
+
+Expression Language
+
+SpEL
+
+JavaScript Engine
+
+Groovy
+
+MVEL
+
+Drools
+
+DMN
+
+Rule database
+
+Rule designer
+
+Rule versioning
+
+Rule persistence
+
+Rule priority
+
+Rule dependencies
+
+Workflow
+
+Event processing
+
+AI-generated rules
+
+Natural language rules
+
+=========================================================================
+
+NO GENERAR
+=========================================================================
+
+Controllers
+
+REST
+
+DTO
+
+Repositories
+
+Entities JPA
+
+EntityManager
+
+JDBC
+
+SQL
+
+Flyway
+
+Database configuration
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar exactamente DIEZ archivos.
+
+Todos los archivos deben pertenecer al proyecto Maven:
+
+aurum-engine
+
+No crear archivos adicionales.
+
+No modificar otros proyectos Maven.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben estar implementados manualmente.
+
+Todos los constructores deben estar implementados manualmente.
+
+Todo debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIO DE ACEPTACIÓN
+=========================================================================
+
+1. BusinessRuleEngine puede recibir un RuleContext.
+
+2. Puede descubrir las BusinessRule registradas como componentes
+   Spring.
+
+3. Puede evaluar todas las reglas compatibles.
+
+4. Puede acumular los resultados.
+
+5. Una regla fallida no impide evaluar las siguientes reglas.
+
+6. RuleContext es genérico y no conoce módulos específicos.
+
+7. No existe código específico de Accounting, Sales, Customers,
+   Products o cualquier otro módulo.
+
+8. No existe SQL.
+
+9. No existe acceso a base de datos.
+
+10. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+IMPORTANTE
+
+INF-011 construye solamente la infraestructura del Business Rules
+Engine.
+
+NO convertir esta historia en un motor Drools.
+
+NO implementar un lenguaje de reglas.
+
+NO introducir un DSL.
+
+NO introducir persistencia.
+
+La prioridad del MVP es disponer de un contrato simple, extensible
+y estable que posteriormente pueda evolucionar hacia reglas
+metadata-driven.
+
+=========================================================================
