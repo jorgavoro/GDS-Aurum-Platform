@@ -1,0 +1,1068 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-004
+CONTABILIZACIÓN — ACCOUNTING POSTING / GENERAL LEDGER
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven construido sobre:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+Infraestructura existente:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El módulo aurum-accounting contiene actualmente:
+
+ChartOfAccounts
+Account
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+
+El JournalEntry puede encontrarse en:
+
+DRAFT
+VALIDATED
+
+Un JournalEntry VALIDATED representa un asiento contable que:
+
+- pertenece a un Plan de Cuentas
+- pertenece a un Período Fiscal
+- tiene una fecha contable válida
+- tiene líneas válidas
+- tiene cuentas válidas
+- tiene débitos y créditos
+- está balanceado
+
+ACC-004 implementará la contabilización.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Convertir un JournalEntry VALIDATED en un movimiento contable
+persistido en el Libro Mayor.
+
+El proceso debe:
+
+1. recibir un JournalEntry VALIDATED
+2. verificar que todavía pueda contabilizarse
+3. crear movimientos de Ledger
+4. registrar débito/crédito por cuenta
+5. asociar cada movimiento con el JournalEntry original
+6. cambiar el JournalEntry a POSTED
+7. impedir que el mismo JournalEntry sea contabilizado dos veces
+
+=========================================================================
+
+PRINCIPIO CONTABLE
+=========================================================================
+
+El Ledger no reemplaza al JournalEntry.
+
+El JournalEntry representa el documento contable.
+
+El Ledger representa el efecto contable persistido.
+
+La relación conceptual es:
+
+JournalEntry
+      │
+      ├── Line 1
+      ├── Line 2
+      └── Line N
+             │
+             ▼
+           POSTING
+             │
+             ▼
+           LEDGER
+             │
+             ├── Account A
+             ├── Account B
+             └── Account N
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa:
+
+Trial Balance
+
+Balance Sheet
+
+Income Statement
+
+Cash Flow
+
+Period Closing
+
+Reversal
+
+Void
+
+Taxes
+
+Multi-Currency
+
+Accounts Receivable
+
+Accounts Payable
+
+Cost Centers
+
+Profit Centers
+
+AI Accounting
+
+El objetivo es únicamente:
+
+VALIDATED JournalEntry → POSTED → Ledger Entries
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben escribirse manualmente.
+
+Todos los constructores deben escribirse manualmente.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal para importes.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+LedgerEntry.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_ledger_entry
+
+Campos:
+
+Long id
+
+JournalEntry journalEntry
+
+JournalEntryLine journalEntryLine
+
+Account account
+
+FiscalPeriod fiscalPeriod
+
+LocalDate accountingDate
+
+BigDecimal debit
+
+BigDecimal credit
+
+String description
+
+Integer lineNumber
+
+Relaciones:
+
+@ManyToOne hacia JournalEntry
+
+@ManyToOne hacia JournalEntryLine
+
+@ManyToOne hacia Account
+
+@ManyToOne hacia FiscalPeriod
+
+Todos los campos de referencia son obligatorios.
+
+=========================================================================
+
+REGLAS DE LedgerEntry
+=========================================================================
+
+Una LedgerEntry representa el efecto persistido de una
+JournalEntryLine.
+
+Debe conservar:
+
+- cuenta
+- período fiscal
+- fecha
+- débito
+- crédito
+- descripción
+- número de línea
+- referencia al documento origen
+
+No almacenar solamente el saldo neto.
+
+Debe conservar explícitamente:
+
+debit
+
+credit
+
+Una LedgerEntry debe respetar:
+
+debit >= 0
+
+credit >= 0
+
+No ambos mayores que cero.
+
+No ambos iguales a cero.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+LedgerEntryRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<LedgerEntry, Long>
+
+Métodos:
+
+List<LedgerEntry> findByJournalEntryId(
+    Long journalEntryId
+);
+
+List<LedgerEntry> findByAccountId(
+    Long accountId
+);
+
+List<LedgerEntry> findByFiscalPeriodId(
+    Long fiscalPeriodId
+);
+
+List<LedgerEntry> findByAccountIdAndFiscalPeriodId(
+    Long accountId,
+    Long fiscalPeriodId
+);
+
+boolean existsByJournalEntryId(
+    Long journalEntryId
+);
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+PostingService.java
+
+Crear interfaz.
+
+Métodos:
+
+JournalEntry post(
+    Long journalEntryId
+);
+
+boolean isPosted(
+    Long journalEntryId
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultPostingService.java
+
+Implementar:
+
+PostingService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+JournalEntryRepository
+
+LedgerEntryRepository
+
+JournalEntryValidator
+
+FiscalPeriodRepository
+
+Debe utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DEL MÉTODO post()
+=========================================================================
+
+1. journalEntryId no puede ser null.
+
+2. El JournalEntry debe existir.
+
+3. El JournalEntry debe estar en estado:
+
+   VALIDATED
+
+4. No permitir POSTED → POSTED.
+
+5. No permitir DRAFT → POSTED.
+
+6. No permitir VOIDED → POSTED.
+
+7. El FiscalPeriod debe existir.
+
+8. El FiscalPeriod debe estar OPEN.
+
+9. El JournalEntry debe seguir perteneciendo al período fiscal.
+
+10. La fecha contable debe seguir dentro del período.
+
+11. El JournalEntry debe continuar balanceado.
+
+12. Las líneas deben continuar siendo válidas.
+
+13. Cada Account debe continuar activa.
+
+14. Cada Account debe continuar siendo postable.
+
+15. No debe existir previamente un LedgerEntry para el JournalEntry.
+
+=========================================================================
+
+PROCESO DE POSTING
+=========================================================================
+
+Para cada JournalEntryLine:
+
+Crear una LedgerEntry.
+
+Copiar:
+
+journalEntry
+
+journalEntryLine
+
+account
+
+fiscalPeriod
+
+accountingDate
+
+debit
+
+credit
+
+description
+
+lineNumber
+
+Guardar la LedgerEntry.
+
+Después de crear correctamente todas las LedgerEntry:
+
+cambiar:
+
+JournalEntry.status
+
+de:
+
+VALIDATED
+
+a:
+
+POSTED
+
+Guardar el JournalEntry.
+
+=========================================================================
+
+ATOMICIDAD
+=========================================================================
+
+El proceso completo de posting debe ser transaccional.
+
+Utilizar:
+
+@Transactional
+
+en el método de implementación correspondiente.
+
+Si una LedgerEntry falla:
+
+NO debe quedar ninguna LedgerEntry parcialmente creada.
+
+El JournalEntry tampoco debe quedar en POSTED.
+
+La operación completa debe revertirse.
+
+=========================================================================
+
+IDEMPOTENCIA
+=========================================================================
+
+Un JournalEntry solamente puede ser contabilizado una vez.
+
+Si:
+
+existsByJournalEntryId(journalEntryId)
+
+devuelve true:
+
+no crear nuevas LedgerEntry.
+
+La operación debe fallar con:
+
+IllegalStateException
+
+con un mensaje claro.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+LedgerService.java
+
+Crear interfaz.
+
+Métodos:
+
+List<LedgerEntry> findByAccount(
+    Long accountId
+);
+
+List<LedgerEntry> findByAccountAndFiscalPeriod(
+    Long accountId,
+    Long fiscalPeriodId
+);
+
+List<LedgerEntry> findByJournalEntry(
+    Long journalEntryId
+);
+
+BigDecimal calculateDebitTotal(
+    Long accountId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateCreditTotal(
+    Long accountId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateBalance(
+    Long accountId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultLedgerService.java
+
+Implementar:
+
+LedgerService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+LedgerEntryRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA DE BALANCE
+=========================================================================
+
+Para una cuenta:
+
+balance = totalDebit - totalCredit
+
+Utilizar:
+
+BigDecimal
+
+Nunca utilizar:
+
+double
+
+float
+
+El método:
+
+calculateBalance()
+
+debe retornar:
+
+totalDebit.subtract(totalCredit)
+
+No interpretar todavía la naturaleza de la cuenta.
+
+La naturaleza DEBIT/CREDIT se utilizará posteriormente para
+presentación financiera y reportes.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+PostingValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    JournalEntry journalEntry
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultPostingValidator.java
+
+Implementar:
+
+PostingValidator
+
+Validaciones:
+
+1. JournalEntry no puede ser null.
+
+2. Status debe ser VALIDATED.
+
+3. FiscalPeriod debe existir.
+
+4. FiscalPeriod debe estar OPEN.
+
+5. JournalEntry debe tener líneas.
+
+6. JournalEntry debe estar balanceado.
+
+7. Cada línea debe tener Account.
+
+8. Cada Account debe estar activa.
+
+9. Cada Account debe ser postable.
+
+10. Cada Account debe pertenecer al mismo ChartOfAccounts.
+
+Si una regla falla:
+
+lanzar IllegalArgumentException.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.exception
+
+Archivo:
+
+PostingException.java
+
+Crear excepción:
+
+public class PostingException
+        extends RuntimeException
+
+Constructores:
+
+PostingException(String message)
+
+PostingException(String message, Throwable cause)
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountBalanceService.java
+
+Crear interfaz.
+
+Método:
+
+BigDecimal calculateBalance(
+    Long accountId,
+    Long fiscalPeriodId
+);
+
+La implementación puede reutilizar LedgerService.
+
+=========================================================================
+
+REGLA SOBRE SALDOS
+=========================================================================
+
+NO almacenar el saldo directamente en Account.
+
+NO agregar:
+
+balance
+
+currentBalance
+
+debitBalance
+
+creditBalance
+
+a la entidad Account.
+
+El saldo se calcula a partir del Ledger.
+
+Esto evita inconsistencias entre:
+
+Account
+
+y
+
+LedgerEntry.
+
+=========================================================================
+
+EJEMPLO
+=========================================================================
+
+JournalEntry:
+
+JE-000001
+
+Status:
+
+VALIDATED
+
+Lines:
+
+Account 110505
+
+Debit 1000.00
+
+Credit 0.00
+
+
+Account 413505
+
+Debit 0.00
+
+Credit 1000.00
+
+
+Después de POST:
+
+JournalEntry.status = POSTED
+
+
+Ledger:
+
+LedgerEntry 1
+
+Account = 110505
+
+Debit = 1000.00
+
+Credit = 0.00
+
+
+LedgerEntry 2
+
+Account = 413505
+
+Debit = 0.00
+
+Credit = 1000.00
+
+=========================================================================
+
+RESULTADO
+=========================================================================
+
+Para 110505:
+
+Debit = 1000.00
+Credit = 0.00
+
+Balance:
+
+1000.00
+
+
+Para 413505:
+
+Debit = 0.00
+Credit = 1000.00
+
+Balance:
+
+-1000.00
+
+=========================================================================
+
+REGLA IMPORTANTE SOBRE EL LEDGER
+=========================================================================
+
+LedgerEntry es un registro histórico.
+
+No debe modificarse como parte del funcionamiento normal del ERP.
+
+Una vez creado mediante posting:
+
+NO actualizar.
+
+NO eliminar.
+
+NO reutilizar.
+
+Una futura operación de reversión deberá generar movimientos
+compensatorios.
+
+=========================================================================
+
+NO IMPLEMENTAR
+=========================================================================
+
+Trial Balance
+
+Balance Sheet
+
+Income Statement
+
+Cash Flow
+
+Closing
+
+Reversal
+
+Void
+
+Correction
+
+Taxes
+
+Currency
+
+Exchange Rates
+
+Multi-Currency
+
+Cost Centers
+
+Profit Centers
+
+Dimensions
+
+Accounts Receivable
+
+Accounts Payable
+
+Bank Reconciliation
+
+Recurring Entries
+
+Approval Workflow
+
+AI Accounting
+
+=========================================================================
+
+NO GENERAR
+=========================================================================
+
+Controllers
+
+REST
+
+DTO
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Un JournalEntry VALIDATED puede ser contabilizado.
+
+2. Un JournalEntry DRAFT no puede ser contabilizado.
+
+3. Un JournalEntry POSTED no puede ser contabilizado nuevamente.
+
+4. Un JournalEntry VOIDED no puede ser contabilizado.
+
+5. El FiscalPeriod debe estar OPEN.
+
+6. El JournalEntry debe continuar balanceado.
+
+7. Cada línea genera exactamente una LedgerEntry.
+
+8. Cada LedgerEntry conserva la referencia al JournalEntry origen.
+
+9. Cada LedgerEntry conserva la referencia a la línea origen.
+
+10. El proceso es transaccional.
+
+11. Si falla una línea, no se persiste ninguna LedgerEntry parcial.
+
+12. Después de un posting exitoso el JournalEntry queda POSTED.
+
+13. No se puede modificar el saldo directamente en Account.
+
+14. El saldo se calcula desde LedgerEntry.
+
+15. Un JournalEntry solamente puede producir un conjunto de
+    LedgerEntry.
+
+16. No existe SQL nativo.
+
+17. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+JournalEntry es el documento.
+
+LedgerEntry es el efecto contable.
+
+Account es la clasificación contable.
+
+FiscalPeriod determina el contexto temporal.
+
+Posting es el proceso que conecta el documento con el Ledger.
+
+La arquitectura debe mantener esta separación.
+
+=========================================================================
+
+FLUJO COMPLETO HASTA ESTE PUNTO
+=========================================================================
+
+ChartOfAccounts
+       │
+       ▼
+Account
+       │
+       ▼
+FiscalPeriod
+       │
+       ▼
+JournalEntry
+       │
+       ├── JournalEntryLine
+       ├── Debit
+       └── Credit
+             │
+             ▼
+        VALIDATION
+             │
+             ▼
+          VALIDATED
+             │
+             ▼
+          POSTING
+             │
+             ▼
+       LedgerEntry
+             │
+             ▼
+           POSTED
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-005
+
+TRIAL BALANCE
+
+ACC-005 utilizará LedgerEntry para construir el primer reporte
+financiero del sistema: el Balance de Comprobación.
+
+=========================================================================
