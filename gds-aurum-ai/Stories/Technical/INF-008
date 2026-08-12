@@ -1,0 +1,287 @@
+=========================================================================
+HISTORIA TÉCNICA: INF-008
+=========================================================================
+PROYECTO
+
+GDS Aurum AI Platform
+
+Versión
+
+MVP 1
+
+Arquitectura
+
+Java 21
+
+Spring Boot 3.5.x
+
+PostgreSQL
+
+Hibernate 6
+
+Spring Data JPA
+
+Flyway
+
+Maven Multi Module
+
+DDD
+
+Clean Architecture
+
+Metadata Driven ERP
+
+=========================================================================
+CONTEXTO
+
+El ERP será completamente Metadata Driven.
+
+Las entidades poseen una colección de FieldDefinition.
+
+Cada FieldDefinition podrá tener reglas de validación que serán
+ejecutadas por el Validation Engine.
+
+En esta historia NO se implementan reglas.
+
+Solamente la infraestructura del motor.
+
+=========================================================================
+REGLAS
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Solo jakarta.*
+
+No utilizar Spring Validation.
+
+No utilizar Bean Validation.
+
+No utilizar EntityManager.
+
+No utilizar SQL.
+
+No utilizar JDBC.
+
+No crear controladores.
+
+No crear DTO.
+
+No crear Repositories.
+
+No crear Tests.
+
+Constructor Injection únicamente.
+
+Código listo para producción.
+
+=========================================================================
+PROYECTO MAVEN
+
+aurum-engine
+
+=========================================================================
+ARCHIVO 1
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation
+
+Archivo
+
+ValidationEngine.java
+
+Crear una interfaz.
+
+Declarar:
+
+ValidationResult validate(
+    EntityDefinition entity,
+    Map<String,Object> values
+);
+
+=========================================================================
+ARCHIVO 2
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation
+
+Archivo
+
+ValidationResult.java
+
+Crear una clase.
+
+Campos:
+
+boolean valid
+
+List<ValidationError> errors
+
+Métodos:
+
+addError()
+
+hasErrors()
+
+=========================================================================
+ARCHIVO 3
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation
+
+Archivo
+
+ValidationError.java
+
+Campos
+
+String field
+
+String code
+
+String message
+
+String rejectedValue
+
+Constructores
+
+Getters
+
+Setters
+
+=========================================================================
+ARCHIVO 4
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation
+
+Archivo
+
+ValidationRule.java
+
+Crear interfaz.
+
+Declarar
+
+boolean supports(FieldDefinition field);
+
+void validate(
+FieldDefinition field,
+Object value,
+ValidationResult result);
+
+=========================================================================
+ARCHIVO 5
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation.impl
+
+Archivo
+
+DefaultValidationEngine.java
+
+Implementar ValidationEngine.
+
+Debe recibir por Constructor Injection:
+
+List<ValidationRule>
+
+Para cada FieldDefinition
+
+buscar la regla compatible
+
+ejecutar validate()
+
+No implementar reglas todavía.
+
+=========================================================================
+ARCHIVO 6
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation.rules
+
+Archivo
+
+RequiredValidationRule.java
+
+Implementar ValidationRule.
+
+Validar únicamente:
+
+required == true
+
+Si el valor es null
+
+agregar ValidationError.
+
+No implementar otras validaciones.
+
+=========================================================================
+ARCHIVO 7
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.validation.rules
+
+Archivo
+
+StringLengthValidationRule.java
+
+Implementar ValidationRule.
+
+Validar solamente
+
+length
+
+No implementar Regex.
+
+No implementar Email.
+
+No implementar Decimal.
+
+=========================================================================
+NO GENERAR
+
+Regex
+
+Email
+
+Phone
+
+Money
+
+Decimal
+
+Date
+
+Controllers
+
+REST
+
+Repositories
+
+DTO
+
+SQL
+
+Tests
+
+=========================================================================
+RESULTADO ESPERADO
+
+Generar exactamente siete archivos.
+
+Todos compilando.
+
+Java 21.
+
+Sin clases adicionales.
+
+=========================================================================
