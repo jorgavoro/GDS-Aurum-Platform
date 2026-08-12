@@ -1,0 +1,250 @@
+==========================================================================
+HISTORIA TÉCNICA: INF-003
+==========================================================================
+
+Proyecto Maven:
+aurum-framework
+
+Objetivo:
+
+Crear el estándar de respuestas REST que será utilizado por todos los
+controladores del ERP GDS Aurum AI.
+
+Debe ser un diseño enterprise preparado para futuras versiones de la API.
+
+Java 21
+
+Spring Boot 3.5.x
+
+Lombok
+
+Jackson
+
+No generar código de ejemplo.
+
+No utilizar ResponseEntity dentro de estas clases.
+
+Seguir principios SOLID.
+
+==========================================================================
+
+ARCHIVO 1
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+
+com.globaldynamicssystems.aurum.framework.api.response
+
+Archivo:
+
+ApiResponse.java
+
+Descripción:
+
+Crear una clase genérica.
+
+Debe contener:
+
+boolean success
+
+String message
+
+T data
+
+Instant timestamp
+
+String traceId
+
+String path
+
+Agregar:
+
+@Getter
+
+@Setter
+
+@Builder
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+Implementar Serializable.
+
+==========================================================================
+
+ARCHIVO 2
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+
+com.globaldynamicssystems.aurum.framework.api.response
+
+Archivo:
+
+PageResponse.java
+
+Descripción:
+
+Crear una clase genérica para respuestas paginadas.
+
+Debe contener:
+
+List<T> content
+
+long totalElements
+
+int totalPages
+
+int page
+
+int size
+
+boolean first
+
+boolean last
+
+Agregar:
+
+@Getter
+
+@Setter
+
+@Builder
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+Implementar Serializable.
+
+==========================================================================
+
+ARCHIVO 3
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+
+com.globaldynamicssystems.aurum.framework.api.response
+
+Archivo:
+
+ErrorResponse.java
+
+Descripción:
+
+Crear una clase estándar para errores REST.
+
+Debe contener:
+
+Instant timestamp
+
+Integer status
+
+String error
+
+String code
+
+String message
+
+String path
+
+String traceId
+
+List<String> details
+
+Agregar:
+
+@Getter
+
+@Setter
+
+@Builder
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+Implementar Serializable.
+
+==========================================================================
+
+ARCHIVO 4
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+
+com.globaldynamicssystems.aurum.framework.api.response
+
+Archivo:
+
+PagedResult.java
+
+Descripción:
+
+Crear una clase genérica.
+
+Debe contener:
+
+List<T> items
+
+long totalItems
+
+int totalPages
+
+int currentPage
+
+int pageSize
+
+Debe utilizar Lombok.
+
+Implementar Serializable.
+
+==========================================================================
+
+REQUISITOS GENERALES
+
+Utilizar:
+
+Java 21
+
+Spring Boot 3.5.x
+
+Jackson
+
+Lombok
+
+Serializable
+
+No utilizar javax.*
+
+No generar controladores.
+
+No generar servicios.
+
+No generar ejemplos.
+
+No generar pruebas unitarias.
+
+No utilizar ResponseEntity.
+
+No utilizar Map<String,Object>.
+
+Las clases deben quedar listas para producción.
+
+==========================================================================
+
+DEPENDENCIAS PENDIENTES
+
+Si alguna dependencia fuera necesaria,
+únicamente listarla al final.
+
+==========================================================================
