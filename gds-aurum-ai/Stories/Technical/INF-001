@@ -1,0 +1,204 @@
+==========================================================================
+HISTORIA TÉCNICA: INF-001
+==========================================================================
+
+Proyecto Maven:
+aurum-framework
+
+Objetivo:
+Construir la infraestructura base de persistencia del framework GDS Aurum AI.
+
+Debe generarse código listo para producción utilizando Java 21, Spring Boot 3.5.x, Jakarta Persistence 3.x, Hibernate 6.x y Lombok.
+
+No generar código de ejemplo.
+
+No agregar métodos innecesarios.
+
+Seguir principios SOLID y Clean Architecture.
+
+==========================================================================
+
+ARCHIVO 1
+
+Paquete:
+com.globaldynamicssystems.aurum.framework.entity
+
+Archivo:
+BaseEntity.java
+
+Descripción:
+
+Crear una clase abstracta anotada con @MappedSuperclass.
+
+Debe implementar Serializable.
+
+Debe utilizar Lombok.
+
+Debe incluir:
+
+- UUID id
+- Boolean active
+- UUID companyId
+- UUID tenantId
+- Long version
+
+Configuración:
+
+id:
+- @Id
+- @GeneratedValue(strategy = GenerationType.UUID)
+- @Column(nullable = false, updatable = false)
+
+active:
+- @Column(nullable = false)
+
+companyId:
+- @Column(nullable = false)
+
+tenantId:
+- @Column(nullable = false)
+
+version:
+- @Version
+
+Agregar:
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
+
+No agregar lógica de negocio.
+
+No agregar constructores personalizados.
+
+==========================================================================
+
+ARCHIVO 2
+
+Paquete:
+com.globaldynamicssystems.aurum.framework.entity
+
+Archivo:
+AuditableEntity.java
+
+Descripción:
+
+Crear una clase abstracta que extienda BaseEntity.
+
+Debe utilizar Spring Data JPA Auditing.
+
+Debe contener:
+
+Instant createdAt
+
+Instant updatedAt
+
+String createdBy
+
+String updatedBy
+
+Utilizar:
+
+@EntityListeners(AuditingEntityListener.class)
+
+Anotaciones:
+
+@CreatedDate
+
+@LastModifiedDate
+
+@CreatedBy
+
+@LastModifiedBy
+
+Agregar:
+
+@Getter
+
+@Setter
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+@SuperBuilder
+
+No agregar lógica de negocio.
+
+==========================================================================
+
+ARCHIVO 3
+
+Paquete:
+
+com.globaldynamicssystems.aurum.framework.configuration
+
+Archivo:
+
+JpaConfiguration.java
+
+Descripción:
+
+Crear una clase de configuración Spring.
+
+Debe contener:
+
+@EnableJpaAuditing
+
+@Configuration
+
+Debe registrar un AuditorAware<String>.
+
+El auditor debe devolver temporalmente:
+
+"system"
+
+mediante:
+
+Optional.of("system")
+
+No utilizar Spring Security todavía.
+
+No utilizar JWT.
+
+No utilizar autenticación.
+
+Solo preparar la infraestructura para futuras implementaciones.
+
+==========================================================================
+
+REQUISITOS GENERALES
+
+Utilizar:
+
+Java 21
+
+Spring Boot 3.5.x
+
+Jakarta Persistence
+
+Spring Data JPA
+
+Hibernate
+
+Lombok
+
+Imports optimizados.
+
+No utilizar javax.*.
+
+Solo jakarta.*.
+
+No inventar clases adicionales.
+
+Si alguna clase adicional fuera necesaria, NO generarla.
+
+Simplemente indicar al final:
+
+DEPENDENCIAS PENDIENTES
+
+con la lista correspondiente.
+
+==========================================================================
