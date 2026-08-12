@@ -1,0 +1,576 @@
+=========================================================================
+HISTORIA TÉCNICA: INF-010
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+=========================================================================
+
+CONTEXTO ARQUITECTÓNICO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+La plataforma utiliza:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+El sistema NO debe depender de lógica de negocio hardcoded para
+construir consultas.
+
+Las entidades funcionales están representadas mediante metadatos
+provenientes de aurum-model.
+
+El módulo aurum-engine contiene los motores genéricos de la plataforma.
+
+Ya existen:
+
+EntityDefinition
+FieldDefinition
+RelationshipDefinition
+
+y el Metadata Engine.
+
+El siguiente componente será el Dynamic Query Engine.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir la infraestructura que permita representar una consulta
+dinámica utilizando metadatos.
+
+El motor debe permitir definir:
+
+- entidad origen
+- campos a retornar
+- filtros
+- ordenamiento
+- paginación
+
+IMPORTANTE:
+
+En esta historia NO se debe ejecutar SQL.
+
+En esta historia NO se debe ejecutar una consulta contra PostgreSQL.
+
+En esta historia NO se debe utilizar EntityManager.
+
+En esta historia NO se debe utilizar JDBC.
+
+La historia solamente construye el modelo y la abstracción del
+Dynamic Query Engine.
+
+La ejecución real de consultas será implementada posteriormente.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar:
+
+javax.*
+
+Reflection
+
+EntityManager
+
+JDBC
+
+SQL nativo
+
+Spring Data repositories
+
+Controllers
+
+REST
+
+DTO
+
+Lombok
+
+Builder generado por Lombok
+
+Field Injection
+
+Código estático específico de CUSTOMER, ACCOUNT, SALES_ORDER,
+PRODUCT o cualquier otra entidad funcional.
+
+Todos los getters y setters deben implementarse manualmente.
+
+Constructor Injection cuando exista dependencia.
+
+Usar java.util.Optional cuando corresponda.
+
+Usar interfaces para desacoplar implementación y contrato.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-engine
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+QueryDefinition.java
+
+Crear una clase.
+
+Representa una consulta dinámica.
+
+Campos:
+
+String entityCode
+
+List<String> fields
+
+List<QueryFilter> filters
+
+List<QuerySort> sorts
+
+Integer page
+
+Integer pageSize
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+QueryFilter.java
+
+Crear una clase.
+
+Representa una condición de búsqueda.
+
+Campos:
+
+String field
+
+QueryOperator operator
+
+Object value
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+QuerySort.java
+
+Crear una clase.
+
+Representa el ordenamiento de un resultado.
+
+Campos:
+
+String field
+
+SortDirection direction
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+QueryOperator.java
+
+Crear enum.
+
+Valores:
+
+EQUALS
+
+NOT_EQUALS
+
+GREATER_THAN
+
+GREATER_THAN_OR_EQUAL
+
+LESS_THAN
+
+LESS_THAN_OR_EQUAL
+
+LIKE
+
+STARTS_WITH
+
+ENDS_WITH
+
+IN
+
+NOT_IN
+
+IS_NULL
+
+IS_NOT_NULL
+
+BETWEEN
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+SortDirection.java
+
+Crear enum.
+
+Valores:
+
+ASC
+
+DESC
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+QueryResult.java
+
+Crear una clase genérica:
+
+QueryResult<T>
+
+Campos:
+
+List<T> content
+
+long totalElements
+
+int page
+
+int pageSize
+
+Debe contener:
+
+Constructor vacío.
+
+Constructor completo.
+
+Getters.
+
+Setters.
+
+Método:
+
+boolean isEmpty();
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+DynamicQueryEngine.java
+
+Crear interfaz.
+
+Método:
+
+QueryResult<Map<String, Object>> execute(
+    QueryDefinition queryDefinition
+);
+
+IMPORTANTE:
+
+La interfaz define el contrato.
+
+No ejecutar ninguna consulta todavía.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query.impl
+
+Archivo:
+
+DefaultDynamicQueryEngine.java
+
+Implementar:
+
+DynamicQueryEngine
+
+Debe ser un componente Spring:
+
+@Component
+
+Por ahora NO debe conectarse a PostgreSQL.
+
+NO utilizar EntityManager.
+
+NO utilizar JDBC.
+
+NO generar SQL.
+
+El método execute() debe devolver un QueryResult vacío válido.
+
+La implementación debe quedar preparada para una futura implementación
+de ejecución real.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query
+
+Archivo:
+
+QueryValidator.java
+
+Crear una interfaz.
+
+Método:
+
+void validate(QueryDefinition queryDefinition);
+
+La interfaz representa la validación estructural de una consulta.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.query.impl
+
+Archivo:
+
+DefaultQueryValidator.java
+
+Implementar:
+
+QueryValidator
+
+Validaciones mínimas:
+
+1. QueryDefinition no puede ser null.
+
+2. entityCode no puede ser null.
+
+3. entityCode no puede estar vacío.
+
+4. page no puede ser menor que 0.
+
+5. pageSize no puede ser menor que 1.
+
+Si una validación falla:
+
+lanzar IllegalArgumentException.
+
+No utilizar Spring Validation.
+
+No utilizar Bean Validation.
+
+=========================================================================
+
+DEPENDENCIAS
+=========================================================================
+
+El Dynamic Query Engine puede utilizar:
+
+java.util.List
+
+java.util.Map
+
+java.util.Objects
+
+java.util.Optional
+
+No agregar dependencias Maven.
+
+No modificar pom.xml.
+
+=========================================================================
+
+NO GENERAR
+=========================================================================
+
+Controllers
+
+REST
+
+DTO
+
+Repositories
+
+EntityManager
+
+JDBC
+
+SQL
+
+QueryDSL
+
+Specifications
+
+Criteria API
+
+Database configuration
+
+Flyway
+
+Tests
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-engine
+
+Todos deben compilar con:
+
+Java 21
+
+No utilizar Lombok.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No crear archivos adicionales.
+
+=========================================================================
+
+IMPORTANTE
+
+El objetivo de INF-010 NO es ejecutar consultas.
+
+El objetivo es establecer el CONTRATO y MODELO del Dynamic Query
+Engine sobre el cual posteriormente se implementará el mecanismo
+real de consulta.
+
+=========================================================================
+
+CRITERIO DE ACEPTACIÓN
+
+El proyecto debe compilar correctamente.
+
+El DynamicQueryEngine debe poder recibir un QueryDefinition.
+
+El QueryValidator debe detectar consultas estructuralmente inválidas.
+
+DefaultDynamicQueryEngine debe devolver un QueryResult vacío sin
+acceder a ninguna base de datos.
+
+No debe existir SQL en ninguna de las clases generadas.
+
+=========================================================================
