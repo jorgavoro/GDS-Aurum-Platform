@@ -1,0 +1,1271 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-009
+SALDOS INICIALES — OPENING BALANCES
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+Stack:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+El módulo aurum-accounting contiene actualmente:
+
+ChartOfAccounts
+Account
+AccountType
+AccountNature
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+LedgerEntry
+TrialBalance
+BalanceSheet
+IncomeStatement
+FiscalYearClosing
+
+El ciclo contable actual es:
+
+Ejercicio anterior
+       ↓
+Journal Entry
+       ↓
+Posting
+       ↓
+Ledger
+       ↓
+Trial Balance
+       ↓
+Financial Statements
+       ↓
+Year End Closing
+       ↓
+Retained Earnings
+       ↓
+NUEVO EJERCICIO
+
+ACC-009 implementará la apertura del nuevo ejercicio mediante
+saldos iniciales.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear el proceso que permita trasladar los saldos permanentes del
+ejercicio anterior al nuevo ejercicio.
+
+Deben trasladarse:
+
+ASSET
+
+LIABILITY
+
+EQUITY
+
+No deben trasladarse directamente:
+
+REVENUE
+
+EXPENSE
+
+Las cuentas de resultados deben comenzar en cero en el nuevo
+ejercicio.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+El Ledger histórico NO se copia.
+
+No duplicar:
+
+LedgerEntry
+
+JournalEntry
+
+JournalEntryLine
+
+El nuevo ejercicio recibe los saldos mediante un:
+
+OPENING BALANCE JOURNAL ENTRY
+
+Flujo:
+
+Ejercicio anterior
+       ↓
+Closing
+       ↓
+Closing Balances
+       ↓
+Opening Balance Calculation
+       ↓
+Opening Journal Entry
+       ↓
+Validation
+       ↓
+Posting
+       ↓
+Nuevo Ledger
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa:
+
+Automatic Fiscal Year Creation
+
+Budget Carry Forward
+
+Tax Carry Forward
+
+Currency Carry Forward
+
+Multi-Currency
+
+Cost Center Carry Forward
+
+Profit Center Carry Forward
+
+Fixed Asset Opening
+
+Inventory Opening
+
+Accounts Receivable Opening
+
+Accounts Payable Opening
+
+Bank Opening
+
+Consolidation
+
+Intercompany
+
+Forecast
+
+AI Financial Analysis
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+OpeningBalanceLine.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long accountId
+
+String accountCode
+
+String accountName
+
+BigDecimal debit
+
+BigDecimal credit
+
+BigDecimal balance
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+OpeningBalanceResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Integer sourceFiscalYear
+
+Integer targetFiscalYear
+
+Long openingJournalEntryId
+
+List<OpeningBalanceLine> lines
+
+BigDecimal totalDebit
+
+BigDecimal totalCredit
+
+Boolean balanced
+
+Boolean successful
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+OpeningBalanceService.java
+
+Crear interfaz.
+
+Métodos:
+
+OpeningBalanceResult generate(
+    Long chartOfAccountsId,
+    Integer sourceFiscalYear,
+    Integer targetFiscalYear
+);
+
+OpeningBalanceResult post(
+    Long chartOfAccountsId,
+    Integer sourceFiscalYear,
+    Integer targetFiscalYear
+);
+
+boolean exists(
+    Long chartOfAccountsId,
+    Integer targetFiscalYear
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultOpeningBalanceService.java
+
+Implementar:
+
+OpeningBalanceService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+ChartOfAccountsRepository
+
+FiscalPeriodRepository
+
+AccountRepository
+
+LedgerEntryRepository
+
+JournalEntryRepository
+
+FinancialStatementService
+
+JournalEntryValidator
+
+PostingService
+
+OpeningBalanceValidator
+
+Utilizar Constructor Injection.
+
+El método:
+
+post()
+
+debe ser:
+
+@Transactional
+
+=========================================================================
+
+REGLAS DE generate()
+
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. sourceFiscalYear obligatorio.
+
+3. targetFiscalYear obligatorio.
+
+4. sourceFiscalYear debe ser menor que targetFiscalYear.
+
+5. ChartOfAccounts debe existir.
+
+6. Deben existir períodos del sourceFiscalYear.
+
+7. Todos los períodos del sourceFiscalYear deben estar CLOSED.
+
+8. Debe existir al menos un período del targetFiscalYear.
+
+9. El targetFiscalYear debe pertenecer al mismo ChartOfAccounts.
+
+10. No debe existir previamente un Opening Balance para el
+    targetFiscalYear.
+
+11. Obtener los saldos finales del ejercicio anterior.
+
+12. Incluir únicamente:
+
+    ASSET
+    LIABILITY
+    EQUITY
+
+13. Excluir:
+
+    REVENUE
+    EXPENSE
+
+14. Generar OpeningBalanceLine por cuenta.
+
+15. Calcular totalDebit.
+
+16. Calcular totalCredit.
+
+17. Verificar:
+
+    totalDebit == totalCredit
+
+18. No persistir nada durante generate().
+
+=========================================================================
+
+REGLA DE GENERATE
+
+=========================================================================
+
+generate() es una operación de cálculo.
+
+NO debe:
+
+crear JournalEntry
+
+crear JournalEntryLine
+
+crear LedgerEntry
+
+cambiar FiscalPeriod
+
+cambiar Account
+
+Debe devolver únicamente:
+
+OpeningBalanceResult
+
+=========================================================================
+
+REGLAS DE post()
+
+=========================================================================
+
+1. Ejecutar las mismas validaciones de generate().
+
+2. Generar OpeningBalanceResult.
+
+3. El resultado debe estar balanceado.
+
+4. Crear JournalEntry de apertura.
+
+5. Crear JournalEntryLine.
+
+6. Validar el JournalEntry.
+
+7. Postearlo.
+
+8. Retornar el resultado con:
+
+    openingJournalEntryId
+
+9. La operación debe ser transaccional.
+
+=========================================================================
+
+REGLA DE ESTADO
+
+=========================================================================
+
+El Opening Journal Entry debe seguir:
+
+DRAFT
+   ↓
+VALIDATED
+   ↓
+POSTED
+
+No permitir:
+
+DRAFT → POSTED
+
+directamente.
+
+Debe pasar por el proceso normal de validación y posting.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+OpeningBalanceValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    OpeningBalanceResult result
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultOpeningBalanceValidator.java
+
+Implementar:
+
+OpeningBalanceValidator
+
+Validar:
+
+1. result no puede ser null.
+
+2. sourceFiscalYear obligatorio.
+
+3. targetFiscalYear obligatorio.
+
+4. sourceFiscalYear < targetFiscalYear.
+
+5. lines no puede ser null.
+
+6. totalDebit obligatorio.
+
+7. totalCredit obligatorio.
+
+8. totalDebit >= 0.
+
+9. totalCredit >= 0.
+
+10. Cada línea debe tener accountId.
+
+11. debit >= 0.
+
+12. credit >= 0.
+
+13. No permitir debit > 0 y credit > 0.
+
+14. No permitir debit = 0 y credit = 0.
+
+15. balance debe coincidir con debit - credit.
+
+16. totalDebit debe ser igual a totalCredit.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+OpeningBalanceCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+List<OpeningBalanceLine> calculate(
+    Long chartOfAccountsId,
+    Integer sourceFiscalYear
+);
+
+BigDecimal calculateDebitTotal(
+    List<OpeningBalanceLine> lines
+);
+
+BigDecimal calculateCreditTotal(
+    List<OpeningBalanceLine> lines
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultOpeningBalanceCalculator.java
+
+Implementar:
+
+OpeningBalanceCalculator
+
+Dependencias:
+
+LedgerEntryRepository
+
+AccountRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA DE CÁLCULO
+
+=========================================================================
+
+Para cada cuenta:
+
+obtener saldo acumulado del ejercicio anterior.
+
+Solo incluir:
+
+ASSET
+LIABILITY
+EQUITY
+
+Excluir:
+
+REVENUE
+EXPENSE
+
+=========================================================================
+
+REGLA SOBRE SALDOS
+
+=========================================================================
+
+Utilizar:
+
+debit - credit
+
+como saldo base.
+
+Para determinar la línea del asiento:
+
+Si balance > 0:
+
+debit = balance
+credit = 0
+
+Si balance < 0:
+
+debit = 0
+credit = abs(balance)
+
+Utilizar:
+
+balance.abs()
+
+Nunca utilizar valores negativos en:
+
+debit
+
+credit
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+OpeningBalanceEntryType.java
+
+Crear enum.
+
+Valor:
+
+OPENING_BALANCE
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.exception
+
+Archivo:
+
+OpeningBalanceException.java
+
+Crear:
+
+public class OpeningBalanceException
+        extends RuntimeException
+
+Constructores:
+
+OpeningBalanceException(String message)
+
+OpeningBalanceException(
+    String message,
+    Throwable cause
+)
+
+=========================================================================
+
+REGLA SOBRE REVENUE Y EXPENSE
+
+=========================================================================
+
+Las cuentas:
+
+REVENUE
+
+EXPENSE
+
+NO generan OpeningBalanceLine.
+
+Después del cierre anual:
+
+Revenue = 0
+
+Expense = 0
+
+El resultado del ejercicio anterior ya fue trasladado a:
+
+Retained Earnings
+
+Por lo tanto:
+
+Revenue
+Expense
+
+comienzan nuevamente desde cero en el nuevo ejercicio.
+
+=========================================================================
+
+REGLA SOBRE ASSET
+
+=========================================================================
+
+Los saldos de:
+
+ASSET
+
+se trasladan al nuevo ejercicio.
+
+Ejemplo:
+
+Cash:
+
+balance = 10000
+
+Opening:
+
+Debit = 10000
+Credit = 0
+
+=========================================================================
+
+REGLA SOBRE LIABILITY
+
+=========================================================================
+
+Los saldos de:
+
+LIABILITY
+
+se trasladan.
+
+Ejemplo:
+
+Accounts Payable:
+
+balance = -4000
+
+Opening:
+
+Debit = 0
+Credit = 4000
+
+=========================================================================
+
+REGLA SOBRE EQUITY
+
+=========================================================================
+
+Los saldos de:
+
+EQUITY
+
+se trasladan.
+
+Retained Earnings debe incluir el resultado acumulado que corresponda
+al cierre anterior.
+
+=========================================================================
+
+REGLA DE BALANCE
+
+=========================================================================
+
+El Opening Journal Entry debe cumplir:
+
+TOTAL DEBIT = TOTAL CREDIT
+
+Si:
+
+totalDebit != totalCredit
+
+NO crear el JournalEntry.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Ejercicio 2026 cerrado:
+
+Cash:
+
+10000
+
+Accounts Payable:
+
+-3000
+
+Capital:
+
+-5000
+
+Retained Earnings:
+
+-2000
+
+Total:
+
+Debit = 10000
+
+Credit = 10000
+
+=========================================================================
+
+OPENING 2027
+
+=========================================================================
+
+JournalEntry:
+
+OPENING-2027
+
+Lines:
+
+Cash:
+
+Debit 10000
+Credit 0
+
+Accounts Payable:
+
+Debit 0
+Credit 3000
+
+Capital:
+
+Debit 0
+Credit 5000
+
+Retained Earnings:
+
+Debit 0
+Credit 2000
+
+Total:
+
+Debit = 10000
+
+Credit = 10000
+
+Balanced = true
+
+=========================================================================
+
+REGLA DE IDEMPOTENCIA
+
+=========================================================================
+
+Solo puede existir un Opening Balance para:
+
+ChartOfAccounts
++
+Target Fiscal Year
+
+Si ya existe:
+
+OpeningBalance
+
+debe rechazarse la operación.
+
+No crear un segundo asiento.
+
+=========================================================================
+
+IDENTIFICACIÓN DEL OPENING ENTRY
+
+=========================================================================
+
+El JournalEntry debe tener un documentNumber determinístico.
+
+Formato:
+
+OPENING-{targetFiscalYear}
+
+Ejemplo:
+
+OPENING-2027
+
+Si el sistema utiliza múltiples Planes de Cuentas, el identificador
+debe garantizar unicidad dentro del contexto del ChartOfAccounts.
+
+No utilizar únicamente description como mecanismo de identificación.
+
+=========================================================================
+
+REGLA SOBRE TARGET FISCAL PERIOD
+
+=========================================================================
+
+El Opening Journal Entry debe pertenecer al primer FiscalPeriod
+del targetFiscalYear.
+
+Por ejemplo:
+
+Target Year:
+
+2027
+
+Primer período:
+
+2027-01
+
+El asiento de apertura debe utilizar:
+
+FiscalPeriod 2027-01
+
+=========================================================================
+
+REGLA SOBRE FECHA
+
+=========================================================================
+
+La fecha contable del Opening Journal Entry debe ser:
+
+startDate
+
+del primer FiscalPeriod del nuevo ejercicio.
+
+=========================================================================
+
+REGLA SOBRE PERÍODO DE DESTINO
+
+=========================================================================
+
+El primer período del targetFiscalYear debe estar:
+
+OPEN
+
+Si está CLOSED:
+
+Opening Balance = REJECTED
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+FiscalYearClosing
+
+PostingService
+
+=========================================================================
+
+NO COPIAR LEDGER
+
+No crear LedgerEntry copiando directamente registros del ejercicio
+anterior.
+
+El único mecanismo permitido para generar movimientos iniciales es:
+
+Opening Journal Entry
+       ↓
+Validation
+       ↓
+Posting
+       ↓
+New LedgerEntry
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Automatic Fiscal Year Creation
+
+Reopening
+
+Carry Forward Budget
+
+Tax Carry Forward
+
+Currency Carry Forward
+
+Inventory Opening
+
+AR Opening
+
+AP Opening
+
+Fixed Asset Opening
+
+Bank Opening
+
+Consolidation
+
+Intercompany
+
+Multi-Currency
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Un ejercicio anterior debe estar completamente cerrado.
+
+2. El nuevo ejercicio debe tener al menos un período OPEN.
+
+3. Se pueden calcular los saldos iniciales del ejercicio anterior.
+
+4. Solo se trasladan:
+
+   ASSET
+   LIABILITY
+   EQUITY
+
+5. Revenue no se traslada.
+
+6. Expense no se traslada.
+
+7. Los saldos se convierten correctamente en débitos y créditos.
+
+8. El Opening Journal Entry está balanceado.
+
+9. El asiento pasa por VALIDATED.
+
+10. El asiento pasa por POSTED.
+
+11. El nuevo Ledger contiene los movimientos de apertura.
+
+12. El Ledger histórico no se modifica.
+
+13. No se copian LedgerEntry del ejercicio anterior.
+
+14. No puede existir más de un Opening Balance para el mismo ejercicio.
+
+15. El Opening Entry pertenece al primer período del nuevo ejercicio.
+
+16. El primer período debe estar OPEN.
+
+17. La fecha del Opening Entry corresponde al inicio del nuevo ejercicio.
+
+18. No se almacenan saldos paralelos.
+
+19. No existe SQL nativo.
+
+20. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+El saldo inicial es una TRANSACCIÓN CONTABLE.
+
+No es una copia de datos históricos.
+
+El ejercicio anterior permanece intacto.
+
+El nuevo ejercicio comienza con un JournalEntry explícito.
+
+El Ledger del nuevo ejercicio comienza con movimientos de apertura.
+
+=========================================================================
+
+CICLO CONTABLE COMPLETO
+
+=========================================================================
+
+                  EJERCICIO N
+                       │
+                       ▼
+                 OPERACIONES
+                       │
+                       ▼
+                 JOURNAL ENTRY
+                       │
+                       ▼
+                    POSTING
+                       │
+                       ▼
+                     LEDGER
+                       │
+             ┌─────────┴─────────┐
+             ▼                   ▼
+       BALANCE SHEET       INCOME STATEMENT
+                                 │
+                                 ▼
+                            NET INCOME
+                                 │
+                                 ▼
+                         YEAR END CLOSING
+                                 │
+                                 ▼
+                         RETAINED EARNINGS
+                                 │
+                                 ▼
+                         FISCAL YEAR CLOSED
+                                 │
+                                 ▼
+                   OPENING BALANCE N+1
+                                 │
+                                 ▼
+                      OPENING JOURNAL ENTRY
+                                 │
+                                 ▼
+                              POSTING
+                                 │
+                                 ▼
+                       LEDGER EJERCICIO N+1
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-010
+
+ACCOUNTING PERIOD LOCK / TRANSACTION CONTROL
+
+La siguiente historia implementará el control transversal que impedirá
+operaciones contables sobre períodos cerrados y consolidará las
+restricciones de escritura del núcleo contable.
+
+=========================================================================
