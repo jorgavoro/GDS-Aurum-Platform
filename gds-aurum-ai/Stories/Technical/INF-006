@@ -1,0 +1,273 @@
+=========================================================================
+PROYECTO
+=========================================================================
+
+Nombre:
+
+GDS Aurum AI Platform
+
+Versión:
+
+MVP 1
+
+Arquitectura:
+
+Java 21
+
+Spring Boot 3.5.x
+
+PostgreSQL
+
+Hibernate 6
+
+Spring Data JPA
+
+Flyway
+
+Maven Multi Module
+
+DDD
+
+Clean Architecture
+
+Metadata Driven ERP
+
+El proyecto NO es un CRUD tradicional.
+
+El proyecto es un ERP Metadata Driven similar conceptualmente a SAP, Oracle ERP o Dynamics 365, donde la definición funcional está soportada por un motor de metadatos.
+
+=========================================================================
+
+REGLAS DE DESARROLLO
+
+No utilizar javax.*
+
+Solo utilizar jakarta.*
+
+No utilizar Field Injection.
+
+Siempre Constructor Injection.
+
+No utilizar Reflection.
+
+No utilizar código de ejemplo.
+
+No generar clases innecesarias.
+
+No modificar otros módulos.
+
+No generar archivos adicionales.
+
+No modificar POM.
+
+Código listo para producción.
+
+JavaDoc obligatorio.
+
+Seguir SOLID.
+
+Seguir Clean Architecture.
+
+=========================================================================
+
+OBJETIVO
+
+Construir el Metadata Engine.
+
+Este módulo administrará las definiciones de entidades cargadas desde aurum-model.
+
+El motor NO conoce la base de datos.
+
+El motor NO conoce Hibernate.
+
+El motor solamente administra definiciones de metadatos.
+
+=========================================================================
+
+PROYECTO MAVEN
+
+aurum-engine
+
+=========================================================================
+
+ARCHIVO 1
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.metadata
+
+Archivo
+
+MetadataRegistry.java
+
+Crear una interfaz.
+
+Debe declarar:
+
+void register(EntityDefinition entity);
+
+Optional<EntityDefinition> findByCode(String code);
+
+List<EntityDefinition> findAll();
+
+boolean exists(String code);
+
+void unregister(String code);
+
+=========================================================================
+
+ARCHIVO 2
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.metadata.impl
+
+Archivo
+
+InMemoryMetadataRegistry.java
+
+Implementar MetadataRegistry.
+
+Utilizar:
+
+ConcurrentHashMap<String,EntityDefinition>
+
+Registrar utilizando el código de la entidad.
+
+No utilizar synchronized.
+
+No utilizar base de datos.
+
+Debe ser un componente Spring.
+
+=========================================================================
+
+ARCHIVO 3
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.metadata
+
+Archivo
+
+MetadataManager.java
+
+Crear una interfaz.
+
+Declarar:
+
+EntityDefinition getEntity(String code);
+
+List<FieldDefinition> getFields(String entityCode);
+
+FieldDefinition getField(String entityCode,String fieldCode);
+
+boolean exists(String entityCode);
+
+=========================================================================
+
+ARCHIVO 4
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.metadata.impl
+
+Archivo
+
+DefaultMetadataManager.java
+
+Implementar MetadataManager.
+
+Utilizar Constructor Injection.
+
+Depender únicamente de MetadataRegistry.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL.
+
+Toda la información proviene de MetadataRegistry.
+
+Cuando no exista una entidad debe lanzar:
+
+NoSuchElementException
+
+Cuando no exista un campo debe lanzar:
+
+NoSuchElementException
+
+=========================================================================
+
+ARCHIVO 5
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.metadata
+
+Archivo
+
+MetadataLoader.java
+
+Crear una interfaz.
+
+Debe declarar:
+
+void load();
+
+=========================================================================
+
+ARCHIVO 6
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.metadata.impl
+
+Archivo
+
+DefaultMetadataLoader.java
+
+Implementar MetadataLoader.
+
+Utilizar Constructor Injection.
+
+Depender únicamente de MetadataRegistry.
+
+No cargar información todavía.
+
+Dejar preparado el punto de extensión para futuras implementaciones.
+
+Debe estar anotado con:
+
+@Service
+
+=========================================================================
+
+NO GENERAR
+
+Repositories
+
+DTO
+
+Controllers
+
+Tests
+
+SQL
+
+Flyway
+
+Configuración
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Se deben generar exactamente seis archivos.
+
+No crear archivos adicionales.
+
+Todos deben compilar en Java 21.
+
+=========================================================================
