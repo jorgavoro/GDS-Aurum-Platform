@@ -1,6 +1,6 @@
 package com.globaldynamicssystems.aurum.accounting.model;
 
-import com.globaldynamicssystems.aurum.model.AuditableEntity;
+import com.globaldynamicssystems.aurum.framework.entity.AuditableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;

@@ -134,4 +134,10 @@ public class DefaultTrialBalanceService implements TrialBalanceService {
 
         return trialBalance;
     }
+    
+    public TrialBalance generateTrialBalance(Long fiscalPeriodId) {
+        FiscalPeriod fiscalPeriod = fiscalPeriodRepository.findById(fiscalPeriodId)
+                .orElseThrow(() -> new IllegalArgumentException("Fiscal period not found: " + fiscalPeriodId));
+        return generateTrialBalance(fiscalPeriodId);
+    }    
 }

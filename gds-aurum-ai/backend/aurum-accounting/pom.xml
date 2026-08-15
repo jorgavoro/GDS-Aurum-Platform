@@ -13,6 +13,20 @@
  <packaging>jar</packaging>
  <name>aurum-accounting</name>
  <dependencies>
-
+    <dependency>
+        <groupId>com.globaldynamicssystems</groupId>
+        <artifactId>aurum-core</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.globaldynamicssystems</groupId>
+        <artifactId>aurum-framework</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.globaldynamicssystems</groupId>
+        <artifactId>aurum-model</artifactId>
+        <version>${project.version}</version>
+    </dependency>
  </dependencies>
 </project>

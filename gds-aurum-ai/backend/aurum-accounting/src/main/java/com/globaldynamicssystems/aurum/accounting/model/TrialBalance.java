@@ -105,4 +105,11 @@ public class TrialBalance {
     public void setBalanced(Boolean balanced) {
         this.balanced = balanced;
     }
+    
+    public boolean isBalanced() {
+        if (totalDebit == null || totalCredit == null) {
+            return false;
+        }
+        return totalDebit.compareTo(totalCredit) == 0;
+    }
 }
