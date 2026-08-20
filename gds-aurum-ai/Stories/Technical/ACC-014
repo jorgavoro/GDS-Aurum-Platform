@@ -1,0 +1,1367 @@
+# ACC-014 — Analytical Reporting Engine
+
+```text
+=========================================================================
+HISTORIA DE USUARIO: ACC-014
+MOTOR DE REPORTING ANALÍTICO
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-011 introdujo CostCenter.
+
+ACC-012 creó el Analytical Dimension Framework.
+
+ACC-013 implementó ProfitCenter utilizando dicho framework.
+
+El modelo actual permite:
+
+JournalEntryLine
+       │
+       ├── Account
+       │
+       └── JournalEntryLineDimension
+                 │
+                 ▼
+       AnalyticalDimensionValue
+                 │
+          ┌──────┴──────┐
+          ▼             ▼
+     COST_CENTER   PROFIT_CENTER
+          │             │
+          └──────┬──────┘
+                 ▼
+             LedgerEntry
+
+Hasta este momento las dimensiones pueden almacenarse y consultarse.
+
+ACC-014 incorpora la capacidad de convertir esos movimientos en
+información financiera analítica.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un motor genérico de reporting analítico capaz de responder:
+
+- cuánto Revenue generó una dimensión
+- cuánto Expense tuvo una dimensión
+- cuál es su resultado
+- cuál es su Debit
+- cuál es su Credit
+- cuál es su Balance
+
+El motor debe funcionar utilizando:
+
+AnalyticalDimensionType
+
+y:
+
+referenceId
+
+sin crear servicios específicos para cada dimensión.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+NO crear:
+
+CostCenterReportService
+
+ProfitCenterReportService
+
+ProjectReportService
+
+RegionReportService
+
+etc.
+
+Debe existir:
+
+AnalyticalReportingService
+
+capaz de trabajar con cualquier:
+
+AnalyticalDimensionType
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+                         LEDGER
+                           │
+                           ▼
+                  ANALYTICAL REPORTING
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+        Cost Center   Profit Center   Future Dimensions
+             │             │
+             └─────────────┬─────────────┘
+                           ▼
+                    Financial Metrics
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+           Revenue       Expense      Balance
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalReportLine.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+AnalyticalDimensionType dimensionType
+
+Long dimensionId
+
+String dimensionCode
+
+String dimensionName
+
+BigDecimal debit
+
+BigDecimal credit
+
+BigDecimal balance
+
+BigDecimal revenue
+
+BigDecimal expense
+
+BigDecimal netResult
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DE BALANCE
+
+=========================================================================
+
+balance:
+
+debit - credit
+
+=========================================================================
+
+REGLA DE REVENUE
+
+=========================================================================
+
+revenue:
+
+credit - debit
+
+aplicado únicamente a cuentas:
+
+REVENUE
+
+=========================================================================
+
+REGLA DE EXPENSE
+
+=========================================================================
+
+expense:
+
+debit - credit
+
+aplicado únicamente a cuentas:
+
+EXPENSE
+
+=========================================================================
+
+REGLA DE NET RESULT
+
+=========================================================================
+
+netResult:
+
+revenue - expense
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+AnalyticalDimensionType dimensionType
+
+List<AnalyticalReportLine> lines
+
+BigDecimal totalDebit
+
+BigDecimal totalCredit
+
+BigDecimal totalBalance
+
+BigDecimal totalRevenue
+
+BigDecimal totalExpense
+
+BigDecimal totalNetResult
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+totalNetResult:
+
+totalRevenue - totalExpense
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AnalyticalReportingService.java
+
+Crear interfaz.
+
+Métodos:
+
+AnalyticalReport generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId,
+    AnalyticalDimensionType dimensionType
+);
+
+AnalyticalReport generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId,
+    AnalyticalDimensionType dimensionType,
+    List<Long> dimensionIds
+);
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El primer método genera el reporte para todas las dimensiones activas
+del tipo solicitado.
+
+El segundo método permite restringir el resultado a determinados
+dimensionIds.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAnalyticalReportingService.java
+
+Implementar:
+
+AnalyticalReportingService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+LedgerEntryRepository
+
+AnalyticalDimensionValueRepository
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+AnalyticalReportCalculator
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DE GENERACIÓN
+
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. fiscalPeriodId obligatorio.
+
+3. dimensionType obligatorio.
+
+4. ChartOfAccounts debe existir.
+
+5. FiscalPeriod debe existir.
+
+6. FiscalPeriod debe pertenecer al ChartOfAccounts.
+
+7. Obtener únicamente LedgerEntry del FiscalPeriod.
+
+8. Obtener únicamente cuentas del ChartOfAccounts.
+
+9. Obtener dimensiones del tipo solicitado.
+
+10. Agrupar movimientos por dimensión.
+
+11. Agrupar dentro de cada dimensión por AccountType.
+
+12. Calcular:
+
+    debit
+
+    credit
+
+    balance
+
+    revenue
+
+    expense
+
+    netResult
+
+13. Ordenar las líneas por:
+
+    dimensionCode
+
+    ascendente.
+
+=========================================================================
+
+REGLA DE DIMENSIONES
+
+=========================================================================
+
+Si:
+
+dimensionType = COST_CENTER
+
+solo considerar:
+
+AnalyticalDimensionValue.dimensionType =
+COST_CENTER
+
+Si:
+
+dimensionType = PROFIT_CENTER
+
+solo considerar:
+
+AnalyticalDimensionValue.dimensionType =
+PROFIT_CENTER
+
+No mezclar tipos.
+
+=========================================================================
+
+REGLA DE MULTIPLES DIMENSIONES
+
+=========================================================================
+
+Una LedgerEntry puede contener:
+
+COST_CENTER = IT
+
+PROFIT_CENTER = SERVICES
+
+Si se genera:
+
+dimensionType = COST_CENTER
+
+solo se considera:
+
+IT
+
+Si se genera:
+
+dimensionType = PROFIT_CENTER
+
+solo se considera:
+
+SERVICES
+
+El movimiento no debe contarse dos veces dentro de un mismo reporte.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AnalyticalReportCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateDebit(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateCredit(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateBalance(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateRevenue(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateExpense(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateNetResult(
+    List<LedgerEntry> entries
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAnalyticalReportCalculator.java
+
+Implementar:
+
+AnalyticalReportCalculator
+
+No debe acceder a:
+
+Repository
+
+Database
+
+EntityManager
+
+JDBC
+
+Debe trabajar exclusivamente con:
+
+List<LedgerEntry>
+
+=========================================================================
+
+REGLAS DEL CALCULATOR
+
+=========================================================================
+
+calculateDebit:
+
+SUM(debit)
+
+calculateCredit:
+
+SUM(credit)
+
+calculateBalance:
+
+debit - credit
+
+calculateRevenue:
+
+SUM(
+    credit - debit
+)
+
+solo para:
+
+AccountType.REVENUE
+
+calculateExpense:
+
+SUM(
+    debit - credit
+)
+
+solo para:
+
+AccountType.EXPENSE
+
+calculateNetResult:
+
+revenue - expense
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AnalyticalReportValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    AnalyticalReport report
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAnalyticalReportValidator.java
+
+Implementar:
+
+AnalyticalReportValidator
+
+Validar:
+
+1. report != null
+
+2. dimensionType != null
+
+3. lines != null
+
+4. totalDebit != null
+
+5. totalCredit != null
+
+6. totalBalance != null
+
+7. totalRevenue != null
+
+8. totalExpense != null
+
+9. totalNetResult != null
+
+10. totalBalance =
+    totalDebit - totalCredit
+
+11. totalNetResult =
+    totalRevenue - totalExpense
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalReportFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+AnalyticalDimensionType dimensionType
+
+List<Long> dimensionIds
+
+Boolean includeInactive
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DE includeInactive
+
+=========================================================================
+
+Por defecto:
+
+false
+
+Si:
+
+false
+
+solo incluir dimensiones activas.
+
+Si:
+
+true
+
+permitir consultar dimensiones históricas inactivas.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AnalyticalReportQueryService.java
+
+Crear interfaz.
+
+Método:
+
+AnalyticalReport generate(
+    AnalyticalReportFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAnalyticalReportQueryService.java
+
+Implementar:
+
+AnalyticalReportQueryService
+
+Debe delegar en:
+
+AnalyticalReportingService
+
+No duplicar lógica de cálculo.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Modificar:
+
+LedgerEntryRepository
+
+Agregar las consultas necesarias para obtener LedgerEntry filtrados
+por:
+
+fiscalPeriodId
+
+dimensionType
+
+dimensionId
+
+Las consultas deben utilizar Spring Data JPA.
+
+No utilizar SQL nativo.
+
+=========================================================================
+
+REGLA DE CONSULTA
+
+=========================================================================
+
+El reporte debe poder ejecutarse para:
+
+COST_CENTER
+
+y:
+
+PROFIT_CENTER
+
+sin cambiar la implementación del servicio.
+
+=========================================================================
+
+EJEMPLO — COST CENTER
+
+=========================================================================
+
+Ledger:
+
+Revenue:
+
+10000
+
+CostCenter:
+
+IT
+
+Expense:
+
+3000
+
+CostCenter:
+
+IT
+
+=========================================================================
+
+Resultado:
+
+Dimension:
+
+IT
+
+Debit:
+
+3000
+
+Credit:
+
+10000
+
+Balance:
+
+-7000
+
+Revenue:
+
+10000
+
+Expense:
+
+3000
+
+NetResult:
+
+7000
+
+=========================================================================
+
+EJEMPLO — PROFIT CENTER
+
+=========================================================================
+
+Ledger:
+
+Revenue:
+
+20000
+
+ProfitCenter:
+
+SERVICES
+
+Expense:
+
+8000
+
+ProfitCenter:
+
+SERVICES
+
+Resultado:
+
+SERVICES
+
+Revenue:
+
+20000
+
+Expense:
+
+8000
+
+NetResult:
+
+12000
+
+=========================================================================
+
+REGLA SOBRE SIGNOS
+
+=========================================================================
+
+Los campos:
+
+debit
+
+credit
+
+balance
+
+representan movimientos contables.
+
+Los campos:
+
+revenue
+
+expense
+
+netResult
+
+representan información financiera presentada.
+
+Por tanto:
+
+Revenue debe ser positivo cuando el movimiento tenga naturaleza
+normalmente acreedora.
+
+Expense debe ser positivo cuando el movimiento tenga naturaleza
+normalmente deudora.
+
+=========================================================================
+
+REGLA SOBRE IMPORTES
+
+=========================================================================
+
+Una LedgerEntry:
+
+Debit = 10000
+
+con:
+
+CostCenter = IT
+
+ProfitCenter = SERVICES
+
+NO debe producir:
+
+IT debit = 10000
+
+SERVICES debit = 10000
+
+como dos movimientos contables dentro del mismo reporte.
+
+Cada reporte analiza una dimensión específica.
+
+=========================================================================
+
+REGLA DE DIMENSION TYPE
+
+=========================================================================
+
+No permitir:
+
+dimensionType = null
+
+No mezclar:
+
+COST_CENTER
+
+con:
+
+PROFIT_CENTER
+
+en una misma línea del reporte.
+
+=========================================================================
+
+REGLA SOBRE CUENTAS
+
+=========================================================================
+
+El motor debe utilizar:
+
+AccountType
+
+para determinar:
+
+REVENUE
+
+EXPENSE
+
+Las cuentas:
+
+ASSET
+
+LIABILITY
+
+EQUITY
+
+contribuyen a:
+
+debit
+
+credit
+
+balance
+
+pero no a:
+
+revenue
+
+expense
+
+=========================================================================
+
+REGLA SOBRE REPORTES GLOBALMENTE BALANCEADOS
+
+=========================================================================
+
+El Analytical Report no necesita estar balanceado por dimensión.
+
+Una dimensión analítica puede contener solamente:
+
+Revenue
+
+o solamente:
+
+Expense
+
+Esto no representa una inconsistencia contable.
+
+La validación:
+
+Debit = Credit
+
+pertenece al nivel contable global.
+
+=========================================================================
+
+REGLA DE HISTÓRICOS
+
+=========================================================================
+
+Una dimensión INACTIVE puede aparecer en reportes históricos.
+
+Por defecto:
+
+includeInactive = false
+
+Para consultar históricos:
+
+includeInactive = true
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+FiscalYearClosing
+
+OpeningBalance
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Dashboard
+
+Charts
+
+REST
+
+Export Excel
+
+Export PDF
+
+Scheduling
+
+Caching
+
+Aggregation Tables
+
+Materialized Views
+
+AI Analysis
+
+Forecast
+
+Budget Comparison
+
+Variance Analysis
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede generar un reporte analítico por COST_CENTER.
+
+2. Se puede generar un reporte analítico por PROFIT_CENTER.
+
+3. El mismo servicio funciona para ambos tipos.
+
+4. No existe un servicio específico para CostCenter.
+
+5. No existe un servicio específico para ProfitCenter.
+
+6. Los movimientos se filtran por FiscalPeriod.
+
+7. Los movimientos se filtran por ChartOfAccounts.
+
+8. Los movimientos se agrupan correctamente por dimensión.
+
+9. Revenue se calcula correctamente.
+
+10. Expense se calcula correctamente.
+
+11. NetResult se calcula correctamente.
+
+12. Debit se calcula correctamente.
+
+13. Credit se calcula correctamente.
+
+14. Balance se calcula correctamente.
+
+15. Una dimensión INACTIVE puede consultarse explícitamente.
+
+16. Una dimensión INACTIVE no aparece por defecto.
+
+17. Una misma LedgerEntry puede tener múltiples dimensiones.
+
+18. El movimiento no se duplica dentro de un reporte de un único
+    tipo de dimensión.
+
+19. Trial Balance no cambia.
+
+20. Balance Sheet no cambia.
+
+21. Income Statement no cambia.
+
+22. No se almacenan resultados del reporte.
+
+23. El Ledger continúa siendo la fuente de verdad.
+
+24. No existe SQL nativo.
+
+25. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+El Analytical Reporting Engine es un READ MODEL.
+
+No modifica:
+
+JournalEntry
+
+LedgerEntry
+
+Account
+
+FiscalPeriod
+
+No almacena:
+
+Revenue
+
+Expense
+
+Balance
+
+Margin
+
+NetResult
+
+Todos los valores se derivan del Ledger.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+                         LEDGER
+                           │
+                           ▼
+                  AnalyticalReporting
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+         COST_CENTER  PROFIT_CENTER   FUTURE
+              │            │          DIMENSIONS
+              └────────────┼────────────┘
+                           ▼
+                    AnalyticalReport
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+       Revenue          Expense          NetResult
+
+=========================================================================
+
+PRUEBA DE EXTENSIBILIDAD
+
+=========================================================================
+
+Si mañana se agrega:
+
+PROJECT
+
+el motor debe poder ejecutar:
+
+generate(
+    chartOfAccountsId,
+    fiscalPeriodId,
+    AnalyticalDimensionType.PROJECT
+)
+
+sin crear:
+
+ProjectReportingService
+
+ni modificar:
+
+AnalyticalReportingService
+
+AnalyticalReportCalculator
+
+AnalyticalReport
+
+LedgerEntry
+
+JournalEntryLine
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-015
+
+ANALYTICAL PROFITABILITY
+
+Construir el primer modelo de rentabilidad por dimensión, utilizando
+Revenue, Expense y Net Result para obtener margen por CostCenter y
+ProfitCenter.
+=========================================================================
+```
