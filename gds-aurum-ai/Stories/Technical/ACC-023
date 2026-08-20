@@ -1,0 +1,1589 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-023
+FINANCIAL KPI ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 implementó Analytical Reporting.
+
+ACC-015 implementó Profitability.
+
+ACC-016 implementó Financial Comparison.
+
+ACC-017 implementó Financial Period Comparison.
+
+ACC-018 implementó Account Financial Analysis.
+
+ACC-019 implementó Financial Ratios.
+
+ACC-020 implementó Cash Flow Analysis.
+
+ACC-021 implementó Accounting Data Quality.
+
+ACC-022 implementó Accounting Rules Engine.
+
+Aurum dispone ahora de múltiples motores especializados.
+
+El problema es que cada uno devuelve su propio modelo:
+
+AnalyticalReport
+
+ProfitabilityReport
+
+FinancialComparisonReport
+
+AccountFinancialAnalysisReport
+
+FinancialRatioReport
+
+CashFlowReport
+
+AccountingDataQualityReport
+
+Aurum Engine necesitará una interfaz financiera uniforme.
+
+Por tanto:
+
+ACC-023 NO crea otro motor contable independiente.
+
+ACC-023 crea una capa de composición.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un:
+
+FINANCIAL KPI ENGINE
+
+capaz de consolidar indicadores financieros provenientes de los
+servicios existentes.
+
+El resultado debe proporcionar un modelo uniforme para:
+
+aurum-engine
+
+y posteriormente:
+
+AI Agents.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+KPI Engine:
+
+NO es fuente de verdad.
+
+NO recalcula Ledger.
+
+NO duplica lógica financiera.
+
+NO persiste KPIs.
+
+Es un:
+
+COMPOSITION LAYER
+
+=========================================================================
+
+ARQUITECTURA
+
+LEDGER
+  │
+  ├── Analytical Reporting
+  │
+  ├── Profitability
+  │
+  ├── Account Analysis
+  │
+  ├── Financial Ratios
+  │
+  ├── Cash Flow
+  │
+  └── Financial Comparison
+          │
+          ▼
+   FINANCIAL KPI ENGINE
+          │
+          ▼
+   NORMALIZED KPI MODEL
+          │
+          ▼
+     AURUM ENGINE
+          │
+          ▼
+       AI AGENTS
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+No duplicar cálculos existentes.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialKpiType.java
+
+Crear enum.
+
+Valores:
+
+REVENUE
+
+EXPENSE
+
+NET_RESULT
+
+NET_MARGIN
+
+OPERATING_CASH_FLOW
+
+INVESTING_CASH_FLOW
+
+FINANCING_CASH_FLOW
+
+NET_CASH_FLOW
+
+CURRENT_RATIO
+
+QUICK_RATIO
+
+DEBT_RATIO
+
+DEBT_TO_EQUITY
+
+RETURN_ON_ASSETS
+
+RETURN_ON_EQUITY
+
+GROSS_MARGIN
+
+DATA_QUALITY_ERROR_COUNT
+
+DATA_QUALITY_WARNING_COUNT
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialKpi.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+FinancialKpiType type
+
+String code
+
+String name
+
+BigDecimal value
+
+String unit
+
+String category
+
+String description
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA UNIT
+
+=========================================================================
+
+MONETARY
+
+para:
+
+REVENUE
+
+EXPENSE
+
+NET_RESULT
+
+OPERATING_CASH_FLOW
+
+INVESTING_CASH_FLOW
+
+FINANCING_CASH_FLOW
+
+NET_CASH_FLOW
+
+=========================================================================
+
+PERCENTAGE
+
+para:
+
+NET_MARGIN
+
+RETURN_ON_ASSETS
+
+RETURN_ON_EQUITY
+
+GROSS_MARGIN
+
+=========================================================================
+
+RATIO
+
+para:
+
+CURRENT_RATIO
+
+QUICK_RATIO
+
+DEBT_RATIO
+
+DEBT_TO_EQUITY
+
+=========================================================================
+
+COUNT
+
+para:
+
+DATA_QUALITY_ERROR_COUNT
+
+DATA_QUALITY_WARNING_COUNT
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialKpiReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+List<FinancialKpi> kpis
+
+Boolean financiallyValid
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA FINANCIALLY VALID
+
+=========================================================================
+
+financiallyValid debe derivarse de:
+
+AccountingDataQualityReport.valid
+
+No duplicar la lógica de validación.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialKpiFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<FinancialKpiType> kpiTypes
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+kpiTypes == null
+
+o:
+
+kpiTypes.isEmpty()
+
+calcular todos los KPIs disponibles.
+
+Si contiene valores:
+
+calcular únicamente los solicitados.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialKpiService.java
+
+Crear interfaz.
+
+Métodos:
+
+FinancialKpiReport calculate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+FinancialKpiReport calculate(
+    FinancialKpiFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialKpiService.java
+
+Implementar:
+
+FinancialKpiService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AnalyticalReportingService
+
+ProfitabilityService
+
+AccountFinancialAnalysisService
+
+FinancialRatioService
+
+CashFlowService
+
+AccountingDataQualityService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO PRINCIPAL
+
+=========================================================================
+
+FinancialKpiService
+
+        │
+        ├── AnalyticalReportingService
+        │
+        ├── ProfitabilityService
+        │
+        ├── AccountFinancialAnalysisService
+        │
+        ├── FinancialRatioService
+        │
+        ├── CashFlowService
+        │
+        └── AccountingDataQualityService
+                  │
+                  ▼
+           KPI Composition
+                  │
+                  ▼
+          FinancialKpiReport
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+
+=========================================================================
+
+DefaultFinancialKpiService NO debe recalcular:
+
+Revenue
+
+Expense
+
+NetResult
+
+Margins
+
+Ratios
+
+Cash Flow
+
+Data Quality
+
+Debe consumir los resultados producidos por los servicios existentes.
+
+=========================================================================
+
+REGLA DE KPIs
+
+=========================================================================
+
+REVENUE
+
+Obtener desde:
+
+ProfitabilityReport
+
+=========================================================================
+
+EXPENSE
+
+Obtener desde:
+
+ProfitabilityReport
+
+=========================================================================
+
+NET_RESULT
+
+Obtener desde:
+
+ProfitabilityReport
+
+=========================================================================
+
+NET_MARGIN
+
+Obtener desde:
+
+ProfitabilityReport
+
+=========================================================================
+
+OPERATING_CASH_FLOW
+
+Obtener desde:
+
+CashFlowReport
+
+=========================================================================
+
+INVESTING_CASH_FLOW
+
+Obtener desde:
+
+CashFlowReport
+
+=========================================================================
+
+FINANCING_CASH_FLOW
+
+Obtener desde:
+
+CashFlowReport
+
+=========================================================================
+
+NET_CASH_FLOW
+
+Obtener desde:
+
+CashFlowReport
+
+=========================================================================
+
+CURRENT_RATIO
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+QUICK_RATIO
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+DEBT_RATIO
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+DEBT_TO_EQUITY
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+RETURN_ON_ASSETS
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+RETURN_ON_EQUITY
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+GROSS_MARGIN
+
+Obtener desde:
+
+FinancialRatioReport
+
+=========================================================================
+
+DATA_QUALITY_ERROR_COUNT
+
+Obtener desde:
+
+AccountingDataQualityReport
+
+=========================================================================
+
+DATA_QUALITY_WARNING_COUNT
+
+Obtener desde:
+
+AccountingDataQualityReport
+
+=========================================================================
+
+REGLA SOBRE ACCOUNT ANALYSIS
+
+=========================================================================
+
+AccountFinancialAnalysisService se consume cuando el KPI solicitado
+requiere información a nivel de Account.
+
+No duplicar la consulta a:
+
+LedgerEntry.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialKpiValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    FinancialKpiReport report
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialKpiValidator.java
+
+Implementar:
+
+FinancialKpiValidator
+
+Validar:
+
+1. report != null
+
+2. chartOfAccountsId != null
+
+3. fiscalPeriodId != null
+
+4. kpis != null
+
+5. Cada KPI debe tener:
+
+   type
+
+   code
+
+   name
+
+   value
+
+   unit
+
+=========================================================================
+
+REGLA DE DUPLICADOS
+
+=========================================================================
+
+No permitir dos KPIs con el mismo:
+
+FinancialKpiType
+
+dentro del mismo:
+
+FinancialKpiReport.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialKpiCatalog.java
+
+Crear interfaz.
+
+Métodos:
+
+Optional<FinancialKpiDefinition> find(
+    FinancialKpiType type
+);
+
+List<FinancialKpiDefinition> findAll();
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialKpiDefinition.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+FinancialKpiType type
+
+String code
+
+String name
+
+String unit
+
+String category
+
+String description
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+InMemoryFinancialKpiCatalog.java
+
+Implementar:
+
+FinancialKpiCatalog
+
+Utilizar:
+
+ConcurrentHashMap
+
+=========================================================================
+
+CATÁLOGO MVP
+
+=========================================================================
+
+Registrar:
+
+REVENUE
+
+EXPENSE
+
+NET_RESULT
+
+NET_MARGIN
+
+OPERATING_CASH_FLOW
+
+INVESTING_CASH_FLOW
+
+FINANCING_CASH_FLOW
+
+NET_CASH_FLOW
+
+CURRENT_RATIO
+
+QUICK_RATIO
+
+DEBT_RATIO
+
+DEBT_TO_EQUITY
+
+RETURN_ON_ASSETS
+
+RETURN_ON_EQUITY
+
+GROSS_MARGIN
+
+DATA_QUALITY_ERROR_COUNT
+
+DATA_QUALITY_WARNING_COUNT
+
+=========================================================================
+
+CATEGORÍAS
+
+=========================================================================
+
+PROFITABILITY:
+
+REVENUE
+
+EXPENSE
+
+NET_RESULT
+
+NET_MARGIN
+
+GROSS_MARGIN
+
+RETURN_ON_ASSETS
+
+RETURN_ON_EQUITY
+
+=========================================================================
+
+LIQUIDITY:
+
+CURRENT_RATIO
+
+QUICK_RATIO
+
+OPERATING_CASH_FLOW
+
+NET_CASH_FLOW
+
+=========================================================================
+
+LEVERAGE:
+
+DEBT_RATIO
+
+DEBT_TO_EQUITY
+
+=========================================================================
+
+CASH_FLOW:
+
+OPERATING_CASH_FLOW
+
+INVESTING_CASH_FLOW
+
+FINANCING_CASH_FLOW
+
+NET_CASH_FLOW
+
+=========================================================================
+
+DATA_QUALITY:
+
+DATA_QUALITY_ERROR_COUNT
+
+DATA_QUALITY_WARNING_COUNT
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FilteredFinancialKpiService.java
+
+Crear interfaz.
+
+Método:
+
+FinancialKpiReport calculate(
+    FinancialKpiFilter filter
+);
+
+=========================================================================
+
+NOTA
+
+=========================================================================
+
+Esta interfaz puede coincidir conceptualmente con:
+
+FinancialKpiService
+
+Si la implementación filtrada no aporta comportamiento adicional,
+NO crear una segunda implementación artificial.
+
+La implementación principal debe soportar el filtro.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Evitar:
+
+FinancialKpiService
+
++
+
+FilteredFinancialKpiService
+
+si ambos contienen exactamente la misma responsabilidad.
+
+La arquitectura debe favorecer una única abstracción coherente.
+
+=========================================================================
+
+REGLA DE COMPATIBILIDAD
+
+=========================================================================
+
+Mantener:
+
+calculate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+)
+
+como método de conveniencia.
+
+El método debe delegar internamente en:
+
+FinancialKpiFilter.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Revenue:
+
+300000
+
+Expense:
+
+180000
+
+Net Result:
+
+120000
+
+Net Margin:
+
+40%
+
+Operating Cash Flow:
+
+100000
+
+Investing Cash Flow:
+
+-30000
+
+Financing Cash Flow:
+
+50000
+
+Net Cash Flow:
+
+120000
+
+Current Ratio:
+
+2.1
+
+Quick Ratio:
+
+1.8
+
+Debt Ratio:
+
+0.35
+
+Debt To Equity:
+
+0.54
+
+ROA:
+
+25%
+
+ROE:
+
+38%
+
+=========================================================================
+
+RESULTADO NORMALIZADO
+
+=========================================================================
+
+FinancialKpiReport
+
+    │
+    ├── REVENUE = 300000
+    │
+    ├── EXPENSE = 180000
+    │
+    ├── NET_RESULT = 120000
+    │
+    ├── NET_MARGIN = 40%
+    │
+    ├── OPERATING_CASH_FLOW = 100000
+    │
+    ├── INVESTING_CASH_FLOW = -30000
+    │
+    ├── FINANCING_CASH_FLOW = 50000
+    │
+    ├── NET_CASH_FLOW = 120000
+    │
+    ├── CURRENT_RATIO = 2.1
+    │
+    ├── QUICK_RATIO = 1.8
+    │
+    ├── DEBT_RATIO = 0.35
+    │
+    ├── DEBT_TO_EQUITY = 0.54
+    │
+    ├── ROA = 25%
+    │
+    ├── ROE = 38%
+    │
+    └── DATA_QUALITY_ERROR_COUNT = 0
+
+=========================================================================
+
+REGLA DE CALIDAD
+
+=========================================================================
+
+Si:
+
+AccountingDataQualityReport.valid == false
+
+el:
+
+FinancialKpiReport.financiallyValid
+
+debe ser:
+
+false.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+financiallyValid NO significa:
+
+"el negocio es financieramente saludable".
+
+Significa únicamente:
+
+"los datos contables evaluados no presentan errores de calidad
+clasificados como ERROR."
+
+=========================================================================
+
+REGLA SOBRE WARNING
+
+=========================================================================
+
+Si existen:
+
+WARNING
+
+pero:
+
+ERROR = 0
+
+entonces:
+
+financiallyValid = true
+
+y:
+
+DATA_QUALITY_WARNING_COUNT > 0
+
+=========================================================================
+
+REGLA SOBRE ERRORES
+
+=========================================================================
+
+Si:
+
+ERROR > 0
+
+entonces:
+
+financiallyValid = false
+
+=========================================================================
+
+REGLA SOBRE PERIOD
+
+=========================================================================
+
+El KPI Report representa:
+
+un único:
+
+FiscalPeriod.
+
+No implementar todavía:
+
+KPI Comparison
+
+KPI Trend
+
+KPI Forecast
+
+=========================================================================
+
+REGLA SOBRE COMPARACIÓN
+
+=========================================================================
+
+Aunque ACC-016 y ACC-017 ya permiten comparación temporal:
+
+ACC-023 no debe mezclar ambos reportes dentro del KPI básico.
+
+El KPI actual representa:
+
+CURRENT STATE
+
+La comparación temporal será una capacidad posterior.
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+
+=========================================================================
+
+ACC-023 genera KPIs globales.
+
+No implementar:
+
+Revenue by CostCenter
+
+Revenue by ProfitCenter
+
+ROE by ProfitCenter
+
+Cash Flow by Project
+
+=========================================================================
+
+NO PERSISTIR
+
+=========================================================================
+
+No crear:
+
+FinancialKpiEntity
+
+FinancialKpiSnapshot
+
+KpiHistory
+
+KpiValue
+
+KpiAggregate
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+AnalyticalReport
+
+ProfitabilityReport
+
+FinancialComparisonReport
+
+FinancialRatioReport
+
+CashFlowReport
+
+AccountingDataQualityReport
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+KPI Dashboard
+
+KPI History
+
+KPI Trend
+
+KPI Forecast
+
+KPI Benchmarking
+
+Industry Benchmarking
+
+AI Interpretation
+
+AI Recommendations
+
+KPI Alerts
+
+Threshold Monitoring
+
+Budget vs Actual
+
+Forecast vs Actual
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe FinancialKpiType.
+
+2. Existe FinancialKpi.
+
+3. Existe FinancialKpiReport.
+
+4. Existe FinancialKpiFilter.
+
+5. Existe FinancialKpiDefinition.
+
+6. Existe FinancialKpiCatalog.
+
+7. Se pueden consultar KPIs por tipo.
+
+8. Se pueden calcular todos los KPIs soportados.
+
+9. Se puede solicitar un subconjunto de KPIs.
+
+10. Revenue proviene del servicio existente.
+
+11. Expense proviene del servicio existente.
+
+12. Net Result proviene del servicio existente.
+
+13. Net Margin proviene del servicio existente.
+
+14. Cash Flow proviene de CashFlowService.
+
+15. Ratios provienen de FinancialRatioService.
+
+16. Data Quality proviene de AccountingDataQualityService.
+
+17. No se duplica lógica financiera.
+
+18. No se consulta directamente Ledger desde el KPI Service.
+
+19. Los KPIs no se persisten.
+
+20. financiallyValid se deriva de Data Quality.
+
+21. ERROR hace financiallyValid = false.
+
+22. WARNING no hace financiallyValid = false.
+
+23. Los KPIs tienen unidad.
+
+24. Los KPIs tienen categoría.
+
+25. No existen KPIs duplicados.
+
+26. Se utiliza BigDecimal.
+
+27. No existe Reflection.
+
+28. No existe SQL nativo.
+
+29. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+ACC-023 crea un lenguaje financiero común para Aurum.
+
+Los servicios internos pueden continuar teniendo modelos específicos:
+
+ProfitabilityReport
+CashFlowReport
+FinancialRatioReport
+AccountingDataQualityReport
+
+pero hacia arriba:
+
+FinancialKpiReport
+
+se convierte en una representación uniforme.
+
+=========================================================================
+
+ARQUITECTURA RESULTANTE
+
+                         LEDGER
+                           │
+                           ▼
+                  ACCOUNTING SERVICES
+                           │
+       ┌───────────┬───────┼───────┬───────────┐
+       ▼           ▼       ▼       ▼           ▼
+   Reporting   Profitability Ratio CashFlow  Quality
+       │           │       │       │           │
+       └───────────┴───────┼───────┴───────────┘
+                           ▼
+                    FINANCIAL KPI
+                           │
+                           ▼
+                     AURUM ENGINE
+                           │
+                           ▼
+                      AI AGENTS
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum Engine podrá consumir un conjunto normalizado de indicadores:
+
+REVENUE
+EXPENSE
+NET_RESULT
+MARGIN
+CASH_FLOW
+LIQUIDITY
+LEVERAGE
+PROFITABILITY
+DATA_QUALITY
+
+sin conocer los detalles internos de cada servicio contable.
+
+=========================================================================
+
+IMPORTANTE PARA EL DISEÑO FUTURO
+=========================================================================
+
+Este punto es deliberado.
+
+No estamos construyendo:
+
+"un dashboard".
+
+Estamos construyendo:
+
+"un contrato de información financiera".
+
+Eso permitirá que posteriormente:
+
+aurum-engine
+
+consuma:
+
+FinancialKpiReport
+
+y pueda decidir qué hacer con esa información sin acoplarse a:
+
+JPA
+
+LedgerEntry
+
+AccountRepository
+
+FinancialRatioService
+
+CashFlowService
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-024
+
+ACCOUNTING QUERY MODEL
+
+Construir el modelo de consulta financiera orientado a consumo
+externo, permitiendo que Aurum Engine consulte información contable
+de forma estructurada, semántica y desacoplada de las entidades
+JPA internas.
+
+=========================================================================
