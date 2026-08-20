@@ -1,0 +1,1575 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-028
+GENERIC CAPABILITY EXECUTION
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO PRINCIPAL
+
+aurum-engine
+
+MÓDULO CONSUMIDO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-025 implementó:
+
+ACCOUNTING CAPABILITY INTEGRATION
+
+ACC-026 implementó:
+
+ACCOUNTING CAPABILITY DISCOVERY
+
+ACC-027 implementó:
+
+CAPABILITY METADATA MODEL
+
+Hasta este punto la arquitectura permite:
+
+DISCOVER
+
+DESCRIBE
+
+EXECUTE
+
+pero la ejecución continúa siendo específica de Accounting.
+
+Actualmente existe conceptualmente:
+
+AccountingCapability
+
+AccountingCapabilityExecutor
+
+AccountingCapabilityRegistry
+
+Esto crea un problema arquitectónico.
+
+Si mañana agregamos:
+
+Metadata
+
+Sales
+
+Purchasing
+
+Inventory
+
+Treasury
+
+Projects
+
+CRM
+
+el Engine terminaría conteniendo:
+
+AccountingCapability
+MetadataCapability
+SalesCapability
+PurchasingCapability
+InventoryCapability
+TreasuryCapability
+
+y eventualmente:
+
+decenas de implementaciones específicas.
+
+Esto rompería el objetivo de:
+
+CAPABILITY-BASED ARCHITECTURE.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear un:
+
+GENERIC CAPABILITY EXECUTION ENGINE
+
+que permita ejecutar cualquier capability registrada mediante un
+contrato común.
+
+El Engine debe ejecutar:
+
+Accounting
+
+y posteriormente:
+
+Metadata
+
+Sales
+
+Purchasing
+
+Inventory
+
+Treasury
+
+etc.
+
+sin modificar el mecanismo central de ejecución.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+El Engine debe conocer:
+
+CAPABILITY CONTRACT
+
+no:
+
+CAPABILITY IMPLEMENTATION.
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                         AURUM ENGINE
+                              │
+                              ▼
+                    CapabilityExecutor
+                              │
+                              ▼
+                    CapabilityRegistry
+                              │
+              ┌───────────────┼────────────────┐
+              ▼               ▼                ▼
+         ACCOUNTING        METADATA          SALES
+              │               │                │
+              ▼               ▼                ▼
+       AccountingImpl    MetadataImpl      SalesImpl
+              │
+              ▼
+       AURUM ACCOUNTING
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+=========================================================================
+
+La infraestructura de ejecución debe ser:
+
+GENÉRICA.
+
+No debe contener:
+
+if capability == ACCOUNTING
+
+if capability == SALES
+
+if capability == INVENTORY
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente cuando corresponda.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear API HTTP.
+
+No crear Flyway.
+
+No persistir ejecuciones.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Java 21.
+
+=========================================================================
+
+PAQUETE
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.capability
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Capability.java
+
+Crear interfaz.
+
+Métodos:
+
+String getCode();
+
+CapabilityDescriptor getDescriptor();
+
+CapabilityMetadata getMetadata();
+
+CapabilityResult execute(
+    CapabilityRequest request
+);
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta interfaz representa la abstracción central.
+
+No debe conocer:
+
+Accounting
+
+Sales
+
+Metadata
+
+Inventory
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+CapabilityRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String capabilityCode
+
+Map<String, Object> parameters
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+parameters representa parámetros de entrada de la capability.
+
+El mapa es permitido en esta capa genérica porque el Engine necesita
+representar capacidades heterogéneas.
+
+No utilizar Map<String,Object> dentro de los modelos financieros
+internos de Accounting.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+CapabilityResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String capabilityCode
+
+Boolean successful
+
+Object data
+
+String message
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+data contiene el resultado específico de la capability.
+
+Para Accounting:
+
+data puede contener:
+
+AccountingQueryResult
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+CapabilityResult es un wrapper genérico.
+
+No debe intentar modelar:
+
+Revenue
+
+Ratio
+
+Cash Flow
+
+Account
+
+etc.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+CapabilityExecutor.java
+
+Crear interfaz.
+
+Método:
+
+CapabilityResult execute(
+    CapabilityRequest request
+);
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+DefaultCapabilityExecutor.java
+
+Implementar:
+
+CapabilityExecutor
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+CapabilityRegistry
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+CapabilityRequest
+
+        ↓
+
+CapabilityExecutor
+
+        ↓
+
+CapabilityRegistry
+
+        ↓
+
+Capability
+
+        ↓
+
+Capability.execute()
+
+        ↓
+
+CapabilityResult
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+CapabilityRegistry.java
+
+Crear interfaz.
+
+Métodos:
+
+void register(
+    Capability capability
+);
+
+Optional<Capability> find(
+    String capabilityCode
+);
+
+List<Capability> findAll();
+
+boolean exists(
+    String capabilityCode
+);
+
+void unregister(
+    String capabilityCode
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+InMemoryCapabilityRegistry.java
+
+Implementar:
+
+CapabilityRegistry
+
+Utilizar:
+
+ConcurrentHashMap<String, Capability>
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Registry debe ser:
+
+thread-safe.
+
+No persistir capabilities.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+CapabilityRegistrationService.java
+
+Crear interfaz.
+
+Método:
+
+void register(
+    Capability capability
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+DefaultCapabilityRegistrationService.java
+
+Implementar:
+
+CapabilityRegistrationService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+CapabilityRegistry
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La lógica de registro debe estar separada de:
+
+CapabilityExecutor.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+AccountingCapabilityAdapter.java
+
+REFACTORIZAR
+
+La implementación existente de ACC-025 debe adaptarse para implementar:
+
+Capability
+
+en lugar de que el Executor genérico conozca:
+
+AccountingCapability.
+
+=========================================================================
+
+MAPEO
+
+=========================================================================
+
+CapabilityRequest
+
+        ↓
+
+AccountingQueryRequest
+
+        ↓
+
+AccountingQueryService
+
+        ↓
+
+AccountingQueryResult
+
+        ↓
+
+CapabilityResult
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La conversión debe ocurrir únicamente dentro del:
+
+AccountingCapabilityAdapter.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No modificar:
+
+AccountingQueryService.
+
+No modificar:
+
+AccountingQueryModel.
+
+No mover lógica contable hacia:
+
+aurum-engine.
+
+=========================================================================
+
+ACCOUNTING ADAPTER
+
+=========================================================================
+
+Debe tener:
+
+code:
+
+ACCOUNTING
+
+descriptor:
+
+Accounting capability descriptor
+
+metadata:
+
+Accounting capability metadata
+
+=========================================================================
+
+MÉTODO EXECUTE
+
+=========================================================================
+
+Debe:
+
+1. validar request.
+
+2. construir AccountingQueryRequest.
+
+3. ejecutar AccountingQueryService.
+
+4. construir CapabilityResult.
+
+=========================================================================
+
+REGLA DE PARÁMETROS
+
+=========================================================================
+
+AccountingCapabilityAdapter debe interpretar:
+
+chartOfAccountsId
+
+fiscalPeriodId
+
+currentFiscalPeriodId
+
+previousFiscalPeriodId
+
+accountIds
+
+kpiTypes
+
+ratioTypes
+
+dimensionType
+
+dimensionIds
+
+=========================================================================
+
+REGLA DE CONVERSIÓN
+
+=========================================================================
+
+Los parámetros genéricos:
+
+Map<String,Object>
+
+se convierten a:
+
+AccountingQueryRequest.
+
+No pasar el Map directamente a:
+
+AccountingQueryService.
+
+=========================================================================
+
+REGLA DE TIPOS
+
+=========================================================================
+
+El adapter debe validar los tipos de parámetros.
+
+Ejemplo:
+
+chartOfAccountsId
+
+debe convertirse a:
+
+Long.
+
+No asumir casting inseguro.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Un parámetro inválido debe producir:
+
+IllegalArgumentException
+
+o:
+
+CapabilityExecutionException
+
+según corresponda.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+CapabilityExecutionException.java
+
+Crear:
+
+public class CapabilityExecutionException
+    extends RuntimeException
+
+Constructores:
+
+CapabilityExecutionException()
+
+CapabilityExecutionException(String message)
+
+CapabilityExecutionException(String message, Throwable cause)
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Errores controlados de ejecución deben transformarse en:
+
+CapabilityExecutionException.
+
+No ocultar errores técnicos.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+CapabilityExecutionValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    CapabilityRequest request
+);
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+DefaultCapabilityExecutionValidator.java
+
+Implementar:
+
+CapabilityExecutionValidator
+
+Validar:
+
+request != null
+
+capabilityCode != null
+
+capabilityCode no vacío
+
+parameters != null
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La validación de parámetros específicos corresponde a la capability.
+
+El Executor genérico no debe conocer:
+
+kpiTypes
+
+ratioTypes
+
+fiscalPeriodId
+
+etc.
+
+=========================================================================
+
+ARQUITECTURA
+
+GENERIC EXECUTOR
+
+valida:
+
+capabilityCode
+
+request structure
+
+CAPABILITY
+
+valida:
+
+business parameters.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+CapabilityBootstrap.java
+
+Crear:
+
+@Component
+
+Responsabilidad:
+
+registrar capabilities disponibles.
+
+Inicialmente:
+
+AccountingCapabilityAdapter.
+
+=========================================================================
+
+FLUJO DE STARTUP
+
+=========================================================================
+
+Application Startup
+
+        ↓
+
+CapabilityBootstrap
+
+        ↓
+
+CapabilityRegistrationService
+
+        ↓
+
+CapabilityRegistry
+
+        ↓
+
+ACCOUNTING registered
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El Bootstrap no ejecuta capabilities.
+
+Solo registra.
+
+=========================================================================
+
+INTEGRACIÓN CON ACC-026
+=========================================================================
+
+ACC-026 continúa proporcionando:
+
+CapabilityDiscoveryService
+
+=========================================================================
+
+INTEGRACIÓN CON ACC-027
+=========================================================================
+
+ACC-027 continúa proporcionando:
+
+CapabilityMetadataService
+
+=========================================================================
+
+RELACIÓN
+
+=========================================================================
+
+DISCOVERY
+
+↓
+
+METADATA
+
+↓
+
+EXECUTION
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Capability debe poder proporcionar:
+
+Descriptor
+
+Metadata
+
+Execution
+
+desde un contrato común.
+
+=========================================================================
+
+REGLA DE CONSISTENCIA
+
+=========================================================================
+
+Capability.getCode()
+
+debe coincidir con:
+
+CapabilityDescriptor.getCode()
+
+y:
+
+CapabilityMetadata.getCode()
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Capability:
+
+ACCOUNTING
+
+Descriptor:
+
+ACCOUNTING
+
+Metadata:
+
+ACCOUNTING
+
+Execution:
+
+AccountingCapabilityAdapter
+
+=========================================================================
+
+REGLA DE REGISTRY
+
+=========================================================================
+
+No permitir dos capabilities con el mismo:
+
+code.
+
+=========================================================================
+
+COMPORTAMIENTO
+
+=========================================================================
+
+register(capability)
+
+si ya existe:
+
+reemplazar la implementación existente.
+
+No crear duplicados.
+
+=========================================================================
+
+REGLA DE EXECUTE
+
+=========================================================================
+
+Si capabilityCode no existe:
+
+lanzar:
+
+CapabilityExecutionException
+
+con mensaje:
+
+"Capability not found: ACCOUNTING"
+
+=========================================================================
+
+REGLA DE DISABLED
+
+=========================================================================
+
+Si descriptor.enabled == false:
+
+no ejecutar.
+
+Debe producir:
+
+CapabilityExecutionException.
+
+=========================================================================
+
+REGLA DE RESULTADO
+
+=========================================================================
+
+Si ejecución exitosa:
+
+successful = true
+
+Si ejecución controladamente fallida:
+
+successful = false
+
+=========================================================================
+
+REGLA DE READ ONLY
+
+=========================================================================
+
+El Generic Capability Executor no debe modificar datos.
+
+La capability concreta define si una operación es:
+
+READ
+
+o:
+
+WRITE
+
+pero ACC-028 solo registra capabilities existentes de lectura.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No introducir todavía:
+
+CREATE
+
+UPDATE
+
+DELETE
+
+POST
+
+commands.
+
+ACC-028 es:
+
+READ CAPABILITY EXECUTION.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Request:
+
+capabilityCode:
+
+ACCOUNTING
+
+parameters:
+
+chartOfAccountsId = 1
+
+fiscalPeriodId = 202701
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+CapabilityExecutor
+
+        ↓
+
+CapabilityRegistry.find("ACCOUNTING")
+
+        ↓
+
+AccountingCapabilityAdapter
+
+        ↓
+
+AccountingQueryRequest
+
+        ↓
+
+AccountingQueryService
+
+        ↓
+
+FinancialKpiService
+
+        ↓
+
+FinancialKpiReport
+
+        ↓
+
+AccountingQueryResult
+
+        ↓
+
+CapabilityResult
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+capabilityCode:
+
+ACCOUNTING
+
+successful:
+
+true
+
+data:
+
+AccountingQueryResult
+
+=========================================================================
+
+EJEMPLO KPI
+
+=========================================================================
+
+Request:
+
+capabilityCode:
+
+ACCOUNTING
+
+parameters:
+
+chartOfAccountsId = 1
+
+fiscalPeriodId = 202701
+
+queryType = KPI
+
+kpiTypes =
+
+REVENUE
+
+NET_RESULT
+
+NET_MARGIN
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+CapabilityResult
+
+successful:
+
+true
+
+data:
+
+KpiQueryResult
+
+=========================================================================
+
+IMPORTANTE SOBRE QUERY TYPE
+
+=========================================================================
+
+ACC-028 no debe crear:
+
+AccountingQueryType
+
+nuevo.
+
+Debe utilizar el existente de:
+
+aurum-accounting.
+
+=========================================================================
+
+NO DUPLICAR MODELOS
+
+=========================================================================
+
+No crear en:
+
+aurum-engine:
+
+EngineFinancialKpi
+
+EngineCashFlow
+
+EngineRatio
+
+EngineProfitability
+
+El Engine utiliza:
+
+CapabilityResult
+
+como wrapper genérico.
+
+=========================================================================
+
+NO MODIFICAR
+
+=========================================================================
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+FinancialKpi
+
+FinancialRatio
+
+CashFlowReport
+
+ProfitabilityReport
+
+AccountingDataQualityReport
+
+=========================================================================
+
+NO MODIFICAR LÓGICA FINANCIERA
+
+=========================================================================
+
+No modificar:
+
+ProfitabilityService
+
+FinancialRatioService
+
+CashFlowService
+
+FinancialKpiService
+
+AccountingDataQualityService
+
+FinancialComparisonService
+
+AccountingQueryService
+
+=========================================================================
+
+NO PERSISTIR
+
+=========================================================================
+
+No crear:
+
+CapabilityExecutionEntity
+
+CapabilityExecutionHistory
+
+CapabilityExecutionResultEntity
+
+CapabilityExecutionRepository
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+=========================================================================
+
+REST
+
+GraphQL
+
+MCP
+
+WebSocket
+
+Kafka
+
+RabbitMQ
+
+AI Agent
+
+LLM
+
+Prompt
+
+Natural Language
+
+Tool Calling
+
+Capability Ranking
+
+Capability Scoring
+
+Capability Authorization
+
+Capability Versioning
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe Capability.
+
+2. Existe CapabilityRequest.
+
+3. Existe CapabilityResult.
+
+4. Existe CapabilityExecutor.
+
+5. Existe CapabilityRegistry.
+
+6. Existe InMemoryCapabilityRegistry.
+
+7. Existe CapabilityExecutionValidator.
+
+8. Existe CapabilityExecutionException.
+
+9. ACCOUNTING implementa Capability.
+
+10. El Engine puede ejecutar ACCOUNTING mediante CapabilityExecutor.
+
+11. CapabilityExecutor no contiene lógica específica de Accounting.
+
+12. No existe:
+
+    if capability == ACCOUNTING
+
+13. AccountingCapabilityAdapter convierte el request genérico a
+    AccountingQueryRequest.
+
+14. AccountingQueryService continúa siendo responsable de las
+    consultas contables.
+
+15. CapabilityResult contiene el resultado específico.
+
+16. CapabilityDescriptor continúa disponible.
+
+17. CapabilityMetadata continúa disponible.
+
+18. Capability code debe ser consistente entre:
+
+    Capability
+    Descriptor
+    Metadata
+
+19. Registry es thread-safe.
+
+20. Capabilities duplicadas no generan entradas duplicadas.
+
+21. Capabilities deshabilitadas no se ejecutan.
+
+22. Capability inexistente genera CapabilityExecutionException.
+
+23. Requests inválidos son rechazados.
+
+24. No se utiliza Reflection.
+
+25. No se utiliza SQL nativo.
+
+26. No se utiliza EntityManager.
+
+27. No se utiliza JDBC.
+
+28. No se utiliza Lombok.
+
+29. No se persisten ejecuciones.
+
+30. No se modifica el Ledger.
+
+31. aurum-accounting no depende de aurum-engine.
+
+32. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+ANTES
+
+AURUM ENGINE
+     │
+     └── AccountingCapability
+             │
+             ▼
+       AccountingQueryService
+
+
+DESPUÉS
+
+AURUM ENGINE
+     │
+     ▼
+CapabilityExecutor
+     │
+     ▼
+CapabilityRegistry
+     │
+     ├── ACCOUNTING
+     ├── METADATA
+     ├── SALES
+     ├── INVENTORY
+     └── ...
+     │
+     ▼
+Capability
+     │
+     ▼
+CapabilityResult
+
+=========================================================================
+
+EVOLUCIÓN
+=========================================================================
+
+ACC-025
+
+ACCOUNTING EXECUTION
+
+↓
+
+ACC-026
+
+CAPABILITY DISCOVERY
+
+↓
+
+ACC-027
+
+CAPABILITY METADATA
+
+↓
+
+ACC-028
+
+GENERIC CAPABILITY EXECUTION
+
+↓
+
+ACC-029
+
+BUSINESS CONTEXT MODEL
+
+↓
+
+ACC-030
+
+AGENT-READY CAPABILITY INTERFACE
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+El cambio fundamental de ACC-028 es:
+
+ANTES:
+
+"El Engine sabe ejecutar Accounting."
+
+DESPUÉS:
+
+"El Engine sabe ejecutar capabilities."
+
+Accounting pasa a ser simplemente:
+
+UNA CAPABILITY.
+
+Esto permite que el crecimiento futuro de Aurum sea horizontal.
+
+No necesitamos modificar:
+
+CapabilityExecutor
+
+cada vez que agregamos un nuevo dominio.
+
+=========================================================================
+
+ARQUITECTURA FUTURA
+=========================================================================
+
+                         AURUM ENGINE
+                              │
+                    GENERIC CAPABILITY
+                         RUNTIME
+                              │
+        ┌─────────────┬───────┼────────┬─────────────┐
+        ▼             ▼       ▼        ▼             ▼
+    ACCOUNTING     METADATA   SALES   INVENTORY   TREASURY
+        │
+        ▼
+    ERP DOMAIN
+        │
+        ▼
+      LEDGER
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum ya posee:
+
+DISCOVERY
+
+METADATA
+
+EXECUTION
+
+El siguiente problema ya no es:
+
+"¿Cómo ejecuto Accounting?"
+
+sino:
+
+"¿Cómo entiende Engine el contexto empresarial en el que debe
+seleccionar y ejecutar una capability?"
+
+Ese será el objetivo de:
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-029
+
+BUSINESS CONTEXT MODEL
+
+Construir un modelo de contexto empresarial que permita a
+`aurum-engine` representar de forma estructurada la empresa, compañía,
+tenant, período fiscal, dominio funcional y demás dimensiones
+relevantes para que una capability pueda ejecutarse dentro del
+contexto correcto, preparando la arquitectura para decisiones
+autónomas y posteriormente agentes de IA.
+
+=========================================================================
