@@ -1,0 +1,1376 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-020
+CASH FLOW ANALYSIS ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-018 implementó Account Financial Analysis.
+
+ACC-019 implementó Financial Ratios.
+
+Aurum ya puede analizar:
+
+Assets
+Liabilities
+Equity
+Revenue
+Expense
+Net Result
+Financial Ratios
+
+Sin embargo, el resultado contable no responde directamente:
+
+¿Cuánto efectivo generó la operación?
+
+¿Cuánto efectivo se utilizó en inversiones?
+
+¿Cuánto efectivo provino de financiación?
+
+¿Cuál fue el cambio neto de efectivo?
+
+ACC-020 incorpora un modelo de Cash Flow derivado del Ledger.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un motor de análisis de flujo de caja capaz de clasificar
+movimientos financieros en:
+
+OPERATING
+
+INVESTING
+
+FINANCING
+
+y calcular:
+
+Operating Cash Flow
+
+Investing Cash Flow
+
+Financing Cash Flow
+
+Net Cash Flow
+
+Opening Cash Balance
+
+Closing Cash Balance
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Cash Flow NO es una fuente de verdad independiente.
+
+La fuente de verdad continúa siendo:
+
+LedgerEntry
+
+El Cash Flow es un:
+
+READ MODEL
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                         LEDGER
+                           │
+                           ▼
+                    CASH MOVEMENTS
+                           │
+                           ▼
+                 CASH FLOW CLASSIFIER
+                           │
+          ┌────────────────┼────────────────┐
+          ▼                ▼                ▼
+      OPERATING         INVESTING        FINANCING
+          │                │                │
+          └────────────────┼────────────────┘
+                           ▼
+                    CASH FLOW REPORT
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+          Net Change    Opening Cash   Closing Cash
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+CashFlowActivityType.java
+
+Crear enum.
+
+Valores:
+
+OPERATING
+
+INVESTING
+
+FINANCING
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+CashFlowLine.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long accountId
+
+String accountCode
+
+String accountName
+
+CashFlowActivityType activityType
+
+BigDecimal cashInflow
+
+BigDecimal cashOutflow
+
+BigDecimal netCashFlow
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+netCashFlow:
+
+cashInflow - cashOutflow
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+CashFlowReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+List<CashFlowLine> operatingLines
+
+List<CashFlowLine> investingLines
+
+List<CashFlowLine> financingLines
+
+BigDecimal operatingCashFlow
+
+BigDecimal investingCashFlow
+
+BigDecimal financingCashFlow
+
+BigDecimal netCashFlow
+
+BigDecimal openingCashBalance
+
+BigDecimal closingCashBalance
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA OPERATING CASH FLOW
+=========================================================================
+
+operatingCashFlow:
+
+suma de:
+
+operatingLines.netCashFlow
+
+=========================================================================
+
+REGLA INVESTING CASH FLOW
+=========================================================================
+
+investingCashFlow:
+
+suma de:
+
+investingLines.netCashFlow
+
+=========================================================================
+
+REGLA FINANCING CASH FLOW
+=========================================================================
+
+financingCashFlow:
+
+suma de:
+
+financingLines.netCashFlow
+
+=========================================================================
+
+REGLA NET CASH FLOW
+=========================================================================
+
+netCashFlow:
+
+operatingCashFlow
++
+investingCashFlow
++
+financingCashFlow
+
+=========================================================================
+
+REGLA CLOSING CASH
+=========================================================================
+
+closingCashBalance:
+
+openingCashBalance
++
+netCashFlow
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+CashFlowFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<Long> accountIds
+
+List<CashFlowActivityType> activityTypes
+
+Boolean includeInactive
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si accountIds:
+
+null o vacío
+
+analizar todas las cuentas de efectivo aplicables.
+
+Si activityTypes:
+
+null o vacío
+
+calcular:
+
+OPERATING
+
+INVESTING
+
+FINANCING
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CashFlowClassificationService.java
+
+Crear interfaz.
+
+Método:
+
+CashFlowActivityType classify(
+    Account account
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCashFlowClassificationService.java
+
+Implementar:
+
+CashFlowClassificationService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+La clasificación debe ser explícita.
+
+No utilizar:
+
+if accountCode startsWith("4")
+
+if accountCode startsWith("5")
+
+como regla rígida de negocio.
+
+=========================================================================
+
+REGLA MVP
+
+=========================================================================
+
+Si el modelo actual de Account no posee una clasificación específica
+para Cash Flow:
+
+NO modificar Account para introducir una arquitectura compleja.
+
+Debe utilizarse una estrategia mínima y explícita compatible con el
+modelo actual.
+
+=========================================================================
+
+CLASIFICACIÓN MVP
+=========================================================================
+
+OPERATING:
+
+Revenue
+
+Expense
+
+y movimientos operativos relacionados.
+
+INVESTING:
+
+movimientos relacionados con adquisición o disposición de activos
+no corrientes.
+
+FINANCING:
+
+movimientos relacionados con deuda y patrimonio.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Si el modelo actual de Account no permite distinguir de manera segura:
+
+Operating
+
+Investing
+
+Financing
+
+NO inventar una clasificación automática.
+
+La clasificación debe permitir:
+
+"UNCLASSIFIED"
+
+internamente si fuese necesario.
+
+Sin embargo:
+
+ACC-020 debe generar un resultado consistente para las cuentas
+clasificables.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CashFlowCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateOperatingCashFlow(
+    List<CashFlowLine> lines
+);
+
+BigDecimal calculateInvestingCashFlow(
+    List<CashFlowLine> lines
+);
+
+BigDecimal calculateFinancingCashFlow(
+    List<CashFlowLine> lines
+);
+
+BigDecimal calculateNetCashFlow(
+    BigDecimal operatingCashFlow,
+    BigDecimal investingCashFlow,
+    BigDecimal financingCashFlow
+);
+
+BigDecimal calculateClosingCashBalance(
+    BigDecimal openingCashBalance,
+    BigDecimal netCashFlow
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCashFlowCalculator.java
+
+Implementar:
+
+CashFlowCalculator
+
+No acceder a:
+
+Repository
+
+Database
+
+EntityManager
+
+JDBC
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+Todos los valores null deben tratarse como:
+
+BigDecimal.ZERO
+
+No utilizar:
+
+double
+
+float
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CashFlowService.java
+
+Crear interfaz.
+
+Métodos:
+
+CashFlowReport generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+CashFlowReport generate(
+    CashFlowFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCashFlowService.java
+
+Implementar:
+
+CashFlowService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AccountRepository
+
+LedgerEntryRepository
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+CashFlowClassificationService
+
+CashFlowCalculator
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+CashFlowService
+
+        ↓
+
+FiscalPeriod
+
+        ↓
+
+LedgerEntry
+
+        ↓
+
+Account
+
+        ↓
+
+CashFlowClassificationService
+
+        ↓
+
+CashFlowLine
+
+        ↓
+
+CashFlowCalculator
+
+        ↓
+
+CashFlowReport
+
+=========================================================================
+
+REGLA DE FUENTE DE DATOS
+=========================================================================
+
+El servicio debe utilizar:
+
+LedgerEntry
+
+como fuente de los movimientos.
+
+No utilizar:
+
+Account.balance
+
+como fuente de Cash Flow.
+
+=========================================================================
+
+REGLA DE MOVIMIENTO
+=========================================================================
+
+Cada movimiento de efectivo debe convertirse en:
+
+CashFlowLine
+
+con:
+
+cashInflow
+
+cashOutflow
+
+netCashFlow
+
+=========================================================================
+
+REGLA DE CASH INFLOW
+=========================================================================
+
+cashInflow:
+
+importe positivo que incrementa efectivo.
+
+=========================================================================
+
+REGLA DE CASH OUTFLOW
+=========================================================================
+
+cashOutflow:
+
+importe positivo que reduce efectivo.
+
+=========================================================================
+
+REGLA NET CASH FLOW
+=========================================================================
+
+netCashFlow:
+
+cashInflow - cashOutflow
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No utilizar:
+
+debit - credit
+
+directamente como:
+
+cashFlow
+
+sin analizar la naturaleza de la cuenta.
+
+La conversión debe respetar la naturaleza contable del movimiento.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+CashFlowValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    CashFlowReport report
+);
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultCashFlowValidator.java
+
+Implementar:
+
+CashFlowValidator
+
+Validar:
+
+1. report != null
+
+2. chartOfAccountsId != null
+
+3. fiscalPeriodId != null
+
+4. operatingLines != null
+
+5. investingLines != null
+
+6. financingLines != null
+
+7. operatingCashFlow != null
+
+8. investingCashFlow != null
+
+9. financingCashFlow != null
+
+10. netCashFlow != null
+
+11. openingCashBalance != null
+
+12. closingCashBalance != null
+
+13. netCashFlow =
+    operatingCashFlow
+    + investingCashFlow
+    + financingCashFlow
+
+14. closingCashBalance =
+    openingCashBalance
+    + netCashFlow
+
+=========================================================================
+
+REGLA DE EFECTIVO
+=========================================================================
+
+El conjunto de cuentas de efectivo debe ser identificable dentro del
+modelo actual.
+
+Si Account todavía no tiene una propiedad explícita:
+
+cashAccount
+
+NO crear una modificación estructural grande.
+
+Utilizar la capacidad existente del modelo.
+
+=========================================================================
+
+REGLA OPENING CASH
+=========================================================================
+
+El:
+
+openingCashBalance
+
+debe obtenerse del período anterior.
+
+No debe ser:
+
+0
+
+por defecto si existe información histórica.
+
+=========================================================================
+
+REGLA PRIMER PERÍODO
+=========================================================================
+
+Si no existe período anterior:
+
+openingCashBalance = 0
+
+para efectos de MVP.
+
+=========================================================================
+
+REGLA CLOSED / OPEN
+=========================================================================
+
+El Cash Flow puede generarse para:
+
+OPEN
+
+o:
+
+CLOSED
+
+FiscalPeriod.
+
+La operación es:
+
+READ ONLY
+
+=========================================================================
+
+EJEMPLO OPERATING
+=========================================================================
+
+Cash Inflow:
+
+Revenue collection:
+
+10000
+
+Cash Outflow:
+
+Operating expense:
+
+6000
+
+Resultado:
+
+Operating Cash Flow:
+
+4000
+
+=========================================================================
+
+EJEMPLO INVESTING
+=========================================================================
+
+Compra de activo:
+
+Cash Outflow:
+
+5000
+
+Resultado:
+
+Investing Cash Flow:
+
+-5000
+
+=========================================================================
+
+EJEMPLO FINANCING
+=========================================================================
+
+Nuevo préstamo:
+
+Cash Inflow:
+
+10000
+
+Resultado:
+
+Financing Cash Flow:
+
+10000
+
+=========================================================================
+
+RESULTADO TOTAL
+=========================================================================
+
+Operating:
+
+4000
+
+Investing:
+
+-5000
+
+Financing:
+
+10000
+
+Net Cash Flow:
+
+9000
+
+Opening Cash:
+
+20000
+
+Closing Cash:
+
+29000
+
+=========================================================================
+
+REGLA DE SIGNOS
+=========================================================================
+
+En:
+
+CashFlowLine
+
+cashInflow:
+
+siempre positivo.
+
+cashOutflow:
+
+siempre positivo.
+
+netCashFlow:
+
+puede ser positivo o negativo.
+
+=========================================================================
+
+REGLA DE PRESENTACIÓN
+=========================================================================
+
+Ejemplo:
+
+Operating Cash Flow:
+
++4000
+
+Investing Cash Flow:
+
+-5000
+
+Financing Cash Flow:
+
++10000
+
+Net Cash Flow:
+
++9000
+
+=========================================================================
+
+NO DUPLICAR MOVIMIENTOS
+=========================================================================
+
+Una LedgerEntry que tenga:
+
+CostCenter
+
+ProfitCenter
+
+Project
+
+etc.
+
+continúa siendo:
+
+un único movimiento.
+
+Las dimensiones analíticas no deben multiplicar el Cash Flow.
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+=========================================================================
+
+ACC-020 genera inicialmente:
+
+Cash Flow global.
+
+No implementar todavía:
+
+Cash Flow by Cost Center
+
+Cash Flow by Profit Center
+
+Cash Flow by Project
+
+=========================================================================
+
+REGLA SOBRE CHART OF ACCOUNTS
+=========================================================================
+
+Todos los datos deben pertenecer al:
+
+chartOfAccountsId
+
+solicitado.
+
+No mezclar ChartOfAccounts.
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+CashFlowSnapshot
+
+CashFlowBalance
+
+CashFlowAggregate
+
+CashFlowHistory
+
+CashFlowEntity
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryDimension
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+FinancialRatio
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Indirect Method
+
+Direct Method Configuration
+
+IAS 7 Full Compliance
+
+IFRS Cash Flow Mapping
+
+Multi-Currency Cash Flow
+
+Cash Flow Forecast
+
+Cash Flow Budget
+
+Cash Flow by Customer
+
+Cash Flow by Supplier
+
+Cash Flow by Project
+
+Working Capital Analysis
+
+Cash Conversion Cycle
+
+AI Cash Flow Interpretation
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede generar Cash Flow para un FiscalPeriod.
+
+2. Se puede obtener Operating Cash Flow.
+
+3. Se puede obtener Investing Cash Flow.
+
+4. Se puede obtener Financing Cash Flow.
+
+5. Se puede obtener Net Cash Flow.
+
+6. Se puede obtener Opening Cash Balance.
+
+7. Se puede obtener Closing Cash Balance.
+
+8. Net Cash Flow se calcula correctamente.
+
+9. Closing Cash se calcula correctamente.
+
+10. Los movimientos se clasifican correctamente cuando existe
+    información suficiente.
+
+11. No se utiliza una clasificación basada exclusivamente en
+    prefijos de AccountCode.
+
+12. Los valores utilizan BigDecimal.
+
+13. No existe división ni operaciones con double.
+
+14. Los movimientos con dimensiones no se duplican.
+
+15. OPEN FiscalPeriod funciona.
+
+16. CLOSED FiscalPeriod funciona.
+
+17. El período anterior puede determinar Opening Cash.
+
+18. Si no existe período anterior, Opening Cash = 0.
+
+19. El Cash Flow no se persiste.
+
+20. LedgerEntry continúa siendo la fuente de verdad.
+
+21. ChartOfAccounts se respeta.
+
+22. No se modifica el modelo transaccional.
+
+23. No existe SQL nativo.
+
+24. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+Cash Flow es otro READ MODEL financiero.
+
+La arquitectura ahora contiene:
+
+                         LEDGER
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+          REPORTING    PROFITABILITY   CASH FLOW
+             │             │             │
+             ▼             ▼             ▼
+          ANALYSIS       MARGIN       LIQUIDITY
+
+Ninguno de estos modelos reemplaza al Ledger.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+Aurum ahora tiene tres grandes perspectivas financieras:
+
+1. RESULTADO
+
+Revenue
+Expense
+Net Result
+Margin
+
+2. POSICIÓN
+
+Assets
+Liabilities
+Equity
+Balance
+
+3. EFECTIVO
+
+Operating Cash Flow
+Investing Cash Flow
+Financing Cash Flow
+Net Cash Flow
+Closing Cash
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum podrá responder:
+
+"¿Cuánto efectivo generó la operación?"
+
+"¿Cuánto efectivo consumieron las inversiones?"
+
+"¿Cuánto efectivo provino de financiación?"
+
+"¿Cuánto efectivo neto generamos?"
+
+"¿Con cuánto efectivo terminamos el período?"
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-021
+
+ACCOUNTING DATA QUALITY ENGINE
+
+Construir un motor de calidad de datos contables capaz de detectar
+inconsistencias, movimientos incompletos, cuentas inválidas,
+dimensiones inválidas y anomalías estructurales antes de que esos
+datos sean utilizados por los motores analíticos y posteriormente por
+Aurum Engine / agentes de IA.
+
+=========================================================================
