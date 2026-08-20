@@ -1,0 +1,1433 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-016
+FINANCIAL DIMENSION COMPARISON
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-012 creó el Analytical Dimension Framework.
+
+ACC-013 implementó ProfitCenter.
+
+ACC-014 creó Analytical Reporting.
+
+ACC-015 creó Analytical Profitability.
+
+Actualmente Aurum puede calcular para una dimensión:
+
+Revenue
+Expense
+Net Result
+Margin
+Margin Percentage
+
+para un período fiscal determinado.
+
+El siguiente paso es permitir comparar esos resultados.
+
+Ejemplos:
+
+ProfitCenter SERVICES
+
+2026:
+Revenue = 100000
+Expense = 70000
+Margin = 30%
+
+2027:
+Revenue = 130000
+Expense = 80000
+Margin = 38.46%
+
+El sistema debe poder determinar:
+
+Revenue Variation
+Expense Variation
+Net Result Variation
+Margin Variation
+Margin Percentage Variation
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar un motor de comparación financiera que permita comparar:
+
+1. Una dimensión entre dos períodos.
+
+2. Varias dimensiones dentro de un período.
+
+3. Varias dimensiones entre dos períodos.
+
+La comparación debe derivarse exclusivamente de:
+
+LedgerEntry
+
+utilizando:
+
+AnalyticalReportingService
+
+y:
+
+ProfitabilityService
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+No almacenar:
+
+Previous Revenue
+
+Previous Expense
+
+Previous Margin
+
+Variation
+
+Growth
+
+Trend
+
+Los valores deben calcularse dinámicamente.
+
+=========================================================================
+
+FUENTE DE VERDAD
+
+=========================================================================
+
+LedgerEntry
+
+        ↓
+
+AnalyticalReportingService
+
+        ↓
+
+ProfitabilityService
+
+        ↓
+
+Financial Comparison
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialComparisonLine.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+AnalyticalDimensionType dimensionType
+
+Long dimensionId
+
+String dimensionCode
+
+String dimensionName
+
+BigDecimal currentRevenue
+
+BigDecimal previousRevenue
+
+BigDecimal revenueVariation
+
+BigDecimal revenueVariationPercentage
+
+BigDecimal currentExpense
+
+BigDecimal previousExpense
+
+BigDecimal expenseVariation
+
+BigDecimal expenseVariationPercentage
+
+BigDecimal currentNetResult
+
+BigDecimal previousNetResult
+
+BigDecimal netResultVariation
+
+BigDecimal netResultVariationPercentage
+
+BigDecimal currentMarginPercentage
+
+BigDecimal previousMarginPercentage
+
+BigDecimal marginPercentageVariation
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialComparisonReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long currentFiscalPeriodId
+
+Long previousFiscalPeriodId
+
+String currentFiscalPeriodName
+
+String previousFiscalPeriodName
+
+AnalyticalDimensionType dimensionType
+
+List<FinancialComparisonLine> lines
+
+BigDecimal totalCurrentRevenue
+
+BigDecimal totalPreviousRevenue
+
+BigDecimal totalRevenueVariation
+
+BigDecimal totalCurrentExpense
+
+BigDecimal totalPreviousExpense
+
+BigDecimal totalExpenseVariation
+
+BigDecimal totalCurrentNetResult
+
+BigDecimal totalPreviousNetResult
+
+BigDecimal totalNetResultVariation
+
+BigDecimal totalCurrentMarginPercentage
+
+BigDecimal totalPreviousMarginPercentage
+
+BigDecimal totalMarginPercentageVariation
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DE VARIACIÓN
+=========================================================================
+
+variation:
+
+current - previous
+
+=========================================================================
+
+REGLA DE VARIACIÓN PORCENTUAL
+=========================================================================
+
+Si:
+
+previous != 0
+
+variationPercentage:
+
+((current - previous) / previous) * 100
+
+Si:
+
+previous == 0
+
+debe utilizarse:
+
+0
+
+No dividir por cero.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Cuando previous == 0 y current != 0:
+
+variationPercentage = 0
+
+No utilizar:
+
+Infinity
+
+NaN
+
+null
+
+No lanzar:
+
+ArithmeticException
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialComparisonService.java
+
+Crear interfaz.
+
+Métodos:
+
+FinancialComparisonReport compare(
+    Long chartOfAccountsId,
+    Long currentFiscalPeriodId,
+    Long previousFiscalPeriodId,
+    AnalyticalDimensionType dimensionType
+);
+
+FinancialComparisonReport compare(
+    Long chartOfAccountsId,
+    Long currentFiscalPeriodId,
+    Long previousFiscalPeriodId,
+    AnalyticalDimensionType dimensionType,
+    List<Long> dimensionIds
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialComparisonService.java
+
+Implementar:
+
+FinancialComparisonService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+ProfitabilityService
+
+FinancialComparisonCalculator
+
+FinancialComparisonValidator
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DE COMPARE
+
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. currentFiscalPeriodId obligatorio.
+
+3. previousFiscalPeriodId obligatorio.
+
+4. dimensionType obligatorio.
+
+5. ChartOfAccounts debe existir.
+
+6. Current FiscalPeriod debe existir.
+
+7. Previous FiscalPeriod debe existir.
+
+8. Ambos períodos deben pertenecer al mismo ChartOfAccounts.
+
+9. currentFiscalPeriodId y previousFiscalPeriodId deben ser diferentes.
+
+10. Generar ProfitabilityReport para el período actual.
+
+11. Generar ProfitabilityReport para el período anterior.
+
+12. Emparejar dimensiones por:
+
+    dimensionId
+
+13. Calcular variaciones.
+
+=========================================================================
+
+REGLA DE IDENTIFICACIÓN
+
+=========================================================================
+
+Una dimensión se identifica por:
+
+dimensionType
++
+dimensionId
+
+No utilizar:
+
+dimensionCode
+
+como identificador técnico.
+
+El código solamente es una representación funcional.
+
+=========================================================================
+
+DIMENSIÓN EXISTENTE SOLO EN CURRENT
+=========================================================================
+
+Si una dimensión existe en:
+
+CURRENT
+
+pero no existe en:
+
+PREVIOUS
+
+sus valores anteriores serán:
+
+Revenue = 0
+
+Expense = 0
+
+NetResult = 0
+
+Margin = 0
+
+=========================================================================
+
+DIMENSIÓN EXISTENTE SOLO EN PREVIOUS
+=========================================================================
+
+Si una dimensión existe en:
+
+PREVIOUS
+
+pero no existe en:
+
+CURRENT
+
+sus valores actuales serán:
+
+Revenue = 0
+
+Expense = 0
+
+NetResult = 0
+
+Margin = 0
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No eliminar dimensiones del resultado.
+
+El reporte debe mostrar la evolución completa.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialComparisonCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateVariation(
+    BigDecimal current,
+    BigDecimal previous
+);
+
+BigDecimal calculateVariationPercentage(
+    BigDecimal current,
+    BigDecimal previous
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialComparisonCalculator.java
+
+Implementar:
+
+FinancialComparisonCalculator
+
+No debe acceder a:
+
+Repository
+
+Database
+
+EntityManager
+
+JDBC
+
+=========================================================================
+
+REGLA calculateVariation
+
+=========================================================================
+
+Si current == null:
+
+BigDecimal.ZERO
+
+Si previous == null:
+
+BigDecimal.ZERO
+
+Resultado:
+
+current - previous
+
+=========================================================================
+
+REGLA calculateVariationPercentage
+
+=========================================================================
+
+Si previous == null:
+
+tratar como:
+
+0
+
+Si previous == 0:
+
+return 0
+
+De lo contrario:
+
+((current - previous) / previous) * 100
+
+Utilizar:
+
+scale = 4
+
+RoundingMode.HALF_UP
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialComparisonValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    FinancialComparisonReport report
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialComparisonValidator.java
+
+Implementar:
+
+FinancialComparisonValidator
+
+Validar:
+
+1. report != null
+
+2. chartOfAccountsId != null
+
+3. currentFiscalPeriodId != null
+
+4. previousFiscalPeriodId != null
+
+5. currentFiscalPeriodId != previousFiscalPeriodId
+
+6. dimensionType != null
+
+7. lines != null
+
+8. Todos los totales deben ser no null.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialComparisonFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long currentFiscalPeriodId
+
+Long previousFiscalPeriodId
+
+AnalyticalDimensionType dimensionType
+
+List<Long> dimensionIds
+
+Boolean includeInactive
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+includeInactive:
+
+default = false
+
+Si false:
+
+solo dimensiones activas.
+
+Si true:
+
+permitir dimensiones históricas.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FilteredFinancialComparisonService.java
+
+Crear interfaz.
+
+Método:
+
+FinancialComparisonReport compare(
+    FinancialComparisonFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFilteredFinancialComparisonService.java
+
+Implementar:
+
+FilteredFinancialComparisonService
+
+Debe delegar en:
+
+FinancialComparisonService
+
+No duplicar lógica de comparación.
+
+=========================================================================
+
+REGLA SOBRE REPORTES ABIERTOS Y CERRADOS
+=========================================================================
+
+La comparación es una operación de lectura.
+
+Debe funcionar sobre:
+
+OPEN
+
+y:
+
+CLOSED
+
+FiscalPeriod.
+
+No debe utilizar:
+
+AccountingPeriodGuard
+
+para bloquear consultas.
+
+=========================================================================
+
+REGLA SOBRE CHART OF ACCOUNTS
+=========================================================================
+
+Current y Previous deben pertenecer al mismo:
+
+ChartOfAccounts.
+
+No comparar:
+
+ChartOfAccounts A
+
+contra:
+
+ChartOfAccounts B.
+
+=========================================================================
+
+REGLA SOBRE DIMENSION TYPE
+=========================================================================
+
+La comparación debe funcionar para:
+
+COST_CENTER
+
+PROFIT_CENTER
+
+y futuras dimensiones.
+
+No crear:
+
+CostCenterComparisonService
+
+ProfitCenterComparisonService
+
+=========================================================================
+
+EJEMPLO 1
+=========================================================================
+
+PROFIT_CENTER:
+
+SERVICES
+
+CURRENT:
+
+Revenue = 130000
+
+Expense = 80000
+
+NetResult = 50000
+
+Margin = 38.4615%
+
+PREVIOUS:
+
+Revenue = 100000
+
+Expense = 70000
+
+NetResult = 30000
+
+Margin = 30%
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+Revenue Variation:
+
+30000
+
+Revenue Variation %:
+
+30%
+
+Expense Variation:
+
+10000
+
+Expense Variation %:
+
+14.2857%
+
+NetResult Variation:
+
+20000
+
+NetResult Variation %:
+
+66.6667%
+
+Margin Percentage Variation:
+
+8.4615 puntos porcentuales
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Margin Percentage Variation NO representa crecimiento porcentual
+del margen.
+
+Debe representar:
+
+Current Margin %
+-
+Previous Margin %
+
+Ejemplo:
+
+38.4615%
+-
+30%
+
+=
+
+8.4615 puntos porcentuales
+
+=========================================================================
+
+REGLA DE PRESENTACIÓN
+=========================================================================
+
+La propiedad:
+
+marginPercentageVariation
+
+representa:
+
+puntos porcentuales
+
+No utilizarla como:
+
+percentage growth
+
+=========================================================================
+
+EJEMPLO 2
+=========================================================================
+
+PREVIOUS:
+
+Revenue = 0
+
+CURRENT:
+
+Revenue = 10000
+
+Revenue Variation:
+
+10000
+
+Revenue Variation %:
+
+0
+
+Esto evita una división por cero.
+
+=========================================================================
+
+EJEMPLO 3
+=========================================================================
+
+PREVIOUS:
+
+Revenue = 10000
+
+CURRENT:
+
+Revenue = 0
+
+Revenue Variation:
+
+-10000
+
+Revenue Variation %:
+
+-100%
+
+=========================================================================
+
+EJEMPLO 4
+=========================================================================
+
+PREVIOUS:
+
+Expense = 10000
+
+CURRENT:
+
+Expense = 15000
+
+Expense Variation:
+
+5000
+
+Expense Variation %:
+
+50%
+
+=========================================================================
+
+REGLA SOBRE RESULTADO NEGATIVO
+=========================================================================
+
+Previous NetResult:
+
+-10000
+
+Current NetResult:
+
+-5000
+
+Variation:
+
+5000
+
+No intentar interpretar automáticamente esta variación como:
+
+"mejora"
+
+o:
+
+"empeoramiento"
+
+ACC-016 calcula indicadores.
+
+La interpretación pertenece a una capa superior.
+
+=========================================================================
+
+REGLA SOBRE SIGNOS
+=========================================================================
+
+Revenue:
+
+credit - debit
+
+Expense:
+
+debit - credit
+
+NetResult:
+
+Revenue - Expense
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+=========================================================================
+
+Una misma:
+
+LedgerEntry
+
+puede tener:
+
+COST_CENTER = IT
+
+PROFIT_CENTER = SERVICES
+
+Si la comparación solicita:
+
+COST_CENTER
+
+solo utilizar:
+
+IT.
+
+Si solicita:
+
+PROFIT_CENTER
+
+solo utilizar:
+
+SERVICES.
+
+No duplicar movimientos.
+
+=========================================================================
+
+REGLA DE AGRUPACIÓN
+=========================================================================
+
+Agrupar por:
+
+dimensionType
+
++
+
+dimensionId
+
+Nunca agrupar únicamente por:
+
+dimensionCode
+
+porque el código puede repetirse en distintos:
+
+ChartOfAccounts.
+
+=========================================================================
+
+REGLA DE ORDENAMIENTO
+=========================================================================
+
+Las líneas deben ordenarse por:
+
+dimensionCode
+
+ascendente.
+
+=========================================================================
+
+REGLA DE PRECISIÓN
+=========================================================================
+
+Utilizar:
+
+BigDecimal
+
+con:
+
+scale = 4
+
+para porcentajes.
+
+RoundingMode:
+
+HALF_UP
+
+No utilizar:
+
+Math.round()
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+FinancialComparisonEntity
+
+FinancialSnapshot
+
+FinancialTrend
+
+FinancialVariation
+
+HistoricalBalance
+
+No almacenar resultados.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+AnalyticalReport
+
+ProfitabilityReport
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Forecast
+
+Budget
+
+Budget vs Actual
+
+Variance Explanation
+
+Trend Detection
+
+Moving Average
+
+Growth Forecast
+
+AI Analysis
+
+Charts
+
+Dashboard
+
+Export Excel
+
+Export PDF
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se pueden comparar dos períodos.
+
+2. Los períodos pertenecen al mismo ChartOfAccounts.
+
+3. No se puede comparar un período consigo mismo.
+
+4. Se puede comparar COST_CENTER.
+
+5. Se puede comparar PROFIT_CENTER.
+
+6. El mismo servicio funciona para ambas dimensiones.
+
+7. Revenue Variation se calcula correctamente.
+
+8. Expense Variation se calcula correctamente.
+
+9. NetResult Variation se calcula correctamente.
+
+10. Margin Percentage Variation se calcula como diferencia de
+    puntos porcentuales.
+
+11. Revenue Variation Percentage se calcula correctamente.
+
+12. Expense Variation Percentage se calcula correctamente.
+
+13. NetResult Variation Percentage se calcula correctamente.
+
+14. previous = 0 no genera división por cero.
+
+15. Una dimensión existente únicamente en Current aparece en el
+    resultado.
+
+16. Una dimensión existente únicamente en Previous aparece en el
+    resultado.
+
+17. Las dimensiones inactivas se excluyen por defecto.
+
+18. Las dimensiones históricas pueden incluirse explícitamente.
+
+19. OPEN y CLOSED FiscalPeriod pueden consultarse.
+
+20. Los resultados no se persisten.
+
+21. LedgerEntry continúa siendo la fuente de verdad.
+
+22. No existe SQL nativo.
+
+23. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+ACC-016 sigue el patrón:
+
+SOURCE OF TRUTH
+       │
+       ▼
+     LEDGER
+       │
+       ▼
+ANALYTICAL REPORT
+       │
+       ▼
+ PROFITABILITY
+       │
+       ▼
+ COMPARISON
+       │
+       ├── CURRENT
+       │
+       └── PREVIOUS
+
+Cada capa deriva información de la anterior.
+
+No se almacenan snapshots artificiales.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+Aurum ahora puede responder:
+
+¿Cuánto vendió?
+
+ACC-014
+
+¿Cuánto ganó?
+
+ACC-015
+
+¿Cómo cambió?
+
+ACC-016
+
+Ejemplo:
+
+                    2026        2027       VARIACIÓN
+
+Revenue             100K        130K        +30K
+Expense              70K         80K        +10K
+Net Result            30K         50K        +20K
+Margin               30%       38.46%       +8.46 pp
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-017
+
+FINANCIAL PERIOD COMPARISON ENGINE
+
+Generalizar la comparación para permitir:
+
+Month vs Month
+
+Quarter vs Quarter
+
+Year vs Year
+
+YTD vs YTD
+
+sin introducir lógica específica dentro de cada reporte.
+
+=========================================================================
