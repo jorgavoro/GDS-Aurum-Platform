@@ -110,4 +110,18 @@ public class JournalEntryLine extends AuditableEntity {
     public void setJournalEntry(JournalEntry journalEntry) {
         this.journalEntry = journalEntry;
     }
+    
+ // Modificación: Agregar mapeo opcional a CostCenter y sus métodos accesores.
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cost_center_id")
+    private CostCenter costCenter;
+
+    public CostCenter getCostCenter() {
+        return costCenter;
+    }
+
+    public void setCostCenter(CostCenter costCenter) {
+        this.costCenter = costCenter;
+    }
 }

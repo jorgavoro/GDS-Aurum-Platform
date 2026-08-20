@@ -150,4 +150,17 @@ public class LedgerEntry extends AuditableEntity {
     public void setLineNumber(Integer lineNumber) {
         this.lineNumber = lineNumber;
     }
+    
+ // Modificación: Agregar atributo CostCenter opcional
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cost_center_id")
+    private CostCenter costCenter;
+
+    public CostCenter getCostCenter() {
+        return costCenter;
+    }
+
+    public void setCostCenter(CostCenter costCenter) {
+        this.costCenter = costCenter;
+    }
 }

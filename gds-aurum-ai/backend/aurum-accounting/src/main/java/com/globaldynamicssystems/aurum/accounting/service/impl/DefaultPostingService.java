@@ -83,7 +83,8 @@ public class DefaultPostingService implements PostingService {
             ledgerEntry.setCredit(line.getCredit());
             ledgerEntry.setDescription(line.getDescription() != null ? line.getDescription() : journalEntry.getDescription());
             ledgerEntry.setLineNumber(line.getLineNumber());
-
+         // Durante la generación del LedgerEntry en el Posting:
+            ledgerEntry.setCostCenter(line.getCostCenter());
             ledgerEntryRepository.save(ledgerEntry);
         }
 

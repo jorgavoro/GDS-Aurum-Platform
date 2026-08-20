@@ -16,6 +16,9 @@ public interface LedgerEntryRepository extends JpaRepository<LedgerEntry, Long> 
     List<LedgerEntry> findByFiscalPeriodId(Long fiscalPeriodId);
 
     List<LedgerEntry> findByAccountIdAndFiscalPeriodId(Long accountId, Long fiscalPeriodId);
+    
+ // Agregar método de consulta por CostCenter y FiscalPeriod
+    List<LedgerEntry> findByCostCenterIdAndFiscalPeriodId(Long costCenterId, Long fiscalPeriodId);
 
     boolean existsByJournalEntryId(Long journalEntryId);
 }

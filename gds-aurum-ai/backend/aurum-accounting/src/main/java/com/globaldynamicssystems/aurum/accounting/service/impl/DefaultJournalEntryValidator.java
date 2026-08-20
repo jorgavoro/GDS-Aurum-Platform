@@ -1,6 +1,8 @@
 package com.globaldynamicssystems.aurum.accounting.service.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.Account;
+import com.globaldynamicssystems.aurum.accounting.model.CostCenter;
+import com.globaldynamicssystems.aurum.accounting.model.CostCenterStatus;
 import com.globaldynamicssystems.aurum.accounting.model.FiscalPeriodStatus;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntry;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntryLine;
@@ -60,6 +62,29 @@ public class DefaultJournalEntryValidator implements JournalEntryValidator {
         if (journalEntry.getFiscalPeriod().getChartOfAccounts() != null &&
             !journalEntry.getFiscalPeriod().getChartOfAccounts().getId().equals(journalEntry.getChartOfAccounts().getId())) {
             throw new IllegalArgumentException("FiscalPeriod does not belong to the JournalEntry ChartOfAccounts");
+        }
+        
+     // Integración de validación de CostCenter en cada línea del JournalEntry:
+        if (journalEntry.getLines() != null) {
+            for (JournalEntryLine line : journalEntry.getLines()) {
+                CostCenter costCenter = line.getCostCenter();
+                if (costCenter != null) {
+                    if (costCenter.getId() == null) {
+                        throw new IllegalArgumentException("Associated CostCenter must exist.");
+                    }
+                    if (costCenter.getChartOfAccounts() == null || 
+                        !costCenter.getChartOfAccounts().getId().equals(journalEntry.getChartOfAccounts().getId())) {
+                        throw new IllegalArgumentException(
+                            "CostCenter must belong to the same ChartOfAccounts as the JournalEntry."
+                        );
+                    }
+                    if (!CostCenterStatus.ACTIVE.equals(costCenter.getStatus()) || !Boolean.TRUE.equals(costCenter.getActive())) {
+                        throw new IllegalArgumentException(
+                            "CostCenter with code '" + costCenter.getCode() + "' is INACTIVE and cannot be used in new entries."
+                        );
+                    }
+                }
+            }
         }
 
         Set<Integer> lineNumbers = new HashSet<>();
@@ -121,4 +146,6 @@ public class DefaultJournalEntryValidator implements JournalEntryValidator {
                     + balanceService.calculateCreditTotal(journalEntry) + ")");
         }
     }
+    
+    
 }
