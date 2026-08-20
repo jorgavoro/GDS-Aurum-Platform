@@ -1,0 +1,1596 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-022
+ACCOUNTING RULES ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-021 implementó:
+
+ACCOUNTING DATA QUALITY ENGINE
+
+capaz de detectar inconsistencias estructurales y contables.
+
+Sin embargo, existen reglas que no son simplemente problemas de
+integridad estructural.
+
+Ejemplos:
+
+- Una cuenta determinada solo puede utilizarse con cierto tipo de
+  documento.
+
+- Un JournalEntry de determinado tipo requiere una dimensión analítica.
+
+- Una cuenta requiere CostCenter.
+
+- Una cuenta requiere ProfitCenter.
+
+- Determinados movimientos no pueden registrarse en períodos cerrados.
+
+- Un importe superior a determinado límite requiere una condición
+  adicional.
+
+Estas reglas representan:
+
+BUSINESS ACCOUNTING POLICIES
+
+y no deben quedar distribuidas entre:
+
+JournalEntryService
+
+PostingService
+
+LedgerService
+
+AccountService
+
+ReportingService
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear un:
+
+ACCOUNTING RULES ENGINE
+
+que permita:
+
+1. Definir reglas contables.
+
+2. Activar o desactivar reglas.
+
+3. Ejecutar reglas sobre operaciones contables.
+
+4. Obtener resultados de validación.
+
+5. Clasificar violaciones.
+
+6. Mantener las reglas desacopladas del código transaccional.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Las reglas deben ser:
+
+DECLARATIVAS
+
+MODULARES
+
+REUTILIZABLES
+
+DETERMINÍSTICAS
+
+No implementar un lenguaje de scripting dentro del MVP.
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                  ACCOUNTING OPERATION
+                           │
+                           ▼
+                    RULES ENGINE
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+           ACCOUNT      JOURNAL       POSTING
+            RULES        RULES         RULES
+              │            │            │
+              └────────────┼────────────┘
+                           ▼
+                    RULE EVALUATION
+                           │
+                 ┌─────────┼─────────┐
+                 ▼         ▼         ▼
+               PASS      WARNING    ERROR
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingRuleSeverity.java
+
+Crear enum.
+
+Valores:
+
+ERROR
+
+WARNING
+
+INFO
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingRuleStatus.java
+
+Crear enum.
+
+Valores:
+
+ACTIVE
+
+INACTIVE
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingRuleType.java
+
+Crear enum.
+
+Valores:
+
+ACCOUNT
+
+JOURNAL_ENTRY
+
+JOURNAL_ENTRY_LINE
+
+POSTING
+
+PERIOD
+
+DIMENSION
+
+AMOUNT
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingRule.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String code
+
+String name
+
+String description
+
+AccountingRuleType type
+
+AccountingRuleSeverity severity
+
+AccountingRuleStatus status
+
+Integer priority
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLAS
+=========================================================================
+
+code:
+
+obligatorio
+
+name:
+
+obligatorio
+
+type:
+
+obligatorio
+
+severity:
+
+obligatorio
+
+status:
+
+obligatorio
+
+priority:
+
+default = 100
+
+=========================================================================
+
+REGLA DE PRIORIDAD
+=========================================================================
+
+Las reglas deben ejecutarse por:
+
+priority ASC
+
+Ejemplo:
+
+10
+
+20
+
+30
+
+100
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingRuleContext.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Representa el contexto sobre el cual se ejecuta una regla.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+JournalEntry journalEntry
+
+JournalEntryLine journalEntryLine
+
+Account account
+
+AnalyticalDimensionValue dimensionValue
+
+BigDecimal amount
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No utilizar Reflection para inspeccionar el contexto.
+
+El contexto contiene explícitamente las entidades necesarias.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingRuleResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String ruleCode
+
+AccountingRuleSeverity severity
+
+Boolean passed
+
+String message
+
+String fieldName
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+passed = true
+
+significa:
+
+la regla fue evaluada y cumplida.
+
+passed = false
+
+significa:
+
+la regla fue violada.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingRuleEvaluator.java
+
+Crear interfaz.
+
+Métodos:
+
+String getRuleCode();
+
+AccountingRuleType getRuleType();
+
+AccountingRuleResult evaluate(
+    AccountingRuleContext context
+);
+
+=========================================================================
+
+PRINCIPIO
+
+=========================================================================
+
+Cada regla concreta implementa:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingRuleRegistry.java
+
+Crear interfaz.
+
+Métodos:
+
+void register(
+    AccountingRuleEvaluator evaluator
+);
+
+Optional<AccountingRuleEvaluator> findByCode(
+    String ruleCode
+);
+
+List<AccountingRuleEvaluator> findAll();
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+InMemoryAccountingRuleRegistry.java
+
+Implementar:
+
+AccountingRuleRegistry
+
+Utilizar:
+
+ConcurrentHashMap
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No persistir los evaluadores.
+
+La registry contiene:
+
+implementaciones de reglas.
+
+No contiene:
+
+AccountingRuleEntity.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingRuleEngine.java
+
+Crear interfaz.
+
+Métodos:
+
+List<AccountingRuleResult> evaluate(
+    AccountingRuleContext context
+);
+
+List<AccountingRuleResult> evaluate(
+    AccountingRuleContext context,
+    List<String> ruleCodes
+);
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingRuleEngine.java
+
+Implementar:
+
+AccountingRuleEngine
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AccountingRuleRegistry
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+AccountingRuleContext
+
+        ↓
+
+AccountingRuleEngine
+
+        ↓
+
+AccountingRuleRegistry
+
+        ↓
+
+AccountingRuleEvaluator
+
+        ↓
+
+AccountingRuleResult
+
+=========================================================================
+
+REGLA DE EJECUCIÓN
+=========================================================================
+
+Solo ejecutar reglas:
+
+ACTIVE
+
+y:
+
+registradas.
+
+=========================================================================
+
+REGLA DE ORDEN
+=========================================================================
+
+Las reglas deben ejecutarse por:
+
+priority ASC
+
+=========================================================================
+
+REGLA DE FALLA
+=========================================================================
+
+Si una regla produce:
+
+ERROR
+
+el resultado debe incluir:
+
+passed = false
+
+No lanzar excepción para una violación normal de negocio.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Una violación de regla no es necesariamente una excepción técnica.
+
+Ejemplo:
+
+"CostCenter is required for account 510505."
+
+Debe producir:
+
+AccountingRuleResult
+
+y no:
+
+RuntimeException
+
+=========================================================================
+
+REGLA DE EXCEPCIONES TÉCNICAS
+=========================================================================
+
+Errores técnicos inesperados sí pueden generar excepciones.
+
+No ocultarlos dentro de:
+
+AccountingRuleResult.
+
+=========================================================================
+
+REGLAS MVP
+=========================================================================
+
+Crear las siguientes reglas concretas.
+
+=========================================================================
+
+RULE-001
+
+ACCOUNT_MUST_BE_ACTIVE
+
+Tipo:
+
+ACCOUNT
+
+Severidad:
+
+ERROR
+
+Regla:
+
+No permitir contabilización utilizando una Account INACTIVE.
+
+=========================================================================
+
+RULE-002
+
+FISCAL_PERIOD_MUST_BE_OPEN
+
+Tipo:
+
+PERIOD
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Una operación de posting requiere FiscalPeriod OPEN.
+
+=========================================================================
+
+RULE-003
+
+ACCOUNT_REQUIRES_COST_CENTER
+
+Tipo:
+
+ACCOUNT
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Si una cuenta requiere CostCenter y el movimiento no contiene
+CostCenter:
+
+FAIL.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Si el modelo actual de Account no posee:
+
+requiresCostCenter
+
+NO modificar Account de forma compleja.
+
+No inventar infraestructura adicional fuera del alcance.
+
+La regla debe implementarse únicamente si la capacidad ya existe
+en el modelo actual.
+
+=========================================================================
+
+RULE-004
+
+ACCOUNT_REQUIRES_PROFIT_CENTER
+
+Tipo:
+
+ACCOUNT
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Si una cuenta requiere ProfitCenter y el movimiento no contiene
+ProfitCenter:
+
+FAIL.
+
+=========================================================================
+
+RULE-005
+
+JOURNAL_ENTRY_MUST_BE_BALANCED
+
+Tipo:
+
+JOURNAL_ENTRY
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Total Debit == Total Credit.
+
+Utilizar:
+
+BigDecimal.compareTo()
+
+=========================================================================
+
+RULE-006
+
+LINE_MUST_HAVE_ACCOUNT
+
+Tipo:
+
+JOURNAL_ENTRY_LINE
+
+Severidad:
+
+ERROR
+
+Regla:
+
+JournalEntryLine debe tener Account.
+
+=========================================================================
+
+RULE-007
+
+LINE_MUST_HAVE_AMOUNT
+
+Tipo:
+
+JOURNAL_ENTRY_LINE
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Debit > 0
+
+o:
+
+Credit > 0
+
+=========================================================================
+
+RULE-008
+
+LINE_CANNOT_HAVE_BOTH_SIDES
+
+Tipo:
+
+JOURNAL_ENTRY_LINE
+
+Severidad:
+
+ERROR
+
+Regla:
+
+No permitir:
+
+Debit > 0
+
+y:
+
+Credit > 0
+
+=========================================================================
+
+RULE-009
+
+AMOUNT_LIMIT_WARNING
+
+Tipo:
+
+AMOUNT
+
+Severidad:
+
+WARNING
+
+Regla:
+
+Si el importe supera el límite configurado para la regla:
+
+WARNING.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+El límite de RULE-009 debe estar definido explícitamente en la
+configuración de la implementación.
+
+No crear:
+
+Dynamic Expression Language
+
+Groovy
+
+JavaScript
+
+SpEL arbitrario
+
+para MVP 1.
+
+=========================================================================
+
+RULE-010
+
+DIMENSION_MUST_BE_ACTIVE
+
+Tipo:
+
+DIMENSION
+
+Severidad:
+
+WARNING
+
+Regla:
+
+No utilizar una dimensión INACTIVE.
+
+=========================================================================
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+ActiveAccountRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+OpenFiscalPeriodRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+BalancedJournalEntryRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 15
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+JournalEntryLineAccountRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 16
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+JournalEntryLineAmountRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 17
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+JournalEntryLineBothSidesRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 18
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+AmountLimitWarningRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+ARCHIVO 19
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.rules
+
+Crear:
+
+ActiveDimensionRule.java
+
+Implementar:
+
+AccountingRuleEvaluator
+
+=========================================================================
+
+REGISTRO DE REGLAS
+=========================================================================
+
+DefaultAccountingRuleRegistry debe registrar:
+
+ActiveAccountRule
+
+OpenFiscalPeriodRule
+
+BalancedJournalEntryRule
+
+JournalEntryLineAccountRule
+
+JournalEntryLineAmountRule
+
+JournalEntryLineBothSidesRule
+
+AmountLimitWarningRule
+
+ActiveDimensionRule
+
+=========================================================================
+
+REGLA DE CONFIGURACIÓN
+=========================================================================
+
+El MVP utiliza:
+
+implementaciones Java
+
+para definir las reglas.
+
+No implementar todavía reglas almacenadas en base de datos.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+ACC-022 crea la arquitectura para reglas configurables.
+
+No significa que MVP 1 tenga un Rule Designer.
+
+La persistencia/configuración dinámica puede implementarse posteriormente.
+
+=========================================================================
+
+INTEGRACIÓN CON ACC-021
+=========================================================================
+
+ACC-021:
+
+Data Quality
+
+ACC-022:
+
+Business Accounting Rules
+
+No mezclar responsabilidades.
+
+=========================================================================
+
+DIFERENCIA
+
+=========================================================================
+
+ACC-021 pregunta:
+
+"¿Los datos son estructuralmente consistentes?"
+
+ACC-022 pregunta:
+
+"¿La operación cumple las políticas contables?"
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Account:
+
+510505
+
+Estado:
+
+ACTIVE
+
+FiscalPeriod:
+
+OPEN
+
+Debit:
+
+5000
+
+Credit:
+
+0
+
+CostCenter:
+
+IT
+
+Resultado:
+
+RULE-001:
+
+PASS
+
+RULE-002:
+
+PASS
+
+RULE-003:
+
+PASS
+
+RULE-005:
+
+PASS
+
+RULE-007:
+
+PASS
+
+RULE-008:
+
+PASS
+
+=========================================================================
+
+EJEMPLO DE VIOLACIÓN
+
+=========================================================================
+
+Account:
+
+510505
+
+requiere:
+
+CostCenter
+
+pero:
+
+CostCenter = null
+
+Resultado:
+
+RULE-003
+
+passed = false
+
+severity = ERROR
+
+message:
+
+"Account 510505 requires a CostCenter."
+
+=========================================================================
+
+EJEMPLO DE PERÍODO CERRADO
+=========================================================================
+
+FiscalPeriod:
+
+CLOSED
+
+Intent:
+
+POSTING
+
+Resultado:
+
+RULE-002
+
+passed = false
+
+severity = ERROR
+
+message:
+
+"FiscalPeriod is closed and cannot receive postings."
+
+=========================================================================
+
+EJEMPLO DE LÍNEA INVÁLIDA
+=========================================================================
+
+Debit:
+
+1000
+
+Credit:
+
+500
+
+Resultado:
+
+RULE-008
+
+passed = false
+
+severity = ERROR
+
+=========================================================================
+
+REGLA DE CONTEXTO
+=========================================================================
+
+El AccountingRuleContext debe ser suficiente para ejecutar una regla.
+
+No permitir que las reglas accedan directamente a:
+
+repositories
+
+EntityManager
+
+JDBC
+
+HTTP
+
+Controllers
+
+=========================================================================
+
+REGLA DE PUREZA
+=========================================================================
+
+AccountingRuleEvaluator debe comportarse como:
+
+Context
+
+↓
+
+Evaluation
+
+↓
+
+Result
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+AccountingRuleEntity
+
+AccountingRuleVersion
+
+AccountingRuleHistory
+
+RuleExecutionEntity
+
+RuleResultEntity
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Rule Designer
+
+Dynamic Rule UI
+
+Rule Database
+
+Expression Language
+
+Groovy Rules
+
+JavaScript Rules
+
+AI Generated Rules
+
+Machine Learning Rules
+
+Rule Versioning
+
+Rule Approval Workflow
+
+Rule Simulation UI
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe AccountingRule.
+
+2. Existe AccountingRuleEvaluator.
+
+3. Existe AccountingRuleRegistry.
+
+4. Existe AccountingRuleEngine.
+
+5. Las reglas pueden registrarse.
+
+6. Las reglas pueden localizarse por código.
+
+7. Las reglas ACTIVE se ejecutan.
+
+8. Las reglas INACTIVE no se ejecutan.
+
+9. Las reglas se ejecutan por prioridad.
+
+10. Se puede evaluar un JournalEntry.
+
+11. Se puede evaluar una JournalEntryLine.
+
+12. Se puede evaluar una Account.
+
+13. Se puede evaluar un FiscalPeriod.
+
+14. Se detectan JournalEntries no balanceados.
+
+15. Se detectan líneas sin Account.
+
+16. Se detectan líneas sin importe.
+
+17. Se detectan líneas con Debit y Credit simultáneos.
+
+18. Se detectan cuentas inactivas.
+
+19. Se detectan períodos cerrados.
+
+20. Se detectan dimensiones inactivas.
+
+21. Las violaciones producen AccountingRuleResult.
+
+22. Una violación de negocio no requiere RuntimeException.
+
+23. Los errores técnicos no se ocultan.
+
+24. No se modifican datos durante la evaluación.
+
+25. No se persisten resultados.
+
+26. No se utiliza Reflection.
+
+27. No existe SQL nativo.
+
+28. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+El Accounting Rules Engine debe quedar desacoplado del flujo de
+posting.
+
+La arquitectura debe permitir posteriormente:
+
+                    POSTING SERVICE
+                          │
+                          ▼
+                   RULES ENGINE
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+          RULE 001     RULE 002     RULE 003
+             │            │            │
+             └────────────┼────────────┘
+                          ▼
+                    RULE RESULTS
+                          │
+                 ┌────────┴────────┐
+                 ▼                 ▼
+               PASS              FAIL
+                 │                 │
+                 ▼                 ▼
+             CONTINUE            BLOCK
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+Con ACC-021 y ACC-022:
+
+                    ACCOUNTING
+                         │
+              ┌──────────┴──────────┐
+              ▼                     ▼
+        DATA QUALITY          BUSINESS RULES
+              │                     │
+              ▼                     ▼
+       STRUCTURAL VALIDITY    POLICY VALIDITY
+              │                     │
+              └──────────┬──────────┘
+                         ▼
+                  FINANCIAL ENGINES
+                         │
+                         ▼
+                    AURUM ENGINE
+                         │
+                         ▼
+                     AI AGENTS
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum ya no solo puede:
+
+registrar
+
+analizar
+
+comparar
+
+calcular ratios
+
+calcular cash flow
+
+detectar inconsistencias
+
+También puede evaluar si una operación cumple las reglas de negocio
+contable definidas para el sistema.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-023
+
+FINANCIAL KPI ENGINE
+
+Construir un motor de KPIs financieros normalizados que consolide
+métricas provenientes de Reporting, Profitability, Ratios, Cash Flow
+y Account Analysis, preparando un modelo financiero estructurado para
+su consumo por Aurum Engine y posteriormente por agentes de IA.
+
+=========================================================================
