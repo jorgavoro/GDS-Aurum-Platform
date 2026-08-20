@@ -1,0 +1,1454 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-025
+ACCOUNTING MVP INTEGRATION
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULOS
+
+aurum-accounting
+aurum-engine
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 → Analytical Reporting
+
+ACC-015 → Profitability
+
+ACC-016 → Financial Comparison
+
+ACC-017 → Financial Period Comparison
+
+ACC-018 → Account Financial Analysis
+
+ACC-019 → Financial Ratios
+
+ACC-020 → Cash Flow Analysis
+
+ACC-021 → Accounting Data Quality
+
+ACC-022 → Accounting Rules Engine
+
+ACC-023 → Financial KPI Engine
+
+ACC-024 → Accounting Query Model
+
+ACC-024 creó el contrato:
+
+AccountingQueryRequest
+AccountingQueryResult
+AccountingQueryService
+
+Este contrato permite representar capacidades financieras sin exponer
+directamente:
+
+JPA
+
+Repositories
+
+LedgerEntry
+
+Account
+
+JournalEntry
+
+Spring Data
+
+Database
+
+La siguiente etapa es conectar formalmente:
+
+aurum-engine
+
+con:
+
+aurum-accounting.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Integrar aurum-accounting dentro de aurum-engine utilizando una
+abstracción de aplicación.
+
+aurum-engine debe poder solicitar capacidades contables mediante:
+
+AccountingQueryService
+
+sin depender directamente de:
+
+Repositories
+
+Entities
+
+JPA
+
+Hibernate
+
+SQL
+
+Database
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Aurum Engine ORQUESTA.
+
+Aurum Accounting PROVEE CAPACIDADES.
+
+La relación debe ser:
+
+AURUM ENGINE
+      │
+      ▼
+ACCOUNTING APPLICATION PORT
+      │
+      ▼
+AURUM ACCOUNTING
+      │
+      ▼
+ACCOUNTING DOMAIN
+      │
+      ▼
+DATABASE
+
+=========================================================================
+
+REGLA DE DEPENDENCIAS
+=========================================================================
+
+Dependencia permitida:
+
+aurum-engine
+      ↓
+aurum-accounting
+
+Dependencia NO permitida:
+
+aurum-accounting
+      ↓
+aurum-engine
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+aurum-accounting nunca debe importar clases de:
+
+com.globaldynamicssystems.aurum.engine
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente donde corresponda.
+
+No utilizar EntityManager desde aurum-engine.
+
+No utilizar JDBC.
+
+No utilizar SQL.
+
+No exponer repositories.
+
+No exponer entidades JPA hacia aurum-engine.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear API HTTP.
+
+No crear Flyway.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Java 21.
+
+=========================================================================
+
+MÓDULO 1
+=========================================================================
+
+aurum-accounting
+
+Debe continuar siendo responsable de:
+
+Accounting Domain
+
+Accounting Services
+
+Financial Analysis
+
+Financial KPIs
+
+Accounting Query Model
+
+=========================================================================
+
+MÓDULO 2
+=========================================================================
+
+aurum-engine
+
+Debe ser responsable de:
+
+Orchestration
+
+Decision Flow
+
+Capability Invocation
+
+Metadata-driven execution
+
+Future AI Agent orchestration
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting
+
+Archivo:
+
+AccountingCapability.java
+
+Crear interfaz.
+
+Método:
+
+AccountingQueryResult execute(
+    AccountingQueryRequest request
+);
+
+=========================================================================
+
+OBJETIVO
+
+=========================================================================
+
+Esta interfaz representa una capacidad contable consumible por Engine.
+
+No debe contener:
+
+JPA
+
+Repository
+
+Spring Data
+
+SQL
+
+Database logic
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting.impl
+
+Archivo:
+
+AccountingCapabilityAdapter.java
+
+Implementar:
+
+AccountingCapability
+
+Anotación:
+
+@Component
+
+Dependencia:
+
+AccountingQueryService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+IMPLEMENTACIÓN
+
+=========================================================================
+
+execute(request)
+
+debe delegar directamente en:
+
+AccountingQueryService.execute(request)
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No duplicar lógica financiera.
+
+No recalcular:
+
+Revenue
+
+Expense
+
+Net Result
+
+Ratios
+
+Cash Flow
+
+KPIs
+
+Data Quality
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+Aurum Engine
+
+      ↓
+
+AccountingCapability
+
+      ↓
+
+AccountingCapabilityAdapter
+
+      ↓
+
+AccountingQueryService
+
+      ↓
+
+Accounting Services
+
+      ↓
+
+Accounting Data
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting
+
+Archivo:
+
+AccountingCapabilityType.java
+
+Crear enum.
+
+Valores:
+
+ACCOUNT
+
+PROFITABILITY
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+DATA_QUALITY
+
+COMPARISON
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting
+
+Archivo:
+
+AccountingCapabilityRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+AccountingCapabilityType capabilityType
+
+AccountingQueryRequest query
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting
+
+Archivo:
+
+AccountingCapabilityResponse.java
+
+Crear clase.
+
+Campos:
+
+AccountingCapabilityType capabilityType
+
+AccountingQueryResult result
+
+Boolean successful
+
+String message
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA SUCCESSFUL
+
+=========================================================================
+
+successful = true
+
+si la ejecución finaliza correctamente.
+
+successful = false
+
+si ocurre un error controlado de capacidad.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting
+
+Archivo:
+
+AccountingCapabilityExecutor.java
+
+Crear interfaz.
+
+Método:
+
+AccountingCapabilityResponse execute(
+    AccountingCapabilityRequest request
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting.impl
+
+Archivo:
+
+DefaultAccountingCapabilityExecutor.java
+
+Implementar:
+
+AccountingCapabilityExecutor
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+AccountingCapability
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO DEL EXECUTOR
+
+=========================================================================
+
+AccountingCapabilityRequest
+
+        ↓
+
+validate request
+
+        ↓
+
+AccountingCapability
+
+        ↓
+
+AccountingQueryService
+
+        ↓
+
+AccountingQueryResult
+
+        ↓
+
+AccountingCapabilityResponse
+
+=========================================================================
+
+REGLA DE VALIDACIÓN
+
+=========================================================================
+
+Si:
+
+request == null
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+capabilityType == null
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+query == null
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA DE CONSISTENCIA
+
+=========================================================================
+
+AccountingCapabilityType
+
+debe ser compatible con:
+
+AccountingQueryType.
+
+Ejemplo:
+
+KPI
+
+debe corresponder a:
+
+KPI.
+
+=========================================================================
+
+MAPEO
+
+=========================================================================
+
+ACCOUNT
+
+→ ACCOUNT
+
+PROFITABILITY
+
+→ PROFITABILITY
+
+RATIO
+
+→ RATIO
+
+CASH_FLOW
+
+→ CASH_FLOW
+
+KPI
+
+→ KPI
+
+DATA_QUALITY
+
+→ DATA_QUALITY
+
+COMPARISON
+
+→ COMPARISON
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting
+
+Archivo:
+
+AccountingCapabilityRegistry.java
+
+Crear interfaz.
+
+Métodos:
+
+void register(
+    AccountingCapabilityType type,
+    AccountingCapability capability
+);
+
+Optional<AccountingCapability> find(
+    AccountingCapabilityType type
+);
+
+List<AccountingCapabilityType> getAvailableCapabilities();
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting.impl
+
+Archivo:
+
+InMemoryAccountingCapabilityRegistry.java
+
+Implementar:
+
+AccountingCapabilityRegistry
+
+Utilizar:
+
+ConcurrentHashMap
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No persistir capabilities.
+
+No utilizar database.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.accounting.impl
+
+Archivo:
+
+DefaultAccountingCapabilityBootstrap.java
+
+Anotación:
+
+@Component
+
+Responsabilidad:
+
+registrar:
+
+AccountingCapability
+
+en:
+
+AccountingCapabilityRegistry
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Registrar inicialmente:
+
+ACCOUNTING
+
+como capacidad.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No crear un componente por cada:
+
+KPI
+
+Ratio
+
+Cash Flow
+
+Profitability
+
+porque:
+
+AccountingCapability
+
+ya representa el punto de integración.
+
+=========================================================================
+
+DEPENDENCIA MAVEN
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Debe depender de:
+
+aurum-accounting
+
+utilizando la dependencia Maven existente del reactor.
+
+No agregar dependencias directas hacia:
+
+Spring Data
+
+Hibernate
+
+JPA
+
+Database drivers
+
+desde aurum-engine.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+aurum-engine
+
+ya tiene:
+
+aurum-accounting
+
+como dependencia:
+
+NO modificar el pom.
+
+Si no existe:
+
+agregar únicamente:
+
+aurum-accounting
+
+como dependencia.
+
+=========================================================================
+
+NO MODIFICAR
+
+=========================================================================
+
+aurum-accounting
+
+domain entities
+
+repositories
+
+ledger
+
+financial services
+
+metadata entities
+
+=========================================================================
+
+REGLA SOBRE AURUM ACCOUNTING
+
+=========================================================================
+
+aurum-accounting sigue siendo completamente independiente de:
+
+aurum-engine.
+
+=========================================================================
+
+REGLA SOBRE AURUM ENGINE
+
+=========================================================================
+
+aurum-engine conoce:
+
+AccountingCapability
+
+AccountingCapabilityType
+
+AccountingCapabilityRequest
+
+AccountingCapabilityResponse
+
+AccountingCapabilityExecutor
+
+pero no necesita conocer:
+
+AccountRepository
+
+LedgerEntryRepository
+
+JournalEntryRepository
+
+=========================================================================
+
+REGLA SOBRE ENTIDADES
+
+=========================================================================
+
+No introducir:
+
+Account
+
+LedgerEntry
+
+JournalEntry
+
+JournalEntryLine
+
+FiscalPeriod
+
+ChartOfAccounts
+
+como campos dentro de:
+
+AccountingCapabilityRequest
+
+AccountingCapabilityResponse
+
+=========================================================================
+
+Debe utilizar:
+
+AccountingQueryRequest
+
+AccountingQueryResult.
+
+=========================================================================
+
+EJEMPLO 1
+
+=========================================================================
+
+Request:
+
+capabilityType:
+
+KPI
+
+query:
+
+chartOfAccountsId = 1
+
+fiscalPeriodId = 202701
+
+kpiTypes:
+
+REVENUE
+
+NET_RESULT
+
+NET_MARGIN
+
+=========================================================================
+
+ENGINE
+
+↓
+
+AccountingCapability
+
+↓
+
+AccountingQueryService
+
+=========================================================================
+
+RESULT
+
+=========================================================================
+
+Revenue:
+
+300000
+
+Net Result:
+
+120000
+
+Net Margin:
+
+40%
+
+=========================================================================
+
+EJEMPLO 2
+
+=========================================================================
+
+Request:
+
+capabilityType:
+
+RATIO
+
+query:
+
+chartOfAccountsId = 1
+
+fiscalPeriodId = 202701
+
+ratioTypes:
+
+CURRENT_RATIO
+
+DEBT_RATIO
+
+=========================================================================
+
+RESULT
+
+=========================================================================
+
+Current Ratio:
+
+2.10
+
+Debt Ratio:
+
+0.35
+
+=========================================================================
+
+EJEMPLO 3
+
+=========================================================================
+
+Request:
+
+capabilityType:
+
+DATA_QUALITY
+
+query:
+
+chartOfAccountsId = 1
+
+fiscalPeriodId = 202701
+
+=========================================================================
+
+RESULT
+
+=========================================================================
+
+errorCount:
+
+0
+
+warningCount:
+
+2
+
+valid:
+
+true
+
+=========================================================================
+
+REGLA DE ERROR
+
+=========================================================================
+
+Si:
+
+AccountingQueryService
+
+lanza:
+
+AccountingQueryException
+
+el executor debe devolver:
+
+successful = false
+
+message = excepción controlada.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No capturar:
+
+Throwable
+
+genéricamente.
+
+Capturar únicamente excepciones previstas.
+
+=========================================================================
+
+REGLA DE EXCEPCIÓN
+
+=========================================================================
+
+No convertir errores de programación en:
+
+successful = false.
+
+Ejemplo:
+
+NullPointerException
+
+no debe ocultarse.
+
+=========================================================================
+
+REGLA DE CONTRATO
+
+=========================================================================
+
+El contrato de integración debe ser:
+
+determinístico.
+
+Para el mismo:
+
+ChartOfAccounts
+
+FiscalPeriod
+
+Query
+
+debe producir el mismo resultado siempre que los datos contables no
+hayan cambiado.
+
+=========================================================================
+
+REGLA READ ONLY
+
+=========================================================================
+
+La ejecución de:
+
+AccountingCapability
+
+no debe modificar datos.
+
+No:
+
+save()
+
+delete()
+
+update()
+
+flush()
+
+=========================================================================
+
+REGLA DE THREAD SAFETY
+
+=========================================================================
+
+Registry debe utilizar:
+
+ConcurrentHashMap.
+
+Los servicios de Accounting deben continuar siendo stateless.
+
+No almacenar:
+
+AccountingQueryRequest
+
+AccountingQueryResult
+
+como estado mutable de singleton.
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+=========================================================================
+
+AI Agent
+
+LLM
+
+Prompt
+
+Tool Calling
+
+Natural Language Query
+
+REST
+
+GraphQL
+
+MCP
+
+WebSocket
+
+Event Bus
+
+Kafka
+
+RabbitMQ
+
+API Gateway
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+ACC-025 NO crea todavía el agente.
+
+Crea la capacidad que posteriormente podrá ser utilizada por:
+
+Aurum Agent Runtime.
+
+=========================================================================
+
+NO PERSISTIR
+
+=========================================================================
+
+No crear:
+
+AccountingCapabilityEntity
+
+CapabilityExecutionEntity
+
+CapabilityHistory
+
+CapabilityResultEntity
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+AccountingController
+
+AccountingRestController
+
+AccountingDto
+
+AccountingMapper
+
+AccountingRepository
+
+AccountingCapabilityRepository
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. aurum-engine puede consumir aurum-accounting.
+
+2. aurum-accounting no depende de aurum-engine.
+
+3. Existe AccountingCapability.
+
+4. Existe AccountingCapabilityAdapter.
+
+5. Existe AccountingCapabilityExecutor.
+
+6. Existe AccountingCapabilityRegistry.
+
+7. Existe AccountingCapabilityRequest.
+
+8. Existe AccountingCapabilityResponse.
+
+9. Engine puede ejecutar consultas ACCOUNT.
+
+10. Engine puede ejecutar consultas PROFITABILITY.
+
+11. Engine puede ejecutar consultas RATIO.
+
+12. Engine puede ejecutar consultas CASH_FLOW.
+
+13. Engine puede ejecutar consultas KPI.
+
+14. Engine puede ejecutar consultas DATA_QUALITY.
+
+15. Engine puede ejecutar consultas COMPARISON.
+
+16. No se exponen entidades JPA.
+
+17. No se exponen repositories.
+
+18. No se duplica lógica contable.
+
+19. No se modifica el Ledger.
+
+20. No se persisten resultados.
+
+21. Las capacidades son thread-safe.
+
+22. Los requests inválidos son rechazados.
+
+23. Los errores controlados producen una respuesta de capacidad.
+
+24. Los errores inesperados no se ocultan.
+
+25. aurum-engine no utiliza EntityManager.
+
+26. aurum-engine no utiliza JDBC.
+
+27. aurum-engine no utiliza SQL.
+
+28. No existe Reflection.
+
+29. No se utiliza Lombok.
+
+30. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+Antes:
+
+aurum-engine
+      │
+      └── Accounting Query Model
+
+Después:
+
+aurum-engine
+      │
+      ▼
+AccountingCapability
+      │
+      ▼
+AccountingCapabilityExecutor
+      │
+      ▼
+AccountingQueryService
+      │
+      ▼
+aurum-accounting
+      │
+      ▼
+Accounting Services
+      │
+      ▼
+Ledger
+
+=========================================================================
+
+NUEVA FRONTERA DEL SISTEMA
+=========================================================================
+
+                    AURUM ENGINE
+                         │
+                  ORCHESTRATION
+                         │
+          ┌──────────────┼──────────────┐
+          ▼              ▼              ▼
+      ACCOUNTING      METADATA       FUTURE ERP
+      CAPABILITY      CAPABILITY     CAPABILITIES
+          │
+          ▼
+   AURUM ACCOUNTING
+          │
+          ▼
+        LEDGER
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+A partir de ACC-025:
+
+aurum-accounting
+
+no es simplemente un módulo que contiene:
+
+Entities + Services + Repositories.
+
+Se convierte en una:
+
+ACCOUNTING BUSINESS CAPABILITY.
+
+Y:
+
+aurum-engine
+
+empieza a convertirse en:
+
+BUSINESS CAPABILITY ORCHESTRATOR.
+
+Esta separación será fundamental cuando incorporemos:
+
+Metadata
+
+Sales
+
+Purchasing
+
+Inventory
+
+Treasury
+
+CRM
+
+Projects
+
+HR
+
+y posteriormente:
+
+AI Agents.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-026
+
+ACCOUNTING CAPABILITY DISCOVERY
+
+Construir el mecanismo mediante el cual `aurum-engine` pueda descubrir
+dinámicamente qué capacidades contables están disponibles, qué tipos
+de consultas soportan y qué información requieren, preparando el
+terreno para un Engine orientado a capacidades y posteriormente para
+agentes autónomos.
+
+=========================================================================
