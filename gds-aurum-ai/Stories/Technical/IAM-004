@@ -1,0 +1,1877 @@
+=========================================================================
+HISTORIA DE USUARIO: IAM-004
+SECURITY CONTEXT & APPLICATION ACCESS
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - IAM
+
+MÓDULOS
+
+aurum-identity
+aurum-engine
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+IAM-001 creó la identidad interna:
+
+User
+
+IAM-002 creó:
+
+Role
+Permission
+UserRole
+RolePermission
+
+IAM-003 creó:
+
+Authorization Engine
+
+capaz de responder:
+
+ALLOW
+
+o
+
+DENY
+
+Sin embargo, el contexto de seguridad todavía no atraviesa
+formalmente la arquitectura de Aurum.
+
+El objetivo de IAM-004 es crear el contrato de seguridad que permitirá
+que:
+
+Authentication
+
+Security Context
+
+Authorization
+
+Capability Execution
+
+Business Modules
+
+trabajen desacoplados.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear un Security Context application-level que represente la
+identidad y autorización de una ejecución.
+
+El contexto debe poder viajar desde:
+
+Authentication
+
+hasta:
+
+Aurum Engine
+
+sin transportar entidades JPA.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Los módulos de negocio NO deben conocer:
+
+UserEntity
+
+RoleEntity
+
+PermissionEntity
+
+ExternalIdentityEntity
+
+AuthenticationEntity
+
+=========================================================================
+
+Los módulos deben conocer únicamente:
+
+SecurityContext
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                    AUTHENTICATION
+                          │
+                          ▼
+                  SECURITY CONTEXT
+                          │
+                          ▼
+                APPLICATION LAYER
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+        AUTHORIZATION   ENGINE      BUSINESS
+             │            │            │
+             ▼            ▼            ▼
+          ALLOW/DENY   CAPABILITY   ACCOUNTING
+                          │
+                          ▼
+                    DOMAIN SERVICES
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente cuando corresponda.
+
+Java 21.
+
+Constructor Injection.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear JWT.
+
+No crear OAuth2.
+
+No crear OIDC.
+
+No crear Google Login.
+
+No crear Microsoft Login.
+
+No crear Password Authentication.
+
+No crear SecurityFilter todavía.
+
+No crear TenantContext como entidad.
+
+No crear CompanyContext como entidad.
+
+=========================================================================
+
+PAQUETE
+=========================================================================
+
+MÓDULO:
+
+aurum-identity
+
+Paquete:
+
+com.globaldynamicssystems.aurum.identity.security
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+SecurityContext.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+NO es DTO REST.
+
+Campos:
+
+Long userId
+
+String username
+
+String email
+
+Set<String> roles
+
+Set<String> permissions
+
+Long tenantId
+
+Long companyId
+
+=========================================================================
+
+REGLA
+=========================================================================
+
+tenantId puede ser:
+
+null
+
+companyId puede ser:
+
+null
+
+en esta etapa.
+
+=========================================================================
+
+REGLA CREDENCIALES
+=========================================================================
+
+SecurityContext NO debe contener:
+
+password
+
+passwordHash
+
+salt
+
+accessToken
+
+refreshToken
+
+idToken
+
+clientSecret
+
+OAuth token
+
+=========================================================================
+
+REGLA INMUTABILIDAD
+=========================================================================
+
+SecurityContext debe ser:
+
+immutable.
+
+No utilizar setters.
+
+=========================================================================
+
+CONSTRUCCIÓN
+=========================================================================
+
+Utilizar constructor completo.
+
+Todos los valores deben quedar establecidos durante la creación.
+
+=========================================================================
+
+COLECCIONES
+=========================================================================
+
+roles
+
+y:
+
+permissions
+
+deben quedar protegidos contra modificación externa.
+
+Utilizar:
+
+Set.copyOf(...)
+
+cuando corresponda.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si roles == null:
+
+usar:
+
+Set.of()
+
+Si permissions == null:
+
+usar:
+
+Set.of()
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+Long getUserId();
+
+String getUsername();
+
+String getEmail();
+
+Set<String> getRoles();
+
+Set<String> getPermissions();
+
+Long getTenantId();
+
+Long getCompanyId();
+
+=========================================================================
+
+MÉTODOS DE UTILIDAD
+=========================================================================
+
+boolean hasRole(
+    String roleCode
+);
+
+boolean hasPermission(
+    String permissionCode
+);
+
+=========================================================================
+
+REGLA NORMALIZACIÓN
+
+=========================================================================
+
+hasRole()
+
+y:
+
+hasPermission()
+
+deben comparar de manera consistente con los códigos normalizados.
+
+Roles:
+
+uppercase
+
+Permissions:
+
+uppercase
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+SecurityContextFactory.java
+
+Mover/redefinir la interfaz creada conceptualmente en IAM-003.
+
+Método:
+
+SecurityContext create(
+    Long userId
+);
+
+=========================================================================
+
+RESPONSABILIDAD
+=========================================================================
+
+Construir un SecurityContext a partir de:
+
+User
+
+Roles
+
+Permissions.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+DefaultSecurityContextFactory.java
+
+Implementar:
+
+SecurityContextFactory
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+UserRepository
+
+UserRoleRepository
+
+RolePermissionRepository
+
+=========================================================================
+
+FLUJO
+=========================================================================
+
+userId
+
+   ↓
+
+UserRepository
+
+   ↓
+
+User
+
+   ↓
+
+UserRoleRepository
+
+   ↓
+
+Roles
+
+   ↓
+
+RolePermissionRepository
+
+   ↓
+
+Permissions
+
+   ↓
+
+SecurityContext
+
+=========================================================================
+
+REGLA USER
+=========================================================================
+
+Si User no existe:
+
+lanzar:
+
+UserNotFoundException
+
+=========================================================================
+
+REGLA STATUS
+=========================================================================
+
+Un usuario:
+
+DISABLED
+
+LOCKED
+
+DELETED
+
+no debe generar un SecurityContext operativo.
+
+Lanzar:
+
+InvalidSecurityContextException
+
+=========================================================================
+
+PENDING
+=========================================================================
+
+PENDING tampoco debe producir un SecurityContext autenticable.
+
+=========================================================================
+
+SOLO ACTIVE
+=========================================================================
+
+Un User:
+
+ACTIVE
+
+puede producir:
+
+SecurityContext.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+InvalidSecurityContextException.java
+
+Extender:
+
+RuntimeException.
+
+Constructores:
+
+vacío
+
+message
+
+message + cause
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+SecurityContextHolder.java
+
+Crear interfaz.
+
+Métodos:
+
+void setContext(
+    SecurityContext context
+);
+
+Optional<SecurityContext> getContext();
+
+void clear();
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Permitir que una ejecución de aplicación pueda acceder al
+SecurityContext actual.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No utilizar todavía:
+
+Spring Security SecurityContextHolder.
+
+Aurum debe mantener inicialmente su propia abstracción.
+
+=========================================================================
+
+RAZÓN
+=========================================================================
+
+El dominio de Aurum no debe quedar acoplado a una implementación
+específica de framework de seguridad.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+ThreadLocalSecurityContextHolder.java
+
+Implementar:
+
+SecurityContextHolder
+
+=========================================================================
+
+IMPLEMENTACIÓN
+
+=========================================================================
+
+Utilizar:
+
+ThreadLocal<SecurityContext>
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El contexto pertenece al:
+
+current execution thread.
+
+=========================================================================
+
+setContext(null)
+=========================================================================
+
+Debe limpiar el contexto.
+
+=========================================================================
+
+clear()
+=========================================================================
+
+Debe ejecutar:
+
+ThreadLocal.remove()
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No utilizar:
+
+static SecurityContext currentContext
+
+porque provocaría contaminación entre ejecuciones.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+SecurityContextService.java
+
+Crear interfaz.
+
+Métodos:
+
+void setContext(
+    SecurityContext context
+);
+
+Optional<SecurityContext> getContext();
+
+SecurityContext requireContext();
+
+void clearContext();
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+DefaultSecurityContextService.java
+
+Implementar:
+
+SecurityContextService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+SecurityContextHolder
+
+=========================================================================
+
+REGLA requireContext
+=========================================================================
+
+Si no existe contexto:
+
+lanzar:
+
+SecurityContextNotAvailableException
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+SecurityContextNotAvailableException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+ApplicationAccessService.java
+
+Crear interfaz.
+
+Métodos:
+
+boolean canAccess(
+    String capability,
+    String resource,
+    PermissionAction action
+);
+
+AuthorizationResult authorize(
+    String capability,
+    String resource,
+    PermissionAction action
+);
+
+=========================================================================
+
+RESPONSABILIDAD
+=========================================================================
+
+Traducir:
+
+SecurityContext
+
++
+
+operación solicitada
+
+en:
+
+AuthorizationRequest
+
+y delegar a:
+
+AuthorizationService.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+ApplicationAccessService NO implementa las reglas de autorización.
+
+Delegará en:
+
+AuthorizationService.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+DefaultApplicationAccessService.java
+
+Implementar:
+
+ApplicationAccessService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+SecurityContextService
+
+AuthorizationService
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+canAccess()
+
+      ↓
+
+SecurityContextService.requireContext()
+
+      ↓
+
+SecurityContext
+
+      ↓
+
+AuthorizationRequest
+
+      ↓
+
+AuthorizationService
+
+      ↓
+
+AuthorizationResult
+
+      ↓
+
+ALLOW / DENY
+
+=========================================================================
+
+REGLA CAN ACCESS
+=========================================================================
+
+Si:
+
+AuthorizationDecision == ALLOW
+
+devolver:
+
+true
+
+en cualquier otro caso:
+
+false.
+
+=========================================================================
+
+REGLA AUTHORIZE
+=========================================================================
+
+Debe devolver:
+
+AuthorizationResult
+
+completo.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No lanzar excepción ante un:
+
+DENY
+
+El DENY es una decisión válida.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+SecurityContextAware.java
+
+Crear interfaz.
+
+Método:
+
+SecurityContext getSecurityContext();
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No utilizar automáticamente esta interfaz en todas las entidades.
+
+Solo estará disponible para componentes que explícitamente necesiten
+el contexto.
+
+=========================================================================
+
+INTEGRACIÓN CON AURUM ENGINE
+=========================================================================
+
+Modificar:
+
+CapabilityRequest
+
+para soportar:
+
+SecurityContext.
+
+=========================================================================
+
+NUEVO CAMPO
+
+=========================================================================
+
+SecurityContext securityContext
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El campo debe ser opcional en esta etapa para mantener compatibilidad
+con ejecuciones internas existentes.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No copiar:
+
+userId
+
+roles
+
+permissions
+
+tenantId
+
+companyId
+
+individualmente dentro de CapabilityRequest.
+
+Debe utilizarse:
+
+SecurityContext.
+
+=========================================================================
+
+ARQUITECTURA
+
+ANTES:
+
+CapabilityRequest
+
+    ├── capabilityCode
+    └── parameters
+
+
+DESPUÉS:
+
+CapabilityRequest
+
+    ├── capabilityCode
+    ├── parameters
+    └── securityContext
+
+=========================================================================
+
+INTEGRACIÓN CON CAPABILITY EXECUTOR
+=========================================================================
+
+Modificar:
+
+DefaultCapabilityExecutor
+
+para realizar autorización antes de ejecutar una capability.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+CapabilityRequest
+
+        ↓
+
+SecurityContext
+
+        ↓
+
+Authorization
+
+        ↓
+
+ALLOW?
+     /     \
+   NO       YES
+   ↓         ↓
+ DENY     Capability
+             │
+             ▼
+          Execute
+
+=========================================================================
+
+REGLA CRÍTICA
+=========================================================================
+
+Si la capability tiene:
+
+securityContext == null
+
+NO debe asumir:
+
+"usuario autorizado".
+
+=========================================================================
+
+COMPORTAMIENTO MVP
+
+=========================================================================
+
+Si no existe SecurityContext:
+
+la ejecución externa debe ser rechazada.
+
+Sin embargo, debe existir una forma explícita para ejecuciones internas
+controladas.
+
+=========================================================================
+
+EXECUTION MODE
+=========================================================================
+
+Agregar a:
+
+CapabilityRequest
+
+el campo:
+
+ExecutionMode executionMode
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+ExecutionMode.java
+
+Enum:
+
+USER
+
+SYSTEM
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+USER:
+
+requiere SecurityContext.
+
+SYSTEM:
+
+puede ejecutarse sin SecurityContext.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+SYSTEM no significa:
+
+"bypass de seguridad universal".
+
+Las capabilities que posteriormente requieran autorización específica
+deben poder imponerla.
+
+=========================================================================
+
+REGLA DEFAULT
+
+=========================================================================
+
+Nuevo CapabilityRequest:
+
+ExecutionMode.USER
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No utilizar:
+
+ExecutionMode.SYSTEM
+
+desde Controllers.
+
+No utilizar:
+
+SYSTEM
+
+para saltarse permisos.
+
+=========================================================================
+
+INTEGRACIÓN CON ACCOUNTING
+=========================================================================
+
+No modificar:
+
+AccountingQueryService
+
+No modificar:
+
+AccountingQueryModel
+
+No modificar:
+
+Accounting entities.
+
+=========================================================================
+
+Accounting continuará recibiendo sus requests específicos.
+
+El SecurityContext permanece en:
+
+aurum-engine/application layer.
+
+=========================================================================
+
+REGLA DE CAPAS
+=========================================================================
+
+SecurityContext pertenece a:
+
+application/security.
+
+NO al:
+
+domain model.
+
+=========================================================================
+
+NO AGREGAR
+
+=========================================================================
+
+User
+
+Role
+
+Permission
+
+SecurityContext
+
+a entidades de Accounting.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+CORRECTO:
+
+CapabilityRequest
+    ↓
+SecurityContext
+    ↓
+AccountingCapabilityAdapter
+    ↓
+AccountingQueryRequest
+
+INCORRECTO:
+
+AccountingQueryRequest
+    ↓
+User
+    ↓
+Role
+    ↓
+Permission
+
+=========================================================================
+
+AUTORIZACIÓN DE CAPABILITY
+=========================================================================
+
+Antes de ejecutar:
+
+ACCOUNTING
+
+el Executor debe determinar qué operación está solicitando.
+
+=========================================================================
+
+NUEVO CAMPO
+
+=========================================================================
+
+CapabilityRequest debe soportar:
+
+String resource
+
+PermissionAction action
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+capabilityCode:
+
+ACCOUNTING
+
+resource:
+
+JOURNAL_ENTRY
+
+action:
+
+POST
+
+=========================================================================
+
+FLUJO COMPLETO
+
+=========================================================================
+
+CapabilityRequest
+
+capability:
+
+ACCOUNTING
+
+resource:
+
+JOURNAL_ENTRY
+
+action:
+
+POST
+
+securityContext:
+
+User 100
+
+        ↓
+
+CapabilityExecutor
+
+        ↓
+
+ApplicationAccessService
+
+        ↓
+
+AuthorizationService
+
+        ↓
+
+ALLOW
+
+        ↓
+
+AccountingCapabilityAdapter
+
+        ↓
+
+AccountingQueryService
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El Generic Capability Executor NO debe asumir:
+
+ACCOUNTING
+
+ni:
+
+JOURNAL_ENTRY.
+
+Utiliza los valores proporcionados en:
+
+CapabilityRequest.
+
+=========================================================================
+
+NO MODIFICAR
+
+=========================================================================
+
+Capability
+
+CapabilityRegistry
+
+CapabilityDescriptor
+
+CapabilityMetadata
+
+CapabilityDiscoveryService
+
+CapabilityMetadataService
+
+=========================================================================
+
+EXCEPCIÓN
+
+=========================================================================
+
+Se permite extender:
+
+CapabilityRequest
+
+para soportar:
+
+SecurityContext
+
+ExecutionMode
+
+resource
+
+action.
+
+=========================================================================
+
+SECURITY CONTEXT Y THREAD
+=========================================================================
+
+Cada ejecución debe:
+
+setContext()
+
+antes de ejecutar operaciones.
+
+y:
+
+clearContext()
+
+al finalizar.
+
+=========================================================================
+
+REGLA CRÍTICA
+
+=========================================================================
+
+Nunca dejar un SecurityContext en el ThreadLocal después de completar
+una ejecución.
+
+=========================================================================
+
+PATRÓN
+
+=========================================================================
+
+try {
+
+    securityContextService.setContext(context);
+
+    // execution
+
+} finally {
+
+    securityContextService.clearContext();
+
+}
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Esto será especialmente importante cuando posteriormente Aurum utilice:
+
+async
+
+parallel execution
+
+scheduled jobs
+
+agents
+
+message consumers.
+
+=========================================================================
+
+NO HACER TODAVÍA
+
+=========================================================================
+
+Async Security Context Propagation.
+
+Reactor Context.
+
+Virtual Thread Context Propagation.
+
+Distributed Security Context.
+
+JWT Context.
+
+HTTP Security Context.
+
+=========================================================================
+
+TESTS
+=========================================================================
+
+Crear pruebas unitarias para:
+
+SecurityContext
+
+SecurityContextFactory
+
+SecurityContextService
+
+ApplicationAccessService
+
+DefaultCapabilityExecutor
+
+=========================================================================
+
+TEST 1
+
+=========================================================================
+
+User ACTIVE
+
++
+
+SecurityContext válido
+
+Resultado:
+
+Context disponible.
+
+=========================================================================
+
+TEST 2
+
+=========================================================================
+
+User DISABLED
+
+Resultado:
+
+InvalidSecurityContextException.
+
+=========================================================================
+
+TEST 3
+
+=========================================================================
+
+No SecurityContext.
+
+USER execution.
+
+Resultado:
+
+DENY / ejecución rechazada.
+
+=========================================================================
+
+TEST 4
+
+=========================================================================
+
+No SecurityContext.
+
+SYSTEM execution.
+
+Resultado:
+
+permitido según reglas internas.
+
+=========================================================================
+
+TEST 5
+
+=========================================================================
+
+SecurityContext con:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+Request:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+Resultado:
+
+ALLOW.
+
+=========================================================================
+
+TEST 6
+
+=========================================================================
+
+SecurityContext sin:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+Request:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+Resultado:
+
+DENY.
+
+=========================================================================
+
+TEST 7
+
+=========================================================================
+
+Capability execution:
+
+ALLOW
+
+↓
+
+Capability.execute()
+
+debe ejecutarse.
+
+=========================================================================
+
+TEST 8
+
+=========================================================================
+
+Capability execution:
+
+DENY
+
+↓
+
+Capability.execute()
+
+NO debe ejecutarse.
+
+=========================================================================
+
+TEST 9
+
+=========================================================================
+
+Después de ejecución:
+
+SecurityContextHolder.getContext()
+
+debe devolver:
+
+empty.
+
+=========================================================================
+
+TEST 10
+
+=========================================================================
+
+hasPermission():
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+debe devolver:
+
+true
+
+cuando el SecurityContext contiene dicho permiso.
+
+=========================================================================
+
+TEST 11
+
+=========================================================================
+
+hasRole():
+
+ACCOUNTING_SUPERVISOR
+
+debe devolver:
+
+true
+
+cuando corresponda.
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+SecurityContextEntity
+
+SecuritySessionEntity
+
+AuthorizationContextEntity
+
+=========================================================================
+
+NO IMPLEMENTAR
+=========================================================================
+
+Login
+
+Logout
+
+Password
+
+Password Reset
+
+OAuth2
+
+OIDC
+
+Google
+
+Microsoft
+
+JWT
+
+Refresh Token
+
+MFA
+
+SSO
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe SecurityContext.
+
+2. SecurityContext es inmutable.
+
+3. SecurityContext no contiene credenciales.
+
+4. SecurityContext contiene userId.
+
+5. SecurityContext contiene username.
+
+6. SecurityContext contiene email.
+
+7. SecurityContext contiene roles.
+
+8. SecurityContext contiene permissions.
+
+9. SecurityContext soporta tenantId.
+
+10. SecurityContext soporta companyId.
+
+11. Existe SecurityContextFactory.
+
+12. User ACTIVE puede generar SecurityContext.
+
+13. User PENDING no puede generar SecurityContext operativo.
+
+14. User LOCKED no puede generar SecurityContext.
+
+15. User DISABLED no puede generar SecurityContext.
+
+16. User DELETED no puede generar SecurityContext.
+
+17. Existe SecurityContextHolder.
+
+18. Existe implementación ThreadLocal.
+
+19. Existe SecurityContextService.
+
+20. Existe ApplicationAccessService.
+
+21. ApplicationAccessService delega en AuthorizationService.
+
+22. DENY no se convierte en excepción técnica.
+
+23. CapabilityRequest soporta SecurityContext.
+
+24. CapabilityRequest soporta ExecutionMode.
+
+25. CapabilityRequest soporta resource.
+
+26. CapabilityRequest soporta action.
+
+27. USER execution requiere SecurityContext.
+
+28. SYSTEM execution puede operar sin SecurityContext.
+
+29. DefaultCapabilityExecutor autoriza antes de ejecutar.
+
+30. Si authorization == DENY, capability NO se ejecuta.
+
+31. Si authorization == ALLOW, capability puede ejecutarse.
+
+32. SecurityContext se limpia al finalizar la ejecución.
+
+33. Accounting no depende de User.
+
+34. Accounting no depende de Role.
+
+35. Accounting no depende de Permission.
+
+36. aurum-engine no depende de entidades JPA de Identity.
+
+37. No se implementa autenticación.
+
+38. No se implementa Google.
+
+39. No se implementa Microsoft.
+
+40. No se implementa OAuth/OIDC.
+
+41. No se implementa JWT.
+
+42. No se utiliza Lombok.
+
+43. No se utiliza Reflection.
+
+44. El proyecto compila con Java 21.
+
+45. Existen pruebas unitarias de ALLOW y DENY.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+                 AUTHENTICATED USER
+                         │
+                         ▼
+                 SECURITY CONTEXT
+                         │
+                         ▼
+                APPLICATION LAYER
+                         │
+             ┌───────────┼───────────┐
+             ▼           ▼           ▼
+       AUTHORIZATION   ENGINE      SERVICES
+             │           │
+             ▼           ▼
+          ALLOW/DENY   CAPABILITY
+                         │
+                         ▼
+                    ACCOUNTING
+
+=========================================================================
+
+EVOLUCIÓN IAM
+=========================================================================
+
+IAM-001
+
+INTERNAL IDENTITY
+
+        ↓
+
+IAM-002
+
+ROLE & PERMISSION MODEL
+
+        ↓
+
+IAM-003
+
+AUTHORIZATION ENGINE
+
+        ↓
+
+IAM-004
+
+SECURITY CONTEXT & APPLICATION ACCESS
+
+        ↓
+
+IAM-005
+
+LOCAL AUTHENTICATION
+
+        ↓
+
+IAM-006
+
+GOOGLE OIDC
+
+        ↓
+
+IAM-007
+
+MICROSOFT OIDC
+
+        ↓
+
+IAM-008
+
+IDENTITY LINKING
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+El objetivo de IAM-004 es conseguir esta separación:
+
+IDENTITY
+
+"Quién es."
+
+        ↓
+
+AUTHENTICATION
+
+"Demostró quién es."
+
+        ↓
+
+SECURITY CONTEXT
+
+"Este es su contexto."
+
+        ↓
+
+AUTHORIZATION
+
+"Puede hacer esto."
+
+        ↓
+
+CAPABILITY
+
+"Ejecutamos la operación."
+
+        ↓
+
+BUSINESS DOMAIN
+
+"Accounting realiza el trabajo."
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+A partir de esta historia, una capability de Aurum no necesita conocer
+cómo se autenticó el usuario.
+
+Tampoco necesita conocer:
+
+UserEntity
+
+RoleEntity
+
+PermissionEntity
+
+ExternalIdentityEntity.
+
+Solo recibe:
+
+SecurityContext
+
+y opera dentro del contexto autorizado.
+
+Esto deja a Aurum preparado para que el mismo mecanismo funcione
+indistintamente cuando el usuario haya sido autenticado mediante:
+
+LOCAL LOGIN
+
+GOOGLE
+
+MICROSOFT
+
+o posteriormente:
+
+SAML
+
+LDAP
+
+ACTIVE DIRECTORY
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+IAM-005
+
+LOCAL AUTHENTICATION
+
+Implementar autenticación local de Aurum mediante credenciales
+internas, almacenamiento seguro de credenciales, login, validación de
+estado de usuario y generación del contexto autenticado, manteniendo
+el contrato preparado para posteriormente incorporar Google OIDC y
+Microsoft OIDC sin modificar el modelo interno de identidad.
+
+=========================================================================
