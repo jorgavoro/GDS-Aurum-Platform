@@ -1,0 +1,1387 @@
+# ACC-012 — Framework de Dimensiones Analíticas
+
+```text
+=========================================================================
+HISTORIA DE USUARIO: ACC-012
+FRAMEWORK DE DIMENSIONES ANALÍTICAS
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-011 introdujo CostCenter como primera dimensión analítica.
+
+El diseño actual permite:
+
+JournalEntryLine
+       │
+       ├── Account
+       │
+       └── CostCenter
+              │
+              ▼
+          LedgerEntry
+
+Este diseño funciona para una dimensión, pero no debe evolucionar
+agregando campos directamente a JournalEntryLine.
+
+El objetivo de ACC-012 es convertir CostCenter en la primera
+implementación de un framework genérico de dimensiones analíticas.
+
+La arquitectura futura deberá poder soportar:
+
+CostCenter
+ProfitCenter
+Project
+BusinessUnit
+Region
+Channel
+Segment
+
+sin modificar estructuralmente JournalEntryLine cada vez que aparezca
+una nueva dimensión.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar un framework genérico para representar dimensiones
+analíticas asociadas a movimientos contables.
+
+La dimensión debe poder identificarse mediante:
+
+dimension type
+dimension id
+dimension code
+dimension name
+
+La arquitectura debe permitir que una JournalEntryLine tenga:
+
+0..N dimensiones analíticas.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+NO hacer esto:
+
+JournalEntryLine
+ ├── costCenter
+ ├── profitCenter
+ ├── project
+ ├── businessUnit
+ └── region
+
+En su lugar:
+
+JournalEntryLine
+       │
+       ▼
+AnalyticalDimensionValue
+       │
+       ├── COST_CENTER
+       ├── PROFIT_CENTER
+       ├── PROJECT
+       └── ...
+
+=========================================================================
+
+DECISIÓN ARQUITECTÓNICA
+
+=========================================================================
+
+Las dimensiones analíticas son datos transaccionales asociados a la
+línea contable.
+
+Por tanto:
+
+Account
+
+define la dimensión contable.
+
+AnalyticalDimensionValue
+
+define una dimensión analítica.
+
+FiscalPeriod
+
+define la dimensión temporal.
+
+LedgerEntry
+
+conserva la información transaccional contabilizada.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal para importes.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalDimensionType.java
+
+Reemplazar la implementación anterior.
+
+Valores:
+
+COST_CENTER
+
+PROFIT_CENTER
+
+PROJECT
+
+BUSINESS_UNIT
+
+REGION
+
+CHANNEL
+
+SEGMENT
+
+IMPORTANTE:
+
+Esta historia solamente implementa comportamiento real para:
+
+COST_CENTER
+
+Los demás tipos quedan preparados arquitectónicamente pero no
+requieren entidades específicas en esta historia.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AnalyticalDimensionValue.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_analytical_dimension_value
+
+Campos:
+
+Long id
+
+AnalyticalDimensionType dimensionType
+
+Long referenceId
+
+String code
+
+String name
+
+Boolean active
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+dimensionType:
+
+obligatorio
+
+referenceId:
+
+obligatorio
+
+code:
+
+obligatorio
+
+name:
+
+obligatorio
+
+active:
+
+obligatorio
+
+=========================================================================
+
+REGLA DE REFERENCE ID
+
+=========================================================================
+
+referenceId identifica la entidad concreta correspondiente a la
+dimensión.
+
+Para:
+
+COST_CENTER
+
+referenceId corresponde a:
+
+CostCenter.id
+
+No utilizar relaciones JPA polimórficas.
+
+No utilizar:
+
+Object
+
+No utilizar:
+
+@Entity abstract
+
+No utilizar:
+
+@Any
+
+No utilizar:
+
+Reflection
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+JournalEntryLineDimension.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_journal_entry_line_dimension
+
+Campos:
+
+Long id
+
+JournalEntryLine journalEntryLine
+
+AnalyticalDimensionValue dimension
+
+=========================================================================
+
+RELACIONES
+
+=========================================================================
+
+@ManyToOne(fetch = FetchType.LAZY)
+
+JournalEntryLine:
+
+@JoinColumn(
+    name = "journal_entry_line_id",
+    nullable = false
+)
+
+AnalyticalDimensionValue:
+
+@JoinColumn(
+    name = "dimension_value_id",
+    nullable = false
+)
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Una JournalEntryLine puede tener:
+
+0..N
+
+JournalEntryLineDimension.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Modificar:
+
+JournalEntryLine.java
+
+Eliminar:
+
+CostCenter costCenter
+
+Agregar:
+
+List<JournalEntryLineDimension> dimensions
+
+Relación:
+
+@OneToMany(
+    mappedBy = "journalEntryLine",
+    cascade = CascadeType.ALL,
+    orphanRemoval = true,
+    fetch = FetchType.LAZY
+)
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+JournalEntryLine no debe conocer:
+
+CostCenter
+
+ProfitCenter
+
+Project
+
+BusinessUnit
+
+Region
+
+Channel
+
+Segment
+
+Debe conocer únicamente:
+
+JournalEntryLineDimension
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Modificar:
+
+LedgerEntry.java
+
+Eliminar:
+
+CostCenter costCenter
+
+Agregar:
+
+List<JournalEntryLineDimension> dimensions
+
+IMPORTANTE:
+
+LedgerEntry debe conservar las dimensiones existentes en el momento
+del Posting.
+
+No depender de la JournalEntryLine original para reconstruirlas.
+
+=========================================================================
+
+REGLA DE POSTING
+
+=========================================================================
+
+El flujo será:
+
+JournalEntryLine
+       │
+       ▼
+dimensions
+       │
+       ▼
+Posting
+       │
+       ▼
+LedgerEntry
+       │
+       ▼
+dimensions
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+AnalyticalDimensionValueRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<
+    AnalyticalDimensionValue,
+    Long
+>
+
+Métodos:
+
+Optional<AnalyticalDimensionValue>
+findByDimensionTypeAndReferenceId(
+    AnalyticalDimensionType dimensionType,
+    Long referenceId
+);
+
+List<AnalyticalDimensionValue>
+findByDimensionTypeAndActive(
+    AnalyticalDimensionType dimensionType,
+    Boolean active
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+JournalEntryLineDimensionRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<
+    JournalEntryLineDimension,
+    Long
+>
+
+Métodos:
+
+List<JournalEntryLineDimension>
+findByJournalEntryLineId(
+    Long journalEntryLineId
+);
+
+List<JournalEntryLineDimension>
+findByDimensionId(
+    Long dimensionId
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AnalyticalDimensionService.java
+
+Crear interfaz.
+
+Métodos:
+
+AnalyticalDimensionValue registerCostCenter(
+    CostCenter costCenter
+);
+
+Optional<AnalyticalDimensionValue> find(
+    AnalyticalDimensionType type,
+    Long referenceId
+);
+
+boolean isActive(
+    AnalyticalDimensionType type,
+    Long referenceId
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAnalyticalDimensionService.java
+
+Implementar:
+
+AnalyticalDimensionService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AnalyticalDimensionValueRepository
+
+CostCenterRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA registerCostCenter()
+
+=========================================================================
+
+1. CostCenter obligatorio.
+
+2. CostCenter debe tener id.
+
+3. CostCenter debe estar ACTIVE.
+
+4. CostCenter.active debe ser true.
+
+5. Buscar si ya existe:
+
+   dimensionType = COST_CENTER
+
+   referenceId = costCenter.id
+
+6. Si existe:
+
+   devolver el existente.
+
+7. Si no existe:
+
+   crear AnalyticalDimensionValue.
+
+=========================================================================
+
+REGLA DE IDEMPOTENCIA
+
+=========================================================================
+
+Registrar dos veces el mismo CostCenter no debe crear dos
+AnalyticalDimensionValue.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+JournalEntryDimensionService.java
+
+Crear interfaz.
+
+Métodos:
+
+void addDimension(
+    Long journalEntryLineId,
+    AnalyticalDimensionType type,
+    Long referenceId
+);
+
+void removeDimension(
+    Long journalEntryLineId,
+    AnalyticalDimensionType type,
+    Long referenceId
+);
+
+List<JournalEntryLineDimension> findDimensions(
+    Long journalEntryLineId
+);
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultJournalEntryDimensionService.java
+
+Implementar:
+
+JournalEntryDimensionService
+
+Dependencias:
+
+JournalEntryLineRepository
+
+JournalEntryLineDimensionRepository
+
+AnalyticalDimensionService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS addDimension()
+
+=========================================================================
+
+1. JournalEntryLine debe existir.
+
+2. type obligatorio.
+
+3. referenceId obligatorio.
+
+4. La dimensión debe existir.
+
+5. La dimensión debe estar activa.
+
+6. No duplicar la misma dimensión.
+
+7. Agregar JournalEntryLineDimension.
+
+=========================================================================
+
+REGLA DE DUPLICACIÓN
+
+=========================================================================
+
+No permitir:
+
+JournalEntryLine
+
+DIMENSION = COST_CENTER
+REFERENCE = 100
+
+dos veces.
+
+=========================================================================
+
+REGLA removeDimension()
+
+=========================================================================
+
+Eliminar solamente la asociación.
+
+No eliminar:
+
+CostCenter
+
+AnalyticalDimensionValue
+
+No eliminar información maestra.
+
+=========================================================================
+
+VALIDACIÓN DEL JOURNAL ENTRY
+
+=========================================================================
+
+Modificar:
+
+DefaultJournalEntryValidator
+
+Agregar validación de dimensions.
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+Para cada:
+
+JournalEntryLineDimension
+
+debe cumplirse:
+
+1. dimension != null
+
+2. dimension.dimensionType != null
+
+3. dimension.referenceId != null
+
+4. dimension.code != null
+
+5. dimension.active == true
+
+=========================================================================
+
+REGLA SOBRE COST CENTER
+
+=========================================================================
+
+Cuando:
+
+dimensionType == COST_CENTER
+
+debe existir un:
+
+CostCenter
+
+correspondiente a:
+
+referenceId
+
+y debe estar activo.
+
+=========================================================================
+
+REGLA SOBRE OTROS TIPOS
+
+=========================================================================
+
+PROFIT_CENTER
+
+PROJECT
+
+BUSINESS_UNIT
+
+REGION
+
+CHANNEL
+
+SEGMENT
+
+pueden existir como tipos declarativos.
+
+Pero no deben requerir una implementación específica en esta historia.
+
+No inventar entidades que todavía no existen.
+
+=========================================================================
+
+POSTING
+
+=========================================================================
+
+Modificar:
+
+DefaultPostingService
+
+Durante Posting:
+
+copiar todas las:
+
+JournalEntryLineDimension
+
+hacia el:
+
+LedgerEntry
+
+correspondiente.
+
+=========================================================================
+
+REGLA DE INMUTABILIDAD
+
+=========================================================================
+
+Una vez creado el LedgerEntry:
+
+las dimensiones contabilizadas representan el estado histórico
+del movimiento.
+
+Cambios posteriores sobre CostCenter no deben alterar LedgerEntry
+históricos.
+
+=========================================================================
+
+ANALYTICAL REPORTING
+
+=========================================================================
+
+Crear soporte para consultar Ledger por dimensión.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AnalyticalLedgerService.java
+
+Crear interfaz.
+
+Métodos:
+
+List<LedgerEntry> findByDimension(
+    AnalyticalDimensionType type,
+    Long referenceId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateDebit(
+    AnalyticalDimensionType type,
+    Long referenceId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateCredit(
+    AnalyticalDimensionType type,
+    Long referenceId,
+    Long fiscalPeriodId
+);
+
+BigDecimal calculateBalance(
+    AnalyticalDimensionType type,
+    Long referenceId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAnalyticalLedgerService.java
+
+Implementar:
+
+AnalyticalLedgerService
+
+Dependencia:
+
+LedgerEntryRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Las consultas deben filtrarse por:
+
+dimension type
+
+reference id
+
+fiscal period
+
+No mezclar períodos.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+Modificar:
+
+LedgerEntryRepository
+
+Agregar métodos necesarios para consultar movimientos por:
+
+AnalyticalDimensionType
+
+referenceId
+
+fiscalPeriodId
+
+La implementación debe utilizar Spring Data JPA.
+
+No utilizar SQL nativo.
+
+=========================================================================
+
+REGLA DE BIGDECIMAL
+
+=========================================================================
+
+Los cálculos deben utilizar:
+
+BigDecimal.ZERO
+
+add()
+
+subtract()
+
+compareTo()
+
+No utilizar:
+
+double
+
+float
+
+=========================================================================
+
+REGLA DE ACCOUNTING REPORTS
+
+=========================================================================
+
+Los reportes financieros globales:
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+no deben cambiar su resultado por la existencia de dimensiones.
+
+Las dimensiones representan una clasificación analítica adicional.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Account:
+
+510505
+Expense
+
+JournalEntryLine:
+
+Debit = 10000
+
+Dimensions:
+
+COST_CENTER = IT
+
+=========================================================================
+
+LEDGER
+
+=========================================================================
+
+LedgerEntry:
+
+Account = 510505
+
+Debit = 10000
+
+Dimension:
+
+COST_CENTER / IT
+
+=========================================================================
+
+CONSULTA
+
+=========================================================================
+
+CostCenter:
+
+IT
+
+FiscalPeriod:
+
+2027-01
+
+Resultado:
+
+Debit = 10000
+
+Credit = 0
+
+Balance = 10000
+
+=========================================================================
+
+MULTIPLES DIMENSIONES
+
+=========================================================================
+
+Una línea puede contener:
+
+COST_CENTER = IT
+
+PROFIT_CENTER = SERVICES
+
+PROJECT = PROJECT-001
+
+REGION = LATAM
+
+La línea continúa siendo:
+
+una única transacción contable.
+
+=========================================================================
+
+NO INTERPRETAR DIMENSIONES COMO DISTRIBUCIÓN
+
+=========================================================================
+
+Si una línea tiene:
+
+Debit = 10000
+
+y:
+
+CostCenter = IT
+ProfitCenter = SERVICES
+
+NO significa:
+
+IT = 10000
+
+SERVICES = 10000
+
+significa que ambas dimensiones describen el mismo movimiento:
+
+10000
+
+No duplicar importes.
+
+=========================================================================
+
+REGLA DE CONSISTENCIA
+
+=========================================================================
+
+Una dimensión es un atributo analítico del movimiento.
+
+No representa una nueva partida contable.
+
+Por tanto:
+
+una JournalEntryLine
+
+tiene:
+
+un debit
+
+un credit
+
+y:
+
+0..N dimensiones.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+FiscalYearClosing
+
+OpeningBalance
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+ProfitCenter Entity
+
+Project Entity
+
+BusinessUnit Entity
+
+Region Entity
+
+Channel Entity
+
+Segment Entity
+
+Dimension Hierarchy
+
+Dimension Allocation
+
+Dimension Weighting
+
+Dimension Splitting
+
+Budget Dimensions
+
+Tax Dimensions
+
+Inventory Dimensions
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. JournalEntryLine soporta 0..N dimensiones.
+
+2. JournalEntryLine no contiene CostCenter directamente.
+
+3. CostCenter se representa mediante AnalyticalDimensionValue.
+
+4. Una dimensión puede asociarse a una JournalEntryLine.
+
+5. No se permiten dimensiones duplicadas.
+
+6. Solo dimensiones activas pueden asociarse a nuevas líneas.
+
+7. Posting conserva todas las dimensiones.
+
+8. LedgerEntry conserva el estado histórico de las dimensiones.
+
+9. Cambiar posteriormente un CostCenter no modifica Ledger histórico.
+
+10. Se puede consultar Ledger por dimensión.
+
+11. Se pueden calcular débitos por dimensión.
+
+12. Se pueden calcular créditos por dimensión.
+
+13. Se puede calcular saldo por dimensión.
+
+14. Se puede asociar más de una dimensión a una misma línea.
+
+15. Las dimensiones no duplican importes.
+
+16. Trial Balance continúa funcionando sin cambios.
+
+17. Balance Sheet continúa funcionando sin cambios.
+
+18. Income Statement continúa funcionando sin cambios.
+
+19. No se agregan columnas específicas de dimensiones a
+    JournalEntryLine.
+
+20. No existe SQL nativo.
+
+21. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+JournalEntryLine representa una transacción.
+
+Account representa clasificación contable.
+
+AnalyticalDimensionValue representa clasificación analítica.
+
+FiscalPeriod representa clasificación temporal.
+
+LedgerEntry representa la verdad histórica contabilizada.
+
+Las dimensiones no deben convertirse en parte rígida del modelo
+contable.
+
+=========================================================================
+
+MODELO FINAL
+
+                    JOURNAL ENTRY
+                          │
+                          ▼
+                  JOURNAL ENTRY LINE
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+           ACCOUNT             DIMENSIONS
+              │                       │
+              │             ┌─────────┼─────────┐
+              │             ▼         ▼         ▼
+              │        COST CENTER PROJECT PROFIT CENTER
+              │
+              └──────────────┬─────────────────┘
+                             ▼
+                           POSTING
+                             │
+                             ▼
+                          LEDGER
+                             │
+               ┌─────────────┴─────────────┐
+               ▼                           ▼
+        FINANCIAL REPORTS          ANALYTICAL REPORTS
+
+=========================================================================
+
+EVOLUCIÓN PREVISTA
+
+=========================================================================
+
+ACC-011
+
+CostCenter
+
+        ↓
+
+ACC-012
+
+Analytical Dimension Framework
+
+        ↓
+
+FUTURO
+
+ProfitCenter
+Project
+BusinessUnit
+Region
+Channel
+Segment
+
+sin modificar:
+
+JournalEntryLine
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-013
+
+PROFIT CENTER
+
+La siguiente historia puede implementar ProfitCenter como la segunda
+dimensión real utilizando el framework creado en ACC-012, demostrando
+que agregar una nueva dimensión no requiere modificar estructuralmente
+JournalEntryLine.
+=========================================================================
+```
+
+**Con ACC-012 hay un cambio arquitectónico importante:** dejamos de diseñar el ERP como un conjunto de funcionalidades contables aisladas y empezamos a construir un **motor contable extensible**. Eso es precisamente lo que necesitaremos después para conectar Aurum con el `aurum-engine` y, más adelante, con agentes de IA sin acoplarlos a clases específicas como `CostCenter`.
