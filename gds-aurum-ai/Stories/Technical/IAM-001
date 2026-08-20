@@ -1,0 +1,1444 @@
+=========================================================================
+HISTORIA DE USUARIO: IAM-001
+INTERNAL USER IDENTITY MODEL
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - IAM
+
+MÓDULO
+
+aurum-identity
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+Aurum terminó el primer corte funcional de Accounting Core.
+
+La siguiente etapa es incorporar Identity & Access Management (IAM).
+
+Aurum debe tener una identidad interna propia para cada usuario.
+
+La identidad interna NO debe depender de:
+
+Google
+
+Microsoft
+
+GitHub
+
+LDAP
+
+Active Directory
+
+OAuth Provider
+
+OpenID Connect Provider
+
+La identidad externa únicamente será un mecanismo de autenticación.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear el modelo interno de usuario de Aurum.
+
+El modelo debe permitir posteriormente:
+
+1. Login local.
+
+2. Login mediante Google.
+
+3. Login mediante Microsoft.
+
+4. Vinculación de múltiples identidades externas.
+
+5. Roles.
+
+6. Permisos.
+
+7. Tenant context.
+
+8. Company context.
+
+9. Security context.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Aurum User es la identidad interna.
+
+External Identity es la identidad proporcionada por un Identity Provider.
+
+Ejemplo:
+
+Google Account
+      │
+      ▼
+External Identity
+      │
+      ▼
+Aurum User
+      │
+      ├── Tenant
+      ├── Company
+      ├── Roles
+      └── Permissions
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+=========================================================================
+
+NO utilizar:
+
+email
+
+como identificador primario del usuario.
+
+El usuario debe tener un identificador interno inmutable.
+
+=========================================================================
+
+ARQUITECTURA
+
+aurum-identity
+      │
+      ├── User
+      │
+      ├── ExternalIdentity
+      │
+      └── UserStatus
+             │
+             ▼
+       Future Authentication
+             │
+       ┌─────┴─────┐
+       ▼           ▼
+    Google      Microsoft
+       │           │
+       └─────┬─────┘
+             ▼
+        Aurum User
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+Utilizar JPA.
+
+Utilizar Spring Data JPA.
+
+Java 21.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear JWT todavía.
+
+No crear OAuth todavía.
+
+No crear OIDC todavía.
+
+No crear Password Authentication todavía.
+
+No crear Roles todavía.
+
+No crear Permissions todavía.
+
+No crear Tenant todavía.
+
+No crear Company todavía.
+
+=========================================================================
+
+MÓDULO
+=========================================================================
+
+Crear:
+
+aurum-identity
+
+Debe pertenecer al reactor Maven principal.
+
+=========================================================================
+
+PAQUETE BASE
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity
+
+=========================================================================
+
+PAQUETE MODEL
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity.model
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+UserStatus.java
+
+Crear enum.
+
+Valores:
+
+PENDING
+
+ACTIVE
+
+LOCKED
+
+DISABLED
+
+DELETED
+
+=========================================================================
+
+SIGNIFICADO
+=========================================================================
+
+PENDING
+
+Usuario creado pero todavía no habilitado.
+
+ACTIVE
+
+Usuario habilitado para autenticación.
+
+LOCKED
+
+Usuario temporalmente bloqueado.
+
+DISABLED
+
+Usuario deshabilitado.
+
+DELETED
+
+Usuario eliminado lógicamente.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+User.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+=========================================================================
+
+TABLA
+
+gds_user
+
+=========================================================================
+
+CAMPOS
+
+Long id
+
+String username
+
+String email
+
+String firstName
+
+String lastName
+
+UserStatus status
+
+Boolean emailVerified
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+id:
+
+Primary Key.
+
+username:
+
+obligatorio.
+
+email:
+
+obligatorio.
+
+firstName:
+
+obligatorio.
+
+lastName:
+
+obligatorio.
+
+status:
+
+obligatorio.
+
+emailVerified:
+
+obligatorio.
+
+=========================================================================
+
+REGLA USERNAME
+
+=========================================================================
+
+username debe ser:
+
+unique
+
+nullable = false
+
+length = 100
+
+=========================================================================
+
+REGLA EMAIL
+
+=========================================================================
+
+email debe ser:
+
+unique
+
+nullable = false
+
+length = 255
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Aunque email sea unique actualmente:
+
+NO utilizar email como identidad primaria.
+
+=========================================================================
+
+REGLA EMAIL NORMALIZATION
+
+=========================================================================
+
+El email debe almacenarse normalizado.
+
+Ejemplo:
+
+Jorge@Example.COM
+
+debe almacenarse como:
+
+jorge@example.com
+
+=========================================================================
+
+REGLA USERNAME NORMALIZATION
+=========================================================================
+
+username debe almacenarse normalizado.
+
+Utilizar:
+
+lowercase
+
+sin espacios iniciales o finales.
+
+=========================================================================
+
+REGLA STATUS
+
+=========================================================================
+
+Nuevo usuario:
+
+PENDING
+
+por defecto.
+
+=========================================================================
+
+REGLA EMAIL VERIFIED
+
+=========================================================================
+
+Nuevo usuario:
+
+false
+
+por defecto.
+
+=========================================================================
+
+REGLA DE CONSTRUCTORES
+=========================================================================
+
+Crear:
+
+constructor vacío
+
+constructor completo
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA GETTERS / SETTERS
+=========================================================================
+
+Todos deben ser manuales.
+
+No utilizar:
+
+@Getter
+
+@Setter
+
+@Data
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+ExternalIdentity.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+=========================================================================
+
+TABLA
+
+gds_external_identity
+
+=========================================================================
+
+CAMPOS
+
+Long id
+
+User user
+
+String provider
+
+String subject
+
+String email
+
+Boolean active
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+provider:
+
+obligatorio.
+
+subject:
+
+obligatorio.
+
+email:
+
+opcional.
+
+active:
+
+obligatorio.
+
+user:
+
+obligatorio.
+
+=========================================================================
+
+REGLA PROVIDER
+
+=========================================================================
+
+Valores iniciales permitidos conceptualmente:
+
+LOCAL
+
+GOOGLE
+
+MICROSOFT
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No implementar todavía los proveedores.
+
+Solo preparar el modelo.
+
+=========================================================================
+
+REGLA SUBJECT
+
+=========================================================================
+
+subject representa el identificador único proporcionado por el Identity
+Provider.
+
+Para OIDC:
+
+subject = claim "sub".
+
+=========================================================================
+
+REGLA UNIQUE
+
+=========================================================================
+
+La combinación:
+
+provider + subject
+
+debe ser única.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+GOOGLE
+
++
+
+1234567890
+
+representa una identidad externa concreta.
+
+=========================================================================
+
+NO utilizar email como external identity key.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+UserRepository.java
+
+Paquete:
+
+com.globaldynamicssystems.aurum.identity.repository
+
+Extender:
+
+JpaRepository<User, Long>
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+Optional<User> findByUsername(
+    String username
+);
+
+Optional<User> findByEmail(
+    String email
+);
+
+boolean existsByUsername(
+    String username
+);
+
+boolean existsByEmail(
+    String email
+);
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No agregar consultas innecesarias.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+ExternalIdentityRepository.java
+
+Extender:
+
+JpaRepository<ExternalIdentity, Long>
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+Optional<ExternalIdentity> findByProviderAndSubject(
+    String provider,
+    String subject
+);
+
+List<ExternalIdentity> findByUserId(
+    Long userId
+);
+
+boolean existsByProviderAndSubject(
+    String provider,
+    String subject
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+UserService.java
+
+Paquete:
+
+com.globaldynamicssystems.aurum.identity.service
+
+Crear interfaz.
+
+Métodos:
+
+User create(
+    User user
+);
+
+Optional<User> findById(
+    Long id
+);
+
+Optional<User> findByUsername(
+    String username
+);
+
+Optional<User> findByEmail(
+    String email
+);
+
+User updateStatus(
+    Long id,
+    UserStatus status
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+DefaultUserService.java
+
+Implementar:
+
+UserService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+UserRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA CREATE
+
+=========================================================================
+
+Antes de crear:
+
+normalizar username
+
+normalizar email
+
+validar username
+
+validar email
+
+validar firstName
+
+validar lastName
+
+=========================================================================
+
+REGLA DUPLICATE USERNAME
+
+=========================================================================
+
+Si username ya existe:
+
+lanzar:
+
+UserAlreadyExistsException
+
+=========================================================================
+
+REGLA DUPLICATE EMAIL
+
+=========================================================================
+
+Si email ya existe:
+
+lanzar:
+
+UserAlreadyExistsException
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+ExternalIdentityService.java
+
+Crear interfaz.
+
+Métodos:
+
+ExternalIdentity link(
+    Long userId,
+    String provider,
+    String subject,
+    String email
+);
+
+Optional<User> findUserByExternalIdentity(
+    String provider,
+    String subject
+);
+
+List<ExternalIdentity> findByUserId(
+    Long userId
+);
+
+void unlink(
+    Long userId,
+    String provider,
+    String subject
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+DefaultExternalIdentityService.java
+
+Implementar:
+
+ExternalIdentityService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+ExternalIdentityRepository
+
+UserRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA LINK
+
+=========================================================================
+
+Antes de vincular:
+
+user debe existir.
+
+provider debe existir.
+
+subject debe existir.
+
+=========================================================================
+
+REGLA DUPLICATE EXTERNAL IDENTITY
+
+=========================================================================
+
+Si ya existe:
+
+provider + subject
+
+no crear una nueva identidad.
+
+Lanzar:
+
+ExternalIdentityAlreadyLinkedException
+
+=========================================================================
+
+REGLA USER
+
+=========================================================================
+
+Una ExternalIdentity solo puede pertenecer a:
+
+un User.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+UserAlreadyExistsException.java
+
+Crear:
+
+RuntimeException
+
+Constructores:
+
+UserAlreadyExistsException()
+
+UserAlreadyExistsException(String message)
+
+UserAlreadyExistsException(String message, Throwable cause)
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+ExternalIdentityAlreadyLinkedException.java
+
+Extender:
+
+RuntimeException
+
+Constructores:
+
+vacío
+
+message
+
+message + cause
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+UserNotFoundException.java
+
+Extender:
+
+RuntimeException
+
+Constructores:
+
+vacío
+
+message
+
+message + cause
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+ExternalIdentityNotFoundException.java
+
+Extender:
+
+RuntimeException
+
+Constructores:
+
+vacío
+
+message
+
+message + cause
+
+=========================================================================
+
+REGLA DE ESTADO
+=========================================================================
+
+Solo un usuario:
+
+ACTIVE
+
+puede ser utilizado posteriormente para autenticación.
+
+ACC-001 no implementa autenticación todavía.
+
+=========================================================================
+
+REGLA DE TRANSICIONES
+=========================================================================
+
+PENDING
+
+→ ACTIVE
+
+permitido.
+
+ACTIVE
+
+→ LOCKED
+
+permitido.
+
+ACTIVE
+
+→ DISABLED
+
+permitido.
+
+LOCKED
+
+→ ACTIVE
+
+permitido.
+
+DISABLED
+
+→ ACTIVE
+
+permitido.
+
+DELETED
+
+→ cualquier estado
+
+NO permitido.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No implementar todavía workflow de aprobación.
+
+Solo controlar consistencia de estados.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+UserStatusService.java
+
+Crear interfaz.
+
+Método:
+
+User changeStatus(
+    Long userId,
+    UserStatus status
+);
+
+=========================================================================
+
+ARCHIVO 15
+=========================================================================
+
+DefaultUserStatusService.java
+
+Implementar:
+
+UserStatusService
+
+Anotación:
+
+@Service
+
+Utilizar:
+
+UserRepository
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Debe validar las transiciones permitidas.
+
+=========================================================================
+
+RELACIÓN USER → EXTERNAL IDENTITY
+=========================================================================
+
+User:
+
+@OneToMany
+
+ExternalIdentity:
+
+@ManyToOne
+
+=========================================================================
+
+REGLA CASCADE
+
+=========================================================================
+
+NO utilizar:
+
+CascadeType.ALL
+
+en:
+
+User → ExternalIdentity
+
+en esta historia.
+
+Las identidades externas tienen ciclo de vida propio.
+
+=========================================================================
+
+REGLA ORPHAN REMOVAL
+=========================================================================
+
+No utilizar:
+
+orphanRemoval = true
+
+=========================================================================
+
+FETCH
+
+=========================================================================
+
+Utilizar:
+
+LAZY
+
+para ExternalIdentity.
+
+=========================================================================
+
+REGLA FOREIGN KEY
+
+=========================================================================
+
+gds_external_identity.user_id
+
+debe ser:
+
+NOT NULL.
+
+=========================================================================
+
+REGLA TABLE NAMES
+
+=========================================================================
+
+gds_user
+
+gds_external_identity
+
+=========================================================================
+
+REGLA COLUMN NAMES
+=========================================================================
+
+Utilizar snake_case.
+
+Ejemplo:
+
+email_verified
+
+first_name
+
+last_name
+
+user_id
+
+=========================================================================
+
+AUDITORÍA
+=========================================================================
+
+User y ExternalIdentity deben extender:
+
+AuditableEntity.
+
+Esto permitirá posteriormente registrar:
+
+createdBy
+
+createdAt
+
+updatedBy
+
+updatedAt
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No agregar:
+
+password
+
+passwordHash
+
+salt
+
+refreshToken
+
+accessToken
+
+idToken
+
+secret
+
+clientSecret
+
+en:
+
+User.
+
+=========================================================================
+
+RAZÓN
+
+=========================================================================
+
+La identidad interna no debe confundirse con las credenciales.
+
+Las credenciales serán responsabilidad de las siguientes historias.
+
+=========================================================================
+
+GOOGLE / MICROSOFT
+=========================================================================
+
+No implementar todavía.
+
+Pero el modelo debe soportar:
+
+provider = GOOGLE
+
+provider = MICROSOFT
+
+=========================================================================
+
+EJEMPLO GOOGLE
+
+=========================================================================
+
+User:
+
+id = 100
+
+email:
+
+jorge@example.com
+
+ExternalIdentity:
+
+provider:
+
+GOOGLE
+
+subject:
+
+google-subject-123
+
+=========================================================================
+
+EJEMPLO MICROSOFT
+
+=========================================================================
+
+El mismo usuario puede tener:
+
+provider:
+
+MICROSOFT
+
+subject:
+
+microsoft-subject-456
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+User:
+
+100
+
+tiene:
+
+ExternalIdentity:
+
+GOOGLE / google-subject-123
+
+MICROSOFT / microsoft-subject-456
+
+=========================================================================
+
+REGLA CRÍTICA
+=========================================================================
+
+No crear dos Users:
+
+User 100 → Google
+
+User 101 → Microsoft
+
+si ambas identidades representan al mismo usuario de Aurum.
+
+El linking posterior deberá permitir:
+
+Google Identity
+        │
+        ├───────┐
+        │       │
+        ▼       ▼
+       USER 100
+        ▲       ▲
+        │       │
+        └───────┘
+        Microsoft Identity
+
+=========================================================================
+
+NO IMPLEMENTAR AUTOMATIC LINKING
+=========================================================================
+
+Aunque Google y Microsoft proporcionen el mismo email:
+
+NO vincular automáticamente.
+
+La vinculación automática será una decisión de seguridad posterior.
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+=========================================================================
+
+Login
+
+Logout
+
+Password
+
+Password Reset
+
+OAuth2
+
+OpenID Connect
+
+Google Authentication
+
+Microsoft Authentication
+
+JWT
+
+Refresh Tokens
+
+Session Tokens
+
+MFA
+
+Roles
+
+Permissions
+
+Authorization
+
+Tenant
+
+Company
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+Controllers
+
+REST APIs
+
+DTO REST
+
+Mappers
+
+Security Filters
+
+Authentication Providers
+
+OAuth Clients
+
+OIDC Clients
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe módulo aurum-identity.
+
+2. Existe User.
+
+3. Existe UserStatus.
+
+4. Existe ExternalIdentity.
+
+5. User tiene identificador interno Long.
+
+6. Email es unique.
+
+7. Username es unique.
+
+8. Email no es el primary key conceptual.
+
+9. ExternalIdentity utiliza provider + subject como identidad externa.
+
+10. provider + subject es unique.
+
+11. User puede tener múltiples ExternalIdentity.
+
+12. ExternalIdentity pertenece a un único User.
+
+13. User extiende AuditableEntity.
+
+14. ExternalIdentity extiende AuditableEntity.
+
+15. UserRepository existe.
+
+16. ExternalIdentityRepository existe.
+
+17. UserService existe.
+
+18. ExternalIdentityService existe.
+
+19. UserStatusService existe.
+
+20. Los emails se normalizan.
+
+21. Los usernames se normalizan.
+
+22. Los usuarios nuevos comienzan en PENDING.
+
+23. emailVerified comienza en false.
+
+24. Los duplicados son rechazados.
+
+25. Las transiciones de estado son validadas.
+
+26. No se almacena password.
+
+27. No se almacena OAuth token.
+
+28. No se implementa todavía Google.
+
+29. No se implementa todavía Microsoft.
+
+30. El modelo permite posteriormente Google.
+
+31. El modelo permite posteriormente Microsoft.
+
+32. No existe dependencia hacia aurum-accounting.
+
+33. No existe dependencia hacia aurum-engine.
+
+34. No existe REST.
+
+35. No existe autenticación todavía.
+
+36. No se utiliza Lombok.
+
+37. El proyecto compila con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+                    AURUM IDENTITY
+                         │
+             ┌───────────┴───────────┐
+             ▼                       ▼
+           USER              EXTERNAL IDENTITY
+             │                       │
+             │              ┌────────┼────────┐
+             │              ▼        ▼        ▼
+             │            LOCAL    GOOGLE  MICROSOFT
+             │
+             ▼
+       FUTURE SECURITY
+             │
+       ┌─────┼─────┐
+       ▼     ▼     ▼
+     ROLE  TENANT COMPANY
+       │
+       ▼
+   PERMISSIONS
+       │
+       ▼
+ SECURITY CONTEXT
+       │
+       ▼
+ AURUM ENGINE
