@@ -1,0 +1,2067 @@
+=========================================================================
+HISTORIA DE USUARIO: IAM-002
+ROLE & PERMISSION MODEL
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - IAM
+
+MÓDULO
+
+aurum-identity
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+IAM-001 creó la identidad interna de Aurum:
+
+User
+
+y preparó:
+
+ExternalIdentity
+
+UserStatus
+
+Aurum necesita ahora determinar qué puede hacer cada usuario.
+
+El modelo debe soportar:
+
+User
+   ↓
+Role
+   ↓
+Permission
+   ↓
+Capability + Resource + Action
+   ↓
+Scope
+
+El modelo debe ser suficientemente flexible para:
+
+Accounting
+
+Sales
+
+Inventory
+
+Treasury
+
+Projects
+
+CRM
+
+y futuros agentes de IA.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar el modelo RBAC de Aurum:
+
+ROLE BASED ACCESS CONTROL
+
+extendido mediante permisos orientados a capacidades de negocio.
+
+Un Role agrupa permisos.
+
+Un Permission representa una acción concreta sobre un recurso dentro
+de una capability.
+
+Un Scope limita el ámbito en el cual el permiso puede utilizarse.
+
+=========================================================================
+
+MODELO CONCEPTUAL
+=========================================================================
+
+USER
+ │
+ └── USER_ROLE
+       │
+       ▼
+     ROLE
+       │
+       └── ROLE_PERMISSION
+              │
+              ▼
+          PERMISSION
+              │
+       ┌──────┼────────┐
+       ▼      ▼        ▼
+   CAPABILITY RESOURCE ACTION
+                       │
+                       ▼
+                     SCOPE
+
+=========================================================================
+
+EJEMPLO
+=========================================================================
+
+User:
+
+Juan
+
+Role:
+
+ACCOUNTING_CLERK
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+Capability:
+
+ACCOUNTING
+
+Resource:
+
+JOURNAL_ENTRY
+
+Action:
+
+POST
+
+Scope:
+
+COMPANY
+
+=========================================================================
+
+PRINCIPIOS
+=========================================================================
+
+1. User NO contiene permisos directamente.
+
+2. Role agrupa permisos.
+
+3. Permission representa una capacidad de negocio autorizable.
+
+4. Capability identifica el dominio funcional.
+
+5. Resource identifica el objeto de negocio.
+
+6. Action identifica la operación permitida.
+
+7. Scope limita el ámbito.
+
+8. Authorization será implementado posteriormente en IAM-003.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+Utilizar JPA.
+
+Utilizar Spring Data JPA.
+
+Java 21.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear JWT.
+
+No crear OAuth.
+
+No crear OIDC.
+
+No crear Google Login.
+
+No crear Microsoft Login.
+
+No crear Authorization Engine.
+
+No crear Security Filters.
+
+No crear Tenant.
+
+No crear Company.
+
+No crear lógica de autenticación.
+
+=========================================================================
+
+PAQUETE BASE
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity
+
+=========================================================================
+
+PAQUETE MODEL
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity.model
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+RoleStatus.java
+
+Crear enum.
+
+Valores:
+
+ACTIVE
+
+DISABLED
+
+DELETED
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+PermissionAction.java
+
+Crear enum.
+
+Valores:
+
+READ
+
+CREATE
+
+UPDATE
+
+DELETE
+
+POST
+
+APPROVE
+
+REVERSE
+
+PRINT
+
+EXPORT
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No incluir:
+
+WRITE
+
+porque es ambiguo.
+
+CREATE y UPDATE representan operaciones diferentes.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+PermissionScopeType.java
+
+Crear enum.
+
+Valores:
+
+GLOBAL
+
+TENANT
+
+COMPANY
+
+BUSINESS_UNIT
+
+COST_CENTER
+
+PROFIT_CENTER
+
+PROJECT
+
+WAREHOUSE
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+En MVP 1 únicamente se utilizarán:
+
+GLOBAL
+
+COMPANY
+
+Los demás valores preparan la arquitectura futura.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Role.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+=========================================================================
+
+TABLA
+
+gds_role
+
+=========================================================================
+
+CAMPOS
+
+Long id
+
+String code
+
+String name
+
+String description
+
+RoleStatus status
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+code:
+
+obligatorio
+
+unique
+
+length = 100
+
+name:
+
+obligatorio
+
+length = 150
+
+description:
+
+opcional
+
+length = 500
+
+status:
+
+obligatorio
+
+=========================================================================
+
+REGLA CODE
+
+=========================================================================
+
+El code debe ser estable y programático.
+
+Ejemplos:
+
+ACCOUNTING_CLERK
+
+ACCOUNTING_SUPERVISOR
+
+ACCOUNTING_MANAGER
+
+SYSTEM_ADMIN
+
+=========================================================================
+
+REGLA STATUS
+
+=========================================================================
+
+Nuevo Role:
+
+ACTIVE
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No eliminar físicamente un Role utilizado históricamente.
+
+DELETED representa eliminación lógica.
+
+=========================================================================
+
+REGLA GETTERS / SETTERS
+
+=========================================================================
+
+Todos manuales.
+
+No Lombok.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Permission.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+=========================================================================
+
+TABLA
+
+gds_permission
+
+=========================================================================
+
+CAMPOS
+
+Long id
+
+String code
+
+String capability
+
+String resource
+
+PermissionAction action
+
+PermissionScopeType scopeType
+
+String name
+
+String description
+
+Boolean enabled
+
+=========================================================================
+
+REGLA CODE
+
+=========================================================================
+
+code debe ser unique.
+
+Formato:
+
+CAPABILITY.RESOURCE.ACTION
+
+=========================================================================
+
+EJEMPLOS
+
+=========================================================================
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+ACCOUNTING.JOURNAL_ENTRY.CREATE
+
+ACCOUNTING.JOURNAL_ENTRY.UPDATE
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+ACCOUNTING.JOURNAL_ENTRY.REVERSE
+
+ACCOUNTING.JOURNAL_ENTRY.PRINT
+
+ACCOUNTING.REPORT.READ
+
+ACCOUNTING.REPORT.EXPORT
+
+=========================================================================
+
+REGLA CAPABILITY
+
+=========================================================================
+
+Ejemplo:
+
+ACCOUNTING
+
+No utilizar nombres de clases Java.
+
+=========================================================================
+
+REGLA RESOURCE
+
+=========================================================================
+
+Ejemplo:
+
+JOURNAL_ENTRY
+
+REPORT
+
+ACCOUNT
+
+FINANCIAL_KPI
+
+CASH_FLOW
+
+=========================================================================
+
+REGLA ACTION
+
+=========================================================================
+
+Debe utilizar:
+
+PermissionAction.
+
+=========================================================================
+
+REGLA SCOPE
+
+=========================================================================
+
+Ejemplo:
+
+COMPANY
+
+=========================================================================
+
+REGLA ENABLED
+
+=========================================================================
+
+Nuevo Permission:
+
+true
+
+=========================================================================
+
+REGLA UNIQUE
+
+=========================================================================
+
+Debe existir una restricción lógica sobre:
+
+capability
+
+resource
+
+action
+
+scopeType
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+UserRole.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+=========================================================================
+
+TABLA
+
+gds_user_role
+
+=========================================================================
+
+CAMPOS
+
+Long id
+
+User user
+
+Role role
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+user:
+
+obligatorio
+
+role:
+
+obligatorio
+
+=========================================================================
+
+REGLA UNIQUE
+
+=========================================================================
+
+La combinación:
+
+user_id
+
++
+
+role_id
+
+debe ser única.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Un usuario puede tener múltiples roles.
+
+Un role puede pertenecer a múltiples usuarios.
+
+=========================================================================
+
+RELACIÓN
+
+=========================================================================
+
+User
+
+1
+
+↓
+
+N
+
+UserRole
+
+N
+
+↓
+
+1
+
+Role
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+RolePermission.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+=========================================================================
+
+TABLA
+
+gds_role_permission
+
+=========================================================================
+
+CAMPOS
+
+Long id
+
+Role role
+
+Permission permission
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+role:
+
+obligatorio
+
+permission:
+
+obligatorio
+
+=========================================================================
+
+REGLA UNIQUE
+
+=========================================================================
+
+role_id
+
++
+
+permission_id
+
+debe ser único.
+
+=========================================================================
+
+RELACIÓN
+
+=========================================================================
+
+Role
+
+1
+
+↓
+
+N
+
+RolePermission
+
+N
+
+↓
+
+1
+
+Permission
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No utilizar:
+
+@ManyToMany
+
+directamente.
+
+Utilizar entidades explícitas:
+
+UserRole
+
+RolePermission
+
+Esto permite agregar metadata posteriormente sin romper el modelo.
+
+=========================================================================
+
+REGLA FETCH
+
+=========================================================================
+
+Todas las relaciones hacia:
+
+User
+
+Role
+
+Permission
+
+deben utilizar:
+
+FetchType.LAZY
+
+=========================================================================
+
+REGLA CASCADE
+
+=========================================================================
+
+No utilizar:
+
+CascadeType.ALL
+
+entre:
+
+User → UserRole
+
+Role → RolePermission
+
+Permission → RolePermission
+
+=========================================================================
+
+REGLA ORPHAN REMOVAL
+
+=========================================================================
+
+No utilizar:
+
+orphanRemoval = true
+
+en relaciones de asociación.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+RoleRepository.java
+
+Paquete:
+
+com.globaldynamicssystems.aurum.identity.repository
+
+Extender:
+
+JpaRepository<Role, Long>
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+Optional<Role> findByCode(
+    String code
+);
+
+boolean existsByCode(
+    String code
+);
+
+List<Role> findByStatus(
+    RoleStatus status
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+PermissionRepository.java
+
+Extender:
+
+JpaRepository<Permission, Long>
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+Optional<Permission> findByCode(
+    String code
+);
+
+boolean existsByCode(
+    String code
+);
+
+List<Permission> findByCapability(
+    String capability
+);
+
+List<Permission> findByCapabilityAndResource(
+    String capability,
+    String resource
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+UserRoleRepository.java
+
+Extender:
+
+JpaRepository<UserRole, Long>
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+List<UserRole> findByUserId(
+    Long userId
+);
+
+List<UserRole> findByRoleId(
+    Long roleId
+);
+
+boolean existsByUserIdAndRoleId(
+    Long userId,
+    Long roleId
+);
+
+void deleteByUserIdAndRoleId(
+    Long userId,
+    Long roleId
+);
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+RolePermissionRepository.java
+
+Extender:
+
+JpaRepository<RolePermission, Long>
+
+=========================================================================
+
+MÉTODOS
+
+=========================================================================
+
+List<RolePermission> findByRoleId(
+    Long roleId
+);
+
+List<RolePermission> findByPermissionId(
+    Long permissionId
+);
+
+boolean existsByRoleIdAndPermissionId(
+    Long roleId,
+    Long permissionId
+);
+
+void deleteByRoleIdAndPermissionId(
+    Long roleId,
+    Long permissionId
+);
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+RoleService.java
+
+Crear interfaz.
+
+Métodos:
+
+Role create(
+    Role role
+);
+
+Optional<Role> findById(
+    Long id
+);
+
+Optional<Role> findByCode(
+    String code
+);
+
+List<Role> findActive();
+
+Role updateStatus(
+    Long roleId,
+    RoleStatus status
+);
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+DefaultRoleService.java
+
+Implementar:
+
+RoleService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+RoleRepository
+
+=========================================================================
+
+REGLA CREATE
+
+=========================================================================
+
+Normalizar:
+
+code
+
+name
+
+=========================================================================
+
+REGLA CODE
+
+=========================================================================
+
+code:
+
+uppercase
+
+trim
+
+sin espacios.
+
+Ejemplo:
+
+accounting_clerk
+
+se almacena:
+
+ACCOUNTING_CLERK
+
+=========================================================================
+
+REGLA DUPLICATE
+
+=========================================================================
+
+Si code ya existe:
+
+lanzar:
+
+RoleAlreadyExistsException
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+PermissionService.java
+
+Crear interfaz.
+
+Métodos:
+
+Permission create(
+    Permission permission
+);
+
+Optional<Permission> findById(
+    Long id
+);
+
+Optional<Permission> findByCode(
+    String code
+);
+
+List<Permission> findByCapability(
+    String capability
+);
+
+List<Permission> findByCapabilityAndResource(
+    String capability,
+    String resource
+);
+
+=========================================================================
+
+ARCHIVO 15
+=========================================================================
+
+DefaultPermissionService.java
+
+Implementar:
+
+PermissionService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+PermissionRepository
+
+=========================================================================
+
+REGLA CREATE
+
+=========================================================================
+
+Normalizar:
+
+capability
+
+resource
+
+code
+
+=========================================================================
+
+REGLA CODE
+
+=========================================================================
+
+El código debe seguir:
+
+CAPABILITY.RESOURCE.ACTION
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+=========================================================================
+
+REGLA DUPLICATE
+
+=========================================================================
+
+Si code ya existe:
+
+lanzar:
+
+PermissionAlreadyExistsException
+
+=========================================================================
+
+REGLA VALIDACIÓN
+
+=========================================================================
+
+No permitir:
+
+capability vacío
+
+resource vacío
+
+action null
+
+scopeType null
+
+=========================================================================
+
+ARCHIVO 16
+=========================================================================
+
+RoleAssignmentService.java
+
+Crear interfaz.
+
+Métodos:
+
+void assignRole(
+    Long userId,
+    Long roleId
+);
+
+void removeRole(
+    Long userId,
+    Long roleId
+);
+
+List<Role> findUserRoles(
+    Long userId
+);
+
+=========================================================================
+
+ARCHIVO 17
+=========================================================================
+
+DefaultRoleAssignmentService.java
+
+Implementar:
+
+RoleAssignmentService
+
+Dependencias:
+
+UserRepository
+
+RoleRepository
+
+UserRoleRepository
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+User debe existir.
+
+Role debe existir.
+
+Role debe estar:
+
+ACTIVE.
+
+=========================================================================
+
+REGLA DUPLICATE
+
+=========================================================================
+
+Si la relación ya existe:
+
+no crear duplicado.
+
+Puede:
+
+ignorar
+
+o lanzar excepción específica.
+
+Para MVP:
+
+ignorar de manera idempotente.
+
+=========================================================================
+
+REGLA REMOVE
+
+=========================================================================
+
+Si no existe la relación:
+
+no producir error.
+
+La operación es idempotente.
+
+=========================================================================
+
+ARCHIVO 18
+=========================================================================
+
+RolePermissionService.java
+
+Crear interfaz.
+
+Métodos:
+
+void assignPermission(
+    Long roleId,
+    Long permissionId
+);
+
+void removePermission(
+    Long roleId,
+    Long permissionId
+);
+
+List<Permission> findRolePermissions(
+    Long roleId
+);
+
+=========================================================================
+
+ARCHIVO 19
+=========================================================================
+
+DefaultRolePermissionService.java
+
+Implementar:
+
+RolePermissionService
+
+Dependencias:
+
+RoleRepository
+
+PermissionRepository
+
+RolePermissionRepository
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Role debe existir.
+
+Permission debe existir.
+
+Role debe estar:
+
+ACTIVE.
+
+Permission debe estar:
+
+enabled = true.
+
+=========================================================================
+
+REGLA DUPLICATE
+
+=========================================================================
+
+assignPermission debe ser:
+
+idempotente.
+
+=========================================================================
+
+REGLA REMOVE
+
+=========================================================================
+
+removePermission debe ser:
+
+idempotente.
+
+=========================================================================
+
+ARCHIVO 20
+=========================================================================
+
+RoleAlreadyExistsException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+ARCHIVO 21
+=========================================================================
+
+PermissionAlreadyExistsException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+ARCHIVO 22
+=========================================================================
+
+RoleNotFoundException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+ARCHIVO 23
+=========================================================================
+
+PermissionNotFoundException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+ARCHIVO 24
+=========================================================================
+
+InvalidPermissionException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+MODELO DE PERMISOS MVP
+=========================================================================
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+ACCOUNTING.JOURNAL_ENTRY.CREATE
+
+ACCOUNTING.JOURNAL_ENTRY.UPDATE
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+ACCOUNTING.JOURNAL_ENTRY.REVERSE
+
+ACCOUNTING.JOURNAL_ENTRY.PRINT
+
+ACCOUNTING.ACCOUNT.READ
+
+ACCOUNTING.ACCOUNT.CREATE
+
+ACCOUNTING.ACCOUNT.UPDATE
+
+ACCOUNTING.REPORT.READ
+
+ACCOUNTING.REPORT.PRINT
+
+ACCOUNTING.REPORT.EXPORT
+
+ACCOUNTING.FINANCIAL_KPI.READ
+
+ACCOUNTING.CASH_FLOW.READ
+
+=========================================================================
+
+ROLES MVP
+=========================================================================
+
+ACCOUNTING_CLERK
+
+ACCOUNTING_SUPERVISOR
+
+ACCOUNTING_MANAGER
+
+SYSTEM_ADMIN
+
+=========================================================================
+
+ACCOUNTING_CLERK
+=========================================================================
+
+Debe poder:
+
+READ
+
+CREATE
+
+UPDATE
+
+PRINT
+
+sobre:
+
+JOURNAL_ENTRY
+
+y:
+
+READ
+
+sobre:
+
+ACCOUNT
+
+REPORT
+
+FINANCIAL_KPI
+
+CASH_FLOW
+
+=========================================================================
+
+ACCOUNTING_SUPERVISOR
+=========================================================================
+
+Debe incluir las capacidades del:
+
+ACCOUNTING_CLERK
+
+más:
+
+POST
+
+REVERSE
+
+APPROVE
+
+sobre:
+
+JOURNAL_ENTRY
+
+=========================================================================
+
+ACCOUNTING_MANAGER
+=========================================================================
+
+Debe incluir las capacidades del:
+
+ACCOUNTING_SUPERVISOR
+
+más:
+
+EXPORT
+
+sobre:
+
+REPORT
+
+=========================================================================
+
+SYSTEM_ADMIN
+=========================================================================
+
+Para MVP:
+
+no asignar automáticamente todos los permisos de negocio.
+
+El rol existe como rol técnico del sistema.
+
+La asignación de permisos administrativos se definirá posteriormente.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No implementar herencia de roles todavía.
+
+Ejemplo:
+
+ACCOUNTING_SUPERVISOR
+
+NO debe depender técnicamente de:
+
+ACCOUNTING_CLERK.
+
+Los permisos se asignarán explícitamente.
+
+La herencia de roles puede ser una capacidad futura.
+
+=========================================================================
+
+SCOPE MVP
+=========================================================================
+
+Los permisos iniciales utilizarán:
+
+COMPANY
+
+o:
+
+GLOBAL
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+scope:
+
+COMPANY
+
+significa:
+
+el usuario podrá contabilizar dentro de las compañías a las que
+posteriormente tenga acceso.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+IAM-002 NO implementa todavía la asociación:
+
+Permission → Company.
+
+Eso pertenece a:
+
+IAM-003
+
+Authorization Engine
+
+y al futuro:
+
+Tenant / Company Context.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+ScopeType define:
+
+qué dimensión controla el permiso.
+
+No contiene todavía:
+
+companyId
+
+tenantId
+
+costCenterId
+
+etc.
+
+=========================================================================
+
+SEPARACIÓN CRÍTICA
+=========================================================================
+
+Permission:
+
+"Puede hacer POST sobre Journal Entry."
+
+Scope:
+
+"El permiso está limitado conceptualmente a COMPANY."
+
+Authorization:
+
+"¿Puede hacerlo sobre Company 100?"
+
+Esto será responsabilidad de IAM-003.
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+=========================================================================
+
+PermissionEvaluator
+
+AuthorizationManager
+
+SecurityContext
+
+TenantContext
+
+CompanyContext
+
+Role hierarchy
+
+Permission inheritance
+
+Permission groups
+
+Dynamic policies
+
+ABAC
+
+Policy engine
+
+JWT
+
+OAuth2
+
+OIDC
+
+Google
+
+Microsoft
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+Controllers
+
+REST DTOs
+
+REST APIs
+
+Security Filters
+
+JPA Entity específica para Scope
+
+=========================================================================
+
+REGLA SOBRE CAPABILITY
+
+=========================================================================
+
+El valor:
+
+capability
+
+debe coincidir conceptualmente con:
+
+CapabilityDescriptor.code
+
+y:
+
+CapabilityMetadata.code.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+Capability:
+
+ACCOUNTING
+
+Resource:
+
+JOURNAL_ENTRY
+
+Action:
+
+POST
+
+=========================================================================
+
+NO HACER
+
+=========================================================================
+
+Permission:
+
+AccountingCapabilityAdapter.POST
+
+Incorrecto.
+
+=========================================================================
+
+NO ACOPLAR A IMPLEMENTACIÓN
+=========================================================================
+
+El IAM no debe conocer:
+
+AccountingCapabilityAdapter
+
+AccountingQueryService
+
+FinancialKpiService
+
+FinancialRatioService
+
+=========================================================================
+
+IAM conoce:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+pero no conoce cómo se ejecuta.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe Role.
+
+2. Existe RoleStatus.
+
+3. Existe Permission.
+
+4. Existe PermissionAction.
+
+5. Existe PermissionScopeType.
+
+6. Existe UserRole.
+
+7. Existe RolePermission.
+
+8. User puede tener múltiples roles.
+
+9. Role puede tener múltiples permisos.
+
+10. Permission puede pertenecer a múltiples roles.
+
+11. user_id + role_id es único.
+
+12. role_id + permission_id es único.
+
+13. Permission.code es único.
+
+14. Permission representa capability + resource + action.
+
+15. Permission soporta scopeType.
+
+16. Existe RoleRepository.
+
+17. Existe PermissionRepository.
+
+18. Existe UserRoleRepository.
+
+19. Existe RolePermissionRepository.
+
+20. Existe RoleService.
+
+21. Existe PermissionService.
+
+22. Existe RoleAssignmentService.
+
+23. Existe RolePermissionService.
+
+24. Roles nuevos comienzan ACTIVE.
+
+25. Permissions nuevas comienzan enabled = true.
+
+26. Roles duplicados son rechazados.
+
+27. Permissions duplicadas son rechazadas.
+
+28. Asignación de roles es idempotente.
+
+29. Asignación de permisos es idempotente.
+
+30. Eliminación de roles es idempotente.
+
+31. Eliminación de permisos es idempotente.
+
+32. No se implementa autorización todavía.
+
+33. No se implementa autenticación.
+
+34. No se implementa Google.
+
+35. No se implementa Microsoft.
+
+36. No se implementa JWT.
+
+37. No se implementa OAuth2/OIDC.
+
+38. No se implementa Tenant.
+
+39. No se implementa Company Context.
+
+40. IAM no depende de aurum-accounting.
+
+41. IAM no depende de aurum-engine.
+
+42. No se utiliza Lombok.
+
+43. No se utiliza Reflection.
+
+44. No se utiliza SQL nativo.
+
+45. El proyecto compila con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+                         USER
+                          │
+                          ▼
+                       USER_ROLE
+                          │
+                          ▼
+                         ROLE
+                          │
+                    ROLE_PERMISSION
+                          │
+                          ▼
+                      PERMISSION
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+        CAPABILITY      RESOURCE      ACTION
+             │            │            │
+             └────────────┼────────────┘
+                          ▼
+                         SCOPE
+
+=========================================================================
+
+EJEMPLO COMPLETO
+=========================================================================
+
+USER:
+
+Juan
+
+ROLE:
+
+ACCOUNTING_SUPERVISOR
+
+PERMISSIONS:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+ACCOUNTING.JOURNAL_ENTRY.CREATE
+ACCOUNTING.JOURNAL_ENTRY.UPDATE
+ACCOUNTING.JOURNAL_ENTRY.POST
+ACCOUNTING.JOURNAL_ENTRY.REVERSE
+ACCOUNTING.JOURNAL_ENTRY.APPROVE
+ACCOUNTING.JOURNAL_ENTRY.PRINT
+ACCOUNTING.ACCOUNT.READ
+ACCOUNTING.REPORT.READ
+ACCOUNTING.REPORT.PRINT
+ACCOUNTING.FINANCIAL_KPI.READ
+ACCOUNTING.CASH_FLOW.READ
+
+=========================================================================
+
+RESULTADO
+=========================================================================
+
+Juan
+
+puede:
+
+consultar asientos
+
+crear asientos
+
+modificar asientos
+
+contabilizar
+
+reversar
+
+aprobar
+
+imprimir
+
+consultar cuentas
+
+consultar reportes
+
+consultar KPIs
+
+consultar Cash Flow
+
+Pero todavía NO significa que pueda hacer esas operaciones sobre
+cualquier compañía.
+
+Eso será decidido por:
+
+Authorization Engine.
+
+=========================================================================
+
+ARQUITECTURA IAM RESULTANTE
+=========================================================================
+
+IAM-001
+
+IDENTITY
+
+       │
+
+       ▼
+
+USER
+
+       │
+
+       ▼
+
+IAM-002
+
+RBAC + PERMISSIONS
+
+       │
+
+       ▼
+
+ROLE
+
+       │
+
+       ▼
+
+PERMISSION
+
+       │
+
+       ├── CAPABILITY
+       ├── RESOURCE
+       ├── ACTION
+       └── SCOPE
+
+       │
+
+       ▼
+
+IAM-003
+
+AUTHORIZATION ENGINE
+
+       │
+
+       ▼
+
+ALLOW / DENY
+
+       │
+
+       ▼
+
+SECURITY CONTEXT
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+IAM-002 NO responde:
+
+"¿Puede Juan hacer esto?"
+
+Solo define:
+
+"¿Qué permisos tiene asignados Juan mediante sus roles?"
+
+La decisión contextual:
+
+"¿Puede Juan ejecutar ACCOUNTING.JOURNAL_ENTRY.POST sobre Company
+100?"
+
+pertenece a IAM-003.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+IAM-003
+
+AUTHORIZATION ENGINE
+
+Construir el motor de autorización de Aurum capaz de evaluar:
+
+User
+
+Role
+
+Permission
+
+Capability
+
+Resource
+
+Action
+
+Scope
+
+y producir una decisión:
+
+ALLOW
+
+o
+
+DENY
+
+dentro de un `SecurityContext`, preparando la integración de
+autorización con `aurum-engine` y las capabilities de negocio.
+
+=========================================================================
