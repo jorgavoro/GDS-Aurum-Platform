@@ -1,0 +1,1442 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-026
+ACCOUNTING CAPABILITY DISCOVERY
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULOS
+
+aurum-accounting
+aurum-engine
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-024 creó:
+
+Accounting Query Model
+
+ACC-025 creó:
+
+Accounting Capability Integration
+
+Actualmente:
+
+aurum-engine
+
+puede ejecutar:
+
+ACCOUNT
+PROFITABILITY
+RATIO
+CASH_FLOW
+KPI
+DATA_QUALITY
+COMPARISON
+
+mediante:
+
+AccountingCapability
+
+Sin embargo, Engine todavía necesita conocer previamente:
+
+qué capacidades existen
+
+qué consultas soportan
+
+qué parámetros requieren
+
+qué parámetros son opcionales
+
+qué información producen
+
+Esto genera un acoplamiento conceptual.
+
+El objetivo de ACC-026 es introducir:
+
+CAPABILITY DISCOVERY.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Permitir que:
+
+aurum-engine
+
+descubra dinámicamente las capacidades contables disponibles.
+
+El Engine debe poder preguntar:
+
+"¿Qué capacidades contables están disponibles?"
+
+y obtener información suficiente para decidir:
+
+qué capacidad utilizar
+
+qué tipo de consulta soporta
+
+qué parámetros requiere
+
+qué parámetros son opcionales
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+DISCOVERY
+
+y:
+
+EXECUTION
+
+son responsabilidades diferentes.
+
+ACC-026 implementa:
+
+DISCOVERY.
+
+ACC-025 continúa siendo responsable de:
+
+EXECUTION.
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                    AURUM ENGINE
+                         │
+                         ▼
+              CAPABILITY DISCOVERY
+                         │
+                         ▼
+              AVAILABLE CAPABILITIES
+                         │
+                         ▼
+              CAPABILITY DESCRIPTION
+                         │
+                         ▼
+                CAPABILITY EXECUTION
+                         │
+                         ▼
+               AURUM ACCOUNTING
+                         │
+                         ▼
+                      LEDGER
+
+=========================================================================
+
+REGLA DE DEPENDENCIAS
+=========================================================================
+
+aurum-engine
+
+puede depender de:
+
+aurum-accounting
+
+pero:
+
+aurum-accounting
+
+NO puede depender de:
+
+aurum-engine.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente cuando corresponda.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear API HTTP.
+
+No crear Flyway.
+
+No crear persistencia para Discovery.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Java 21.
+
+=========================================================================
+
+PAQUETE
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.capability
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Archivo:
+
+CapabilityType.java
+
+Crear enum.
+
+Valores:
+
+ACCOUNTING
+
+METADATA
+
+GENERIC
+
+=========================================================================
+
+NOTA
+
+=========================================================================
+
+En MVP 1 solo se utilizará:
+
+ACCOUNTING
+
+Los valores:
+
+METADATA
+
+GENERIC
+
+preparan la arquitectura para futuras capacidades.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Archivo:
+
+CapabilityDescriptor.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String code
+
+String name
+
+String description
+
+CapabilityType capabilityType
+
+List<String> supportedOperations
+
+List<String> requiredParameters
+
+List<String> optionalParameters
+
+Boolean enabled
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA CODE
+=========================================================================
+
+Debe identificar inequívocamente una capacidad.
+
+Ejemplo:
+
+ACCOUNTING
+
+=========================================================================
+
+REGLA NAME
+=========================================================================
+
+Ejemplo:
+
+Accounting Business Capability
+
+=========================================================================
+
+REGLA DESCRIPTION
+=========================================================================
+
+Debe explicar qué problema de negocio resuelve la capacidad.
+
+=========================================================================
+
+REGLA SUPPORTED OPERATIONS
+=========================================================================
+
+Para Accounting:
+
+ACCOUNT
+
+PROFITABILITY
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+DATA_QUALITY
+
+COMPARISON
+
+=========================================================================
+
+REGLA REQUIRED PARAMETERS
+=========================================================================
+
+La capacidad ACCOUNTING debe declarar:
+
+chartOfAccountsId
+
+=========================================================================
+
+REGLA OPTIONAL PARAMETERS
+=========================================================================
+
+Puede declarar:
+
+fiscalPeriodId
+
+accountIds
+
+kpiTypes
+
+ratioTypes
+
+dimensionType
+
+dimensionIds
+
+currentFiscalPeriodId
+
+previousFiscalPeriodId
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+La lista de parámetros es descriptiva.
+
+No debe convertirse todavía en un sistema de:
+
+Dynamic Schema Validation.
+
+La validación real continúa perteneciendo a:
+
+AccountingQueryValidator.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Archivo:
+
+CapabilityDiscoveryService.java
+
+Crear interfaz.
+
+Métodos:
+
+List<CapabilityDescriptor> discover();
+
+Optional<CapabilityDescriptor> discover(
+    String code
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Archivo:
+
+CapabilityDiscoveryRegistry.java
+
+Crear interfaz.
+
+Métodos:
+
+void register(
+    CapabilityDescriptor descriptor
+);
+
+Optional<CapabilityDescriptor> find(
+    String code
+);
+
+List<CapabilityDescriptor> findAll();
+
+boolean exists(
+    String code
+);
+
+void unregister(
+    String code
+);
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Archivo:
+
+InMemoryCapabilityDiscoveryRegistry.java
+
+Implementar:
+
+CapabilityDiscoveryRegistry
+
+Utilizar:
+
+ConcurrentHashMap<String, CapabilityDescriptor>
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El Registry debe ser:
+
+thread-safe.
+
+No debe almacenar estado mutable de ejecución.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Archivo:
+
+DefaultCapabilityDiscoveryService.java
+
+Implementar:
+
+CapabilityDiscoveryService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+CapabilityDiscoveryRegistry
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+IMPLEMENTACIÓN
+
+=========================================================================
+
+discover()
+
+debe devolver:
+
+todos los CapabilityDescriptor
+
+registrados.
+
+=========================================================================
+
+REGLA ENABLED
+=========================================================================
+
+discover()
+
+debe devolver únicamente capacidades:
+
+enabled = true
+
+=========================================================================
+
+REGLA DISCOVERY POR CODE
+=========================================================================
+
+discover(code)
+
+debe:
+
+1. validar code
+
+2. buscar descriptor
+
+3. devolver Optional
+
+=========================================================================
+
+Si:
+
+code == null
+
+o:
+
+code.trim().isEmpty()
+
+devolver:
+
+Optional.empty()
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Archivo:
+
+AccountingCapabilityDescriptorFactory.java
+
+Crear clase.
+
+Responsabilidad:
+
+crear el descriptor de:
+
+ACCOUNTING
+
+=========================================================================
+
+MÉTODO
+
+=========================================================================
+
+CapabilityDescriptor create();
+
+=========================================================================
+
+DESCRIPTOR
+
+=========================================================================
+
+code:
+
+ACCOUNTING
+
+name:
+
+Accounting Business Capability
+
+description:
+
+Provides financial accounting analysis, reporting, ratios, cash flow,
+financial KPIs, data quality and accounting comparison capabilities.
+
+capabilityType:
+
+ACCOUNTING
+
+enabled:
+
+true
+
+=========================================================================
+
+OPERATIONS
+
+=========================================================================
+
+ACCOUNT
+
+PROFITABILITY
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+DATA_QUALITY
+
+COMPARISON
+
+=========================================================================
+
+REQUIRED PARAMETERS
+
+=========================================================================
+
+chartOfAccountsId
+
+=========================================================================
+
+OPTIONAL PARAMETERS
+
+=========================================================================
+
+fiscalPeriodId
+
+accountIds
+
+kpiTypes
+
+ratioTypes
+
+dimensionType
+
+dimensionIds
+
+currentFiscalPeriodId
+
+previousFiscalPeriodId
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Archivo:
+
+CapabilityDiscoveryBootstrap.java
+
+Anotación:
+
+@Component
+
+Responsabilidad:
+
+registrar los descriptors disponibles durante el bootstrap.
+
+Debe registrar:
+
+ACCOUNTING
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El bootstrap NO debe ejecutar consultas contables.
+
+Solo debe registrar:
+
+CapabilityDescriptor.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+Application Startup
+
+       ↓
+
+CapabilityDiscoveryBootstrap
+
+       ↓
+
+AccountingCapabilityDescriptorFactory
+
+       ↓
+
+CapabilityDiscoveryRegistry
+
+       ↓
+
+ACCOUNTING descriptor disponible
+
+=========================================================================
+
+INTEGRACIÓN CON ACC-025
+=========================================================================
+
+ACC-025 posee:
+
+AccountingCapabilityRegistry
+
+ACC-026 posee:
+
+CapabilityDiscoveryRegistry
+
+No deben mezclarse.
+
+=========================================================================
+
+DIFERENCIA
+
+=========================================================================
+
+AccountingCapabilityRegistry
+
+responde:
+
+"¿Qué implementación puede ejecutar esta capacidad?"
+
+CapabilityDiscoveryRegistry
+
+responde:
+
+"¿Qué capacidades existen y qué ofrecen?"
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Discovery NO ejecuta:
+
+AccountingQueryService.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Archivo:
+
+CapabilityDiscoveryRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+CapabilityType capabilityType
+
+Boolean enabledOnly
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Modificar:
+
+CapabilityDiscoveryService
+
+Agregar:
+
+List<CapabilityDescriptor> discover(
+    CapabilityDiscoveryRequest request
+);
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+request == null
+
+equivale a:
+
+discover()
+
+=========================================================================
+
+Si:
+
+enabledOnly == true
+
+devolver únicamente:
+
+enabled = true.
+
+=========================================================================
+
+Si:
+
+capabilityType != null
+
+filtrar por:
+
+capabilityType.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Archivo:
+
+CapabilityDiscoveryValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    CapabilityDiscoveryRequest request
+);
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Archivo:
+
+DefaultCapabilityDiscoveryValidator.java
+
+Implementar:
+
+CapabilityDiscoveryValidator
+
+Validar:
+
+capabilityType
+
+si está presente.
+
+No consultar database.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La validación del request debe ser:
+
+estructural.
+
+No debe verificar:
+
+si la capacidad existe.
+
+Eso pertenece al Registry.
+
+=========================================================================
+
+CAPACIDADES MVP
+=========================================================================
+
+Registrar inicialmente:
+
+ACCOUNTING
+
+No registrar todavía:
+
+METADATA
+
+GENERIC
+
+aunque los tipos puedan existir.
+
+=========================================================================
+
+OPERACIONES ACCOUNTING
+=========================================================================
+
+El descriptor ACCOUNTING debe declarar:
+
+ACCOUNT
+
+PROFITABILITY
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+DATA_QUALITY
+
+COMPARISON
+
+=========================================================================
+
+EJEMPLO DE DISCOVERY
+
+=========================================================================
+
+Request:
+
+enabledOnly = true
+
+Resultado:
+
+[
+    {
+        code: "ACCOUNTING",
+        name: "Accounting Business Capability",
+        capabilityType: "ACCOUNTING",
+        enabled: true
+    }
+]
+
+=========================================================================
+
+EJEMPLO DE DISCOVERY DETALLADO
+=========================================================================
+
+ACCOUNTING
+
+Description:
+
+Provides financial accounting analysis, reporting, ratios, cash flow,
+financial KPIs, data quality and accounting comparison capabilities.
+
+Operations:
+
+ACCOUNT
+PROFITABILITY
+RATIO
+CASH_FLOW
+KPI
+DATA_QUALITY
+COMPARISON
+
+Required:
+
+chartOfAccountsId
+
+Optional:
+
+fiscalPeriodId
+accountIds
+kpiTypes
+ratioTypes
+dimensionType
+dimensionIds
+currentFiscalPeriodId
+previousFiscalPeriodId
+
+=========================================================================
+
+REGLA DE INMUTABILIDAD CONCEPTUAL
+=========================================================================
+
+Los descriptors describen capacidades.
+
+No deben representar:
+
+estado de una ejecución.
+
+No agregar:
+
+lastExecution
+
+executionCount
+
+lastResult
+
+lastError
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+CapabilityDescriptorEntity
+
+CapabilityRegistryEntity
+
+CapabilityHistory
+
+CapabilityDiscoveryHistory
+
+CapabilityExecutionHistory
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+CapabilityController
+
+CapabilityRestController
+
+CapabilityDto
+
+CapabilityMapper
+
+CapabilityRepository
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Dynamic Capability Creation
+
+Database Capability Configuration
+
+AI Generated Capabilities
+
+Natural Language Discovery
+
+Capability Versioning
+
+Capability Marketplace
+
+Capability Permissions
+
+Capability Pricing
+
+Capability Metrics
+
+Capability Execution History
+
+=========================================================================
+
+REGLA DE VERSIONAMIENTO
+
+=========================================================================
+
+No implementar versionamiento todavía.
+
+Sin embargo:
+
+CapabilityDescriptor
+
+debe diseñarse de manera que pueda evolucionar posteriormente.
+
+=========================================================================
+
+REGLA DE SEGURIDAD
+=========================================================================
+
+ACC-026 no implementa:
+
+Authentication
+
+Authorization
+
+RBAC
+
+ABAC
+
+Tenant Security
+
+Company Security
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+La existencia de una capability NO significa que cualquier usuario
+pueda ejecutarla.
+
+Discovery y Authorization serán responsabilidades distintas.
+
+=========================================================================
+
+INTEGRACIÓN CON AURUM ENGINE
+=========================================================================
+
+aurum-engine debe poder obtener:
+
+List<CapabilityDescriptor>
+
+mediante:
+
+CapabilityDiscoveryService.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El Engine no debe inspeccionar:
+
+AccountingCapabilityAdapter
+
+para descubrir capacidades.
+
+Debe utilizar:
+
+CapabilityDiscoveryService.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+                 AURUM ENGINE
+                      │
+                      ▼
+          CapabilityDiscoveryService
+                      │
+                      ▼
+          CapabilityDiscoveryRegistry
+                      │
+                      ▼
+            CapabilityDescriptor
+                      │
+                      ▼
+             Capability Selection
+                      │
+                      ▼
+          AccountingCapabilityExecutor
+                      │
+                      ▼
+             AccountingQueryService
+                      │
+                      ▼
+               ACCOUNTING DOMAIN
+
+=========================================================================
+
+REGLA DE SEPARACIÓN
+
+=========================================================================
+
+DISCOVERY:
+
+"¿Qué puedo hacer?"
+
+SELECTION:
+
+"¿Qué quiero hacer?"
+
+EXECUTION:
+
+"Ejecuta esto."
+
+RESULT:
+
+"Esto fue lo obtenido."
+
+ACC-026 implementa únicamente:
+
+DISCOVERY.
+
+=========================================================================
+
+NO MODIFICAR
+
+=========================================================================
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+AccountFinancialAnalysis
+
+Profitability
+
+FinancialRatio
+
+CashFlow
+
+FinancialKpi
+
+AccountingDataQuality
+
+=========================================================================
+
+NO MODIFICAR LA LÓGICA FINANCIERA
+
+=========================================================================
+
+No modificar:
+
+ProfitabilityService
+
+FinancialRatioService
+
+CashFlowService
+
+FinancialKpiService
+
+AccountingDataQualityService
+
+FinancialComparisonService
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe CapabilityType.
+
+2. Existe CapabilityDescriptor.
+
+3. Existe CapabilityDiscoveryRequest.
+
+4. Existe CapabilityDiscoveryService.
+
+5. Existe CapabilityDiscoveryRegistry.
+
+6. Existe InMemoryCapabilityDiscoveryRegistry.
+
+7. Existe AccountingCapabilityDescriptorFactory.
+
+8. Existe CapabilityDiscoveryBootstrap.
+
+9. Existe CapabilityDiscoveryValidator.
+
+10. ACCOUNTING se registra automáticamente.
+
+11. Engine puede descubrir ACCOUNTING.
+
+12. Discovery devuelve únicamente capabilities habilitadas cuando
+    enabledOnly = true.
+
+13. Discovery puede filtrar por CapabilityType.
+
+14. ACCOUNTING declara sus operaciones soportadas.
+
+15. ACCOUNTING declara sus parámetros requeridos.
+
+16. ACCOUNTING declara sus parámetros opcionales.
+
+17. Discovery no ejecuta ninguna operación contable.
+
+18. Discovery no accede a repositories.
+
+19. Discovery no accede a JPA.
+
+20. Discovery no accede a Ledger.
+
+21. Discovery no persiste información.
+
+22. Registry es thread-safe.
+
+23. No se utiliza Reflection.
+
+24. No se utiliza Lombok.
+
+25. No existe SQL nativo.
+
+26. El proyecto compila con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+Antes de ACC-026:
+
+AURUM ENGINE
+     │
+     ▼
+AccountingCapability
+     │
+     ▼
+Accounting
+
+Engine necesita conocer las capacidades.
+
+Después de ACC-026:
+
+AURUM ENGINE
+     │
+     ▼
+CAPABILITY DISCOVERY
+     │
+     ▼
+¿Qué capacidades existen?
+     │
+     ▼
+ACCOUNTING
+     │
+     ▼
+¿Qué operaciones soporta?
+     │
+     ├── ACCOUNT
+     ├── PROFITABILITY
+     ├── RATIO
+     ├── CASH_FLOW
+     ├── KPI
+     ├── DATA_QUALITY
+     └── COMPARISON
+             │
+             ▼
+       CAPABILITY EXECUTION
+             │
+             ▼
+       ACCOUNTING SERVICE
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum Engine deja de depender únicamente de conocimiento estático.
+
+Ahora puede descubrir capacidades.
+
+Esto prepara el sistema para que posteriormente un componente de
+orquestación pueda seleccionar una capability basándose en:
+
+objetivo
+
+contexto
+
+datos disponibles
+
+capacidad requerida
+
+=========================================================================
+
+EVOLUCIÓN HACIA AGENTES
+=========================================================================
+
+La evolución prevista queda:
+
+ACC-025
+
+CAPABILITY EXECUTION
+
+↓
+
+ACC-026
+
+CAPABILITY DISCOVERY
+
+↓
+
+ACC-027
+
+CAPABILITY METADATA
+
+↓
+
+ACC-028
+
+GENERIC CAPABILITY EXECUTION
+
+↓
+
+ACC-029
+
+BUSINESS CONTEXT
+
+↓
+
+ACC-030
+
+AGENT-READY ACCOUNTING INTERFACE
+
+↓
+
+AURUM AGENT RUNTIME
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+El objetivo no es construir un:
+
+"ERP con IA pegada encima".
+
+El objetivo es construir:
+
+BUSINESS CAPABILITIES
+
+que puedan ser:
+
+DISCOVERED
+
+SELECTED
+
+EXECUTED
+
+COMPOSED
+
+y posteriormente:
+
+ORCHESTRATED BY AI.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-027
+
+CAPABILITY METADATA MODEL
+
+Evolucionar el descriptor básico de capacidades hacia un modelo
+semántico capaz de describir no solamente qué puede hacer una
+capacidad, sino también qué entidades de negocio utiliza, qué
+conceptos maneja, qué resultados produce y qué dependencias requiere,
+preparando el sistema para selección semántica de capacidades por
+Aurum Engine y posteriormente por agentes de IA.
+
+=========================================================================
