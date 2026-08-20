@@ -1,0 +1,2072 @@
+=========================================================================
+HISTORIA DE USUARIO: IAM-005
+LOCAL AUTHENTICATION
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - IAM
+
+MÓDULO
+
+aurum-identity
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+IAM-001 creó:
+
+User
+ExternalIdentity
+UserStatus
+
+IAM-002 creó:
+
+Role
+Permission
+UserRole
+RolePermission
+
+IAM-003 creó:
+
+Authorization Engine
+
+IAM-004 creó:
+
+SecurityContext
+SecurityContextHolder
+ApplicationAccessService
+integración con CapabilityExecutor.
+
+Aurum ya puede determinar:
+
+"¿Puede este usuario ejecutar esta operación?"
+
+Pero todavía no puede determinar:
+
+"¿Quién es este usuario?"
+
+IAM-005 implementa la primera forma de autenticación:
+
+LOCAL AUTHENTICATION.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Permitir que un usuario de Aurum se autentique mediante:
+
+username + password
+
+y obtener una identidad autenticada que posteriormente pueda
+convertirse en:
+
+SecurityContext.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Authentication:
+
+verifica las credenciales.
+
+Authorization:
+
+determina qué puede hacer el usuario.
+
+IAM-005 implementa:
+
+AUTHENTICATION.
+
+IAM-003 continúa siendo responsable de:
+
+AUTHORIZATION.
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                     LOGIN REQUEST
+                           │
+                           ▼
+                  AuthenticationService
+                           │
+                           ▼
+                     UserRepository
+                           │
+                           ▼
+                       User
+                           │
+                           ▼
+                    PasswordVerifier
+                           │
+                  ┌────────┴────────┐
+                  ▼                 ▼
+                VALID             INVALID
+                  │                 │
+                  ▼                 ▼
+           AuthenticationResult   DENIED
+                  │
+                  ▼
+         SecurityContextFactory
+                  │
+                  ▼
+          SecurityContext
+                  │
+                  ▼
+        Application / Engine
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+Java 21.
+
+Constructor Injection.
+
+No almacenar passwords en texto plano.
+
+No almacenar passwords reversibles.
+
+No almacenar passwords en SecurityContext.
+
+No almacenar passwords en logs.
+
+No crear OAuth2 todavía.
+
+No crear OIDC todavía.
+
+No crear Google todavía.
+
+No crear Microsoft todavía.
+
+No crear JWT todavía.
+
+No crear Refresh Tokens todavía.
+
+No crear MFA todavía.
+
+=========================================================================
+
+CAMBIO EN USER
+=========================================================================
+
+Modificar:
+
+User
+
+Agregar:
+
+String passwordHash
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+passwordHash:
+
+nullable = true
+
+length suficiente para almacenar el hash generado por el algoritmo
+seleccionado.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+passwordHash NO significa que:
+
+User
+
+sea una entidad de credenciales completa.
+
+Es solamente la representación hash necesaria para autenticación local.
+
+=========================================================================
+
+REGLA EXTERNAL IDENTITY
+=========================================================================
+
+Usuarios autenticados exclusivamente mediante:
+
+GOOGLE
+
+MICROSOFT
+
+pueden tener:
+
+passwordHash = null.
+
+Esto es intencional.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+LOCAL USER
+
+User:
+
+username = john
+
+passwordHash = <hash>
+
+ExternalIdentity:
+
+LOCAL / <subject>
+
+=========================================================================
+
+GOOGLE USER
+
+User:
+
+username = john
+
+passwordHash = null
+
+ExternalIdentity:
+
+GOOGLE / google-subject
+
+=========================================================================
+
+MICROSOFT USER
+
+User:
+
+username = john
+
+passwordHash = null
+
+ExternalIdentity:
+
+MICROSOFT / microsoft-subject
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No utilizar:
+
+passwordHash
+
+para determinar si el usuario fue creado mediante Google/Microsoft.
+
+La fuente de autenticación debe determinarse mediante:
+
+ExternalIdentity
+
+y el mecanismo de AuthenticationProvider.
+
+=========================================================================
+
+PAQUETE
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity.authentication
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+AuthenticationRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String username
+
+String password
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+password solamente existe durante el proceso de autenticación.
+
+No persistir.
+
+No colocar password dentro de:
+
+SecurityContext
+
+AuthenticationResult
+
+logs
+
+events
+
+=========================================================================
+
+CONSTRUCTORES
+
+=========================================================================
+
+Constructor vacío.
+
+Constructor completo.
+
+=========================================================================
+
+GETTERS / SETTERS
+
+=========================================================================
+
+Manuales.
+
+No Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+AuthenticationResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+boolean authenticated
+
+Long userId
+
+String username
+
+String message
+
+SecurityContext securityContext
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si:
+
+authenticated = false
+
+securityContext debe ser:
+
+null.
+
+=========================================================================
+
+Si:
+
+authenticated = true
+
+securityContext debe estar disponible.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No almacenar:
+
+password
+
+passwordHash
+
+tokens
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+AuthenticationFailureReason.java
+
+Crear enum.
+
+Valores:
+
+INVALID_CREDENTIALS
+
+USER_NOT_FOUND
+
+USER_DISABLED
+
+USER_LOCKED
+
+USER_PENDING
+
+USER_DELETED
+
+LOCAL_AUTHENTICATION_NOT_ENABLED
+
+INVALID_REQUEST
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+AuthenticationFailureException.java
+
+NO utilizar como mecanismo normal de login fallido.
+
+Los errores de credenciales deben devolver:
+
+AuthenticationResult
+
+con:
+
+authenticated = false.
+
+Esta excepción queda reservada para errores técnicos inesperados.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+PasswordHasher.java
+
+Crear interfaz.
+
+Métodos:
+
+String hash(
+    String rawPassword
+);
+
+boolean matches(
+    String rawPassword,
+    String passwordHash
+);
+
+=========================================================================
+
+PRINCIPIO
+=========================================================================
+
+El dominio de Authentication no debe quedar acoplado al algoritmo
+concreto.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+BCryptPasswordHasher.java
+
+Implementar:
+
+PasswordHasher
+
+=========================================================================
+
+ALGORITMO
+=========================================================================
+
+Utilizar:
+
+BCrypt
+
+con una configuración apropiada para producción.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No implementar BCrypt manualmente.
+
+Utilizar una implementación criptográfica mantenida.
+
+=========================================================================
+
+REGLA MATCH
+=========================================================================
+
+matches()
+
+debe utilizar el mecanismo seguro de comparación proporcionado por
+la implementación BCrypt.
+
+No comparar hashes mediante:
+
+equals()
+
+sobre un hash recalculado manualmente.
+
+=========================================================================
+
+DEPENDENCIA
+=========================================================================
+
+Agregar al módulo:
+
+aurum-identity
+
+la dependencia necesaria para BCrypt.
+
+No depender de:
+
+spring-security-web
+
+si no es necesario para esta historia.
+
+=========================================================================
+
+NOTA
+
+=========================================================================
+
+Spring Security podrá incorporarse posteriormente como infraestructura
+de autenticación HTTP.
+
+El contrato:
+
+PasswordHasher
+
+debe permanecer independiente.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+AuthenticationService.java
+
+Crear interfaz.
+
+Método:
+
+AuthenticationResult authenticate(
+    AuthenticationRequest request
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+DefaultAuthenticationService.java
+
+Implementar:
+
+AuthenticationService
+
+Anotación:
+
+@Service
+
+=========================================================================
+
+DEPENDENCIAS
+
+=========================================================================
+
+UserRepository
+
+PasswordHasher
+
+SecurityContextFactory
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+authenticate(request)
+
+        ↓
+
+validate request
+
+        ↓
+
+normalize username
+
+        ↓
+
+find User
+
+        ↓
+
+validate User status
+
+        ↓
+
+check passwordHash
+
+        ↓
+
+verify password
+
+        ↓
+
+create SecurityContext
+
+        ↓
+
+AuthenticationResult
+
+=========================================================================
+
+REGLA USERNAME
+
+=========================================================================
+
+Normalizar:
+
+trim
+
+lowercase
+
+=========================================================================
+
+REGLA REQUEST
+
+=========================================================================
+
+Si request == null:
+
+authenticated = false
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA USERNAME
+
+=========================================================================
+
+Si username vacío:
+
+authenticated = false
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA PASSWORD
+
+=========================================================================
+
+Si password vacío:
+
+authenticated = false
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA USER NOT FOUND
+
+=========================================================================
+
+No revelar públicamente:
+
+"User does not exist."
+
+Utilizar:
+
+INVALID_CREDENTIALS
+
+como respuesta externa.
+
+=========================================================================
+
+REGLA PASSWORD HASH NULL
+
+=========================================================================
+
+Si:
+
+passwordHash == null
+
+authentication debe fallar.
+
+Reason interno:
+
+LOCAL_AUTHENTICATION_NOT_ENABLED
+
+La respuesta externa debe evitar revelar detalles sobre el mecanismo.
+
+=========================================================================
+
+REGLA STATUS
+
+=========================================================================
+
+PENDING:
+
+DENY
+
+LOCKED:
+
+DENY
+
+DISABLED:
+
+DENY
+
+DELETED:
+
+DENY
+
+ACTIVE:
+
+continuar.
+
+=========================================================================
+
+REGLA PASSWORD
+
+=========================================================================
+
+Utilizar:
+
+PasswordHasher.matches()
+
+=========================================================================
+
+SI PASSWORD INVALIDA
+
+=========================================================================
+
+authenticated:
+
+false
+
+reason:
+
+INVALID_CREDENTIALS
+
+=========================================================================
+
+SI PASSWORD VÁLIDA
+
+=========================================================================
+
+Crear:
+
+SecurityContext
+
+mediante:
+
+SecurityContextFactory
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+authenticated:
+
+true
+
+userId:
+
+User.id
+
+username:
+
+User.username
+
+securityContext:
+
+SecurityContext
+
+=========================================================================
+
+NO HACER LOGIN AUTOMÁTICO
+=========================================================================
+
+AuthenticationService NO debe almacenar automáticamente el contexto
+en:
+
+SecurityContextHolder.
+
+=========================================================================
+
+RAZÓN
+
+=========================================================================
+
+Authentication produce identidad.
+
+La capa superior decide cuándo establecer el contexto de ejecución.
+
+=========================================================================
+
+FLUJO CORRECTO
+
+=========================================================================
+
+AuthenticationService
+
+       ↓
+
+AuthenticationResult
+
+       ↓
+
+SecurityContext
+
+       ↓
+
+SecurityContextService.setContext()
+
+=========================================================================
+
+NO:
+
+AuthenticationService
+
+       ↓
+
+ThreadLocal
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+AuthenticationProvider.java
+
+Crear interfaz.
+
+Métodos:
+
+String getCode();
+
+AuthenticationResult authenticate(
+    AuthenticationRequest request
+);
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Preparar una arquitectura extensible para:
+
+LOCAL
+
+GOOGLE
+
+MICROSOFT
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+LocalAuthenticationProvider.java
+
+Implementar:
+
+AuthenticationProvider
+
+=========================================================================
+
+getCode():
+
+LOCAL
+
+=========================================================================
+
+Delegará en:
+
+LocalAuthenticationService
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No implementar:
+
+GoogleAuthenticationProvider
+
+MicrosoftAuthenticationProvider
+
+todavía.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+AuthenticationProviderRegistry.java
+
+Crear interfaz.
+
+Métodos:
+
+void register(
+    AuthenticationProvider provider
+);
+
+Optional<AuthenticationProvider> find(
+    String code
+);
+
+List<AuthenticationProvider> findAll();
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+InMemoryAuthenticationProviderRegistry.java
+
+Implementar:
+
+AuthenticationProviderRegistry
+
+Utilizar:
+
+ConcurrentHashMap
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Thread-safe.
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+DefaultAuthenticationProviderRegistry.java
+
+Si se considera innecesario como clase adicional, utilizar directamente:
+
+InMemoryAuthenticationProviderRegistry
+
+como implementación Spring.
+
+No crear capas artificiales.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+AuthenticationManager.java
+
+Crear interfaz.
+
+Método:
+
+AuthenticationResult authenticate(
+    String provider,
+    AuthenticationRequest request
+);
+
+=========================================================================
+
+ARCHIVO 15
+=========================================================================
+
+DefaultAuthenticationManager.java
+
+Implementar:
+
+AuthenticationManager
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+AuthenticationProviderRegistry
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+provider:
+
+LOCAL
+
+        ↓
+
+AuthenticationProviderRegistry
+
+        ↓
+
+LocalAuthenticationProvider
+
+        ↓
+
+AuthenticationService
+
+        ↓
+
+AuthenticationResult
+
+=========================================================================
+
+REGLA PROVIDER NOT FOUND
+
+=========================================================================
+
+Si provider no existe:
+
+authentication failure.
+
+No lanzar excepción técnica para una solicitud normal.
+
+=========================================================================
+
+ARCHIVO 16
+=========================================================================
+
+AuthenticationBootstrap.java
+
+Crear:
+
+@Component
+
+Responsabilidad:
+
+registrar:
+
+LOCAL
+
+AuthenticationProvider.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+Application Startup
+
+        ↓
+
+AuthenticationBootstrap
+
+        ↓
+
+LocalAuthenticationProvider
+
+        ↓
+
+AuthenticationProviderRegistry
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No autenticar usuarios durante startup.
+
+=========================================================================
+
+PASSWORD POLICY
+=========================================================================
+
+Crear:
+
+PasswordPolicy
+
+=========================================================================
+
+ARCHIVO 17
+=========================================================================
+
+PasswordPolicy.java
+
+Crear clase.
+
+Configuración inicial:
+
+minimumLength = 12
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Para MVP:
+
+password debe tener mínimo:
+
+12 caracteres.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No imponer todavía una lista excesiva de reglas como:
+
+mayúscula
+
+minúscula
+
+número
+
+símbolo
+
+porque las políticas modernas de contraseñas no deberían depender
+únicamente de reglas arbitrarias de composición.
+
+La longitud y bloqueo ante abuso serán más importantes.
+
+=========================================================================
+
+ARCHIVO 18
+=========================================================================
+
+PasswordPolicyValidator.java
+
+Crear clase.
+
+Método:
+
+void validate(
+    String password
+);
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si password no cumple:
+
+lanzar:
+
+InvalidPasswordException
+
+=========================================================================
+
+ARCHIVO 19
+=========================================================================
+
+InvalidPasswordException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+PasswordPolicy se utilizará durante:
+
+creación de credenciales
+
+y posteriormente:
+
+password change.
+
+No durante cada login.
+
+=========================================================================
+
+PASSWORD HASH CREATION
+=========================================================================
+
+Modificar:
+
+UserService
+
+o crear:
+
+LocalCredentialService
+
+=========================================================================
+
+RECOMENDACIÓN
+
+=========================================================================
+
+Crear:
+
+LocalCredentialService
+
+=========================================================================
+
+ARCHIVO 20
+=========================================================================
+
+LocalCredentialService.java
+
+Métodos:
+
+void setPassword(
+    Long userId,
+    String rawPassword
+);
+
+void changePassword(
+    Long userId,
+    String currentPassword,
+    String newPassword
+);
+
+boolean hasLocalCredentials(
+    Long userId
+);
+
+=========================================================================
+
+ARCHIVO 21
+=========================================================================
+
+DefaultLocalCredentialService.java
+
+Implementar:
+
+LocalCredentialService
+
+Dependencias:
+
+UserRepository
+
+PasswordHasher
+
+PasswordPolicyValidator
+
+=========================================================================
+
+REGLA SET PASSWORD
+=========================================================================
+
+1. Buscar User.
+
+2. Validar User.
+
+3. Validar password policy.
+
+4. Hash password.
+
+5. Guardar passwordHash.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Nunca guardar:
+
+rawPassword.
+
+=========================================================================
+
+REGLA CHANGE PASSWORD
+=========================================================================
+
+1. Buscar User.
+
+2. Validar User ACTIVE.
+
+3. Validar currentPassword.
+
+4. Validar newPassword.
+
+5. Generar nuevo hash.
+
+6. Persistir nuevo hash.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No permitir:
+
+newPassword == currentPassword.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No permitir cambio de password para:
+
+DELETED
+
+DISABLED
+
+LOCKED
+
+=========================================================================
+
+PENDING
+=========================================================================
+
+Puede establecer credenciales antes de activación, dependiendo del
+workflow de creación.
+
+Para MVP:
+
+permitido.
+
+La autenticación seguirá bloqueada mientras el User no esté:
+
+ACTIVE.
+
+=========================================================================
+
+AUDITORÍA
+=========================================================================
+
+Al cambiar password:
+
+AuditableEntity
+
+debe actualizar:
+
+updatedAt
+
+updatedBy
+
+según el mecanismo existente.
+
+=========================================================================
+
+NO LOGUEAR
+=========================================================================
+
+Nunca registrar:
+
+rawPassword
+
+passwordHash
+
+=========================================================================
+
+NO CREAR PASSWORD RESET TODAVÍA
+=========================================================================
+
+Password recovery será:
+
+IAM-005.x
+
+o una historia posterior.
+
+=========================================================================
+
+SEGURIDAD CONTRA ENUMERATION
+=========================================================================
+
+Las respuestas externas de login fallido deben ser suficientemente
+genéricas.
+
+Ejemplo:
+
+"Invalid credentials."
+
+No devolver:
+
+"User does not exist."
+
+"No password configured."
+
+"User is locked."
+
+dependiendo del canal público.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Internamente puede existir:
+
+AuthenticationFailureReason.
+
+Pero la capa externa podrá mapear múltiples razones a:
+
+INVALID_CREDENTIALS
+
+para evitar user enumeration.
+
+=========================================================================
+
+ACCOUNT LOCKOUT
+=========================================================================
+
+NO implementar todavía contador de intentos.
+
+No crear:
+
+failedLoginAttempts
+
+lockedUntil
+
+loginAttempts
+
+en User todavía.
+
+=========================================================================
+
+RAZÓN
+
+=========================================================================
+
+Account lockout requiere una política específica y almacenamiento
+transaccional.
+
+Se implementará posteriormente.
+
+=========================================================================
+
+RATE LIMITING
+=========================================================================
+
+No implementar dentro de:
+
+AuthenticationService.
+
+Debe ser responsabilidad de la capa de infraestructura/API.
+
+=========================================================================
+
+SESSION
+=========================================================================
+
+IAM-005 NO crea sesiones persistentes.
+
+No crear:
+
+SessionEntity
+
+RefreshTokenEntity
+
+AccessTokenEntity.
+
+=========================================================================
+
+JWT
+=========================================================================
+
+No crear JWT en esta historia.
+
+El contrato de autenticación queda preparado para que una historia
+posterior convierta:
+
+AuthenticationResult
+
+en:
+
+HTTP session
+
+JWT
+
+u otro mecanismo.
+
+=========================================================================
+
+GOOGLE
+=========================================================================
+
+No implementar.
+
+Pero:
+
+AuthenticationProvider
+
+permite posteriormente:
+
+GOOGLE.
+
+=========================================================================
+
+MICROSOFT
+=========================================================================
+
+No implementar.
+
+Pero:
+
+AuthenticationProvider
+
+permite posteriormente:
+
+MICROSOFT.
+
+=========================================================================
+
+IDENTITY LINKING
+=========================================================================
+
+No implementar automáticamente.
+
+Un usuario local:
+
+LOCAL
+
+puede posteriormente vincular:
+
+GOOGLE
+
+MICROSOFT.
+
+Eso será una historia específica.
+
+=========================================================================
+
+EJEMPLO LOGIN EXITOSO
+=========================================================================
+
+Request:
+
+username:
+
+john
+
+password:
+
+********
+
+        ↓
+
+AuthenticationManager
+
+provider:
+
+LOCAL
+
+        ↓
+
+LocalAuthenticationProvider
+
+        ↓
+
+AuthenticationService
+
+        ↓
+
+User
+
+        ↓
+
+PasswordHasher.matches()
+
+        ↓
+
+VALID
+
+        ↓
+
+SecurityContextFactory
+
+        ↓
+
+SecurityContext
+
+        ↓
+
+AuthenticationResult
+
+authenticated:
+
+true
+
+=========================================================================
+
+EJEMPLO LOGIN FALLIDO
+=========================================================================
+
+username:
+
+john
+
+password:
+
+incorrect
+
+        ↓
+
+PasswordHasher.matches()
+
+        ↓
+
+false
+
+        ↓
+
+AuthenticationResult
+
+authenticated:
+
+false
+
+reason:
+
+INVALID_CREDENTIALS
+
+=========================================================================
+
+EJEMPLO USER DISABLED
+=========================================================================
+
+User:
+
+DISABLED
+
+        ↓
+
+Authentication
+
+        ↓
+
+DENY
+
+=========================================================================
+
+EJEMPLO GOOGLE USER
+=========================================================================
+
+User:
+
+john
+
+passwordHash:
+
+null
+
+ExternalIdentity:
+
+GOOGLE / xyz
+
+LOCAL provider:
+
+DENY
+
+reason:
+
+LOCAL_AUTHENTICATION_NOT_ENABLED
+
+=========================================================================
+
+ARQUITECTURA DE PROVIDERS
+=========================================================================
+
+                    AUTHENTICATION MANAGER
+                             │
+                  ┌──────────┼──────────┐
+                  ▼          ▼          ▼
+                LOCAL      GOOGLE    MICROSOFT
+                  │          │          │
+                  ▼          ▼          ▼
+              PASSWORD      OIDC       OIDC
+                  │
+                  ▼
+             AURUM USER
+                  │
+                  ▼
+          SECURITY CONTEXT
+
+IAM-005 implementa solamente:
+
+LOCAL.
+
+=========================================================================
+
+INTEGRACIÓN CON IAM-004
+=========================================================================
+
+AuthenticationResult produce:
+
+SecurityContext.
+
+IAM-004 proporciona:
+
+SecurityContextService.
+
+La aplicación podrá realizar:
+
+authentication
+
+↓
+
+result
+
+↓
+
+securityContextService.setContext()
+
+↓
+
+application execution
+
+↓
+
+securityContextService.clearContext()
+
+=========================================================================
+
+NO HACER
+=========================================================================
+
+AuthenticationService
+
+NO debe:
+
+ejecutar capabilities.
+
+AuthenticationService
+
+NO debe:
+
+consultar Accounting.
+
+AuthenticationService
+
+NO debe:
+
+decidir permisos.
+
+AuthenticationService
+
+NO debe:
+
+crear roles.
+
+AuthenticationService
+
+NO debe:
+
+crear permissions.
+
+=========================================================================
+
+PRUEBAS OBLIGATORIAS
+=========================================================================
+
+1. Password hash generado correctamente.
+
+2. Password hash nunca coincide con password en texto plano.
+
+3. Password correcta produce matches = true.
+
+4. Password incorrecta produce matches = false.
+
+5. User inexistente produce autenticación fallida.
+
+6. User PENDING no puede autenticarse.
+
+7. User LOCKED no puede autenticarse.
+
+8. User DISABLED no puede autenticarse.
+
+9. User DELETED no puede autenticarse.
+
+10. User ACTIVE puede autenticarse.
+
+11. User sin passwordHash no puede autenticarse localmente.
+
+12. Login correcto genera SecurityContext.
+
+13. Login incorrecto NO genera SecurityContext.
+
+14. Password mínima de 12 caracteres.
+
+15. Password no se almacena en texto plano.
+
+16. PasswordHash no aparece en AuthenticationResult.
+
+17. AuthenticationResult no contiene password.
+
+18. AuthenticationProvider LOCAL funciona.
+
+19. AuthenticationManager encuentra LOCAL.
+
+20. Provider inexistente produce authentication failure.
+
+21. SecurityContext contiene userId.
+
+22. SecurityContext contiene username.
+
+23. SecurityContext contiene roles.
+
+24. SecurityContext contiene permissions.
+
+25. No se establece automáticamente ThreadLocal desde AuthenticationService.
+
+26. Google no está implementado.
+
+27. Microsoft no está implementado.
+
+28. JWT no está implementado.
+
+29. OAuth/OIDC no está implementado.
+
+30. No se utiliza Lombok.
+
+31. El proyecto compila con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. User soporta passwordHash.
+
+2. passwordHash puede ser null para usuarios federados.
+
+3. Existe AuthenticationRequest.
+
+4. Existe AuthenticationResult.
+
+5. Existe AuthenticationService.
+
+6. Existe PasswordHasher.
+
+7. Existe BCryptPasswordHasher.
+
+8. Existe LocalCredentialService.
+
+9. Existe PasswordPolicy.
+
+10. Existe AuthenticationProvider.
+
+11. Existe LocalAuthenticationProvider.
+
+12. Existe AuthenticationProviderRegistry.
+
+13. Existe AuthenticationManager.
+
+14. Existe Local Authentication Bootstrap.
+
+15. Passwords no se almacenan en texto plano.
+
+16. Passwords no aparecen en logs.
+
+17. Passwords no aparecen en SecurityContext.
+
+18. Login requiere User ACTIVE.
+
+19. Login requiere passwordHash configurado.
+
+20. Credenciales incorrectas producen failure.
+
+21. Usuario inexistente no se revela al cliente.
+
+22. Usuario bloqueado no puede autenticarse.
+
+23. Usuario deshabilitado no puede autenticarse.
+
+24. Usuario pendiente no puede autenticarse.
+
+25. Usuario eliminado no puede autenticarse.
+
+26. Login exitoso genera SecurityContext.
+
+27. Authentication no modifica permisos.
+
+28. Authentication no ejecuta capabilities.
+
+29. Authentication no accede a Accounting.
+
+30. Authentication no implementa autorización.
+
+31. Google queda preparado mediante AuthenticationProvider.
+
+32. Microsoft queda preparado mediante AuthenticationProvider.
+
+33. No se implementa OAuth2.
+
+34. No se implementa OIDC.
+
+35. No se implementa JWT.
+
+36. No se implementan Refresh Tokens.
+
+37. No se implementa MFA.
+
+38. No se implementa password recovery.
+
+39. No se implementa account lockout.
+
+40. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+IAM-001
+IDENTITY
+   │
+   ▼
+USER
+   │
+   ▼
+IAM-002
+ROLES & PERMISSIONS
+   │
+   ▼
+IAM-003
+AUTHORIZATION
+   │
+   ▼
+IAM-004
+SECURITY CONTEXT
+   │
+   ▼
+IAM-005
+LOCAL AUTHENTICATION
+   │
+   ▼
+AUTHENTICATED USER
+   │
+   ▼
+SECURITY CONTEXT
+   │
+   ▼
+AUTHORIZATION
+   │
+   ▼
+CAPABILITY EXECUTION
+
+=========================================================================
+
+MODELO FINAL HASTA IAM-005
+=========================================================================
+
+                     USER
+                      │
+          ┌───────────┴───────────┐
+          ▼                       ▼
+   LOCAL CREDENTIALS      EXTERNAL IDENTITY
+          │                       │
+          ▼                 ┌─────┴─────┐
+       PASSWORD          GOOGLE      MICROSOFT
+          │
+          ▼
+   AUTHENTICATION
+          │
+          └─────────────┐
+                        ▼
+                 SECURITY CONTEXT
+                        │
+                        ▼
+                  AUTHORIZATION
+                        │
+                 ┌──────┴──────┐
+                 ▼             ▼
+               ALLOW          DENY
+                 │
+                 ▼
+              CAPABILITY
+                 │
+                 ▼
+           BUSINESS DOMAIN
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+Aurum ya no dependerá de un mecanismo específico de autenticación.
+
+El usuario interno es estable.
+
+Los mecanismos de autenticación son intercambiables:
+
+LOCAL
+GOOGLE
+MICROSOFT
+
+La arquitectura queda:
+
+IDENTITY
+
+independiente de:
+
+AUTHENTICATION
+
+que a su vez es independiente de:
+
+AUTHORIZATION
+
+que finalmente es independiente de:
+
+BUSINESS CAPABILITY.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+=========================================================================
+
+IAM-006
+
+AUTHENTICATION SESSION & TOKEN MANAGEMENT
+
+Separar la autenticación exitosa del mecanismo de sesión y transporte,
+definiendo el ciclo de vida de una sesión autenticada y preparando la
+emisión segura de tokens para APIs y aplicaciones web, sin acoplar
+Aurum User a JWT ni a un proveedor de identidad específico.
+
+Después de esa historia podremos implementar:
+
+IAM-007 — GOOGLE OIDC
+
+IAM-008 — MICROSOFT OIDC
+
+IAM-009 — IDENTITY LINKING
+
+=========================================================================
