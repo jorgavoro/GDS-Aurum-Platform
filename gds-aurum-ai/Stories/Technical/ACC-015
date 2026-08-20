@@ -1,0 +1,1385 @@
+# ACC-015 — Rentabilidad Analítica
+
+```text
+=========================================================================
+HISTORIA DE USUARIO: ACC-015
+ANALYTICAL PROFITABILITY — RENTABILIDAD POR DIMENSIÓN
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-012 creó el Analytical Dimension Framework.
+
+ACC-013 implementó ProfitCenter.
+
+ACC-014 creó el Analytical Reporting Engine.
+
+Actualmente Aurum puede obtener:
+
+Revenue
+Expense
+Debit
+Credit
+Balance
+NetResult
+
+por:
+
+AnalyticalDimensionType
+
+ACC-015 agrega una nueva capacidad:
+
+ANALYTICAL PROFITABILITY
+
+La finalidad es determinar la rentabilidad de una dimensión analítica
+a partir de los movimientos contabilizados en LedgerEntry.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un modelo de rentabilidad que permita calcular:
+
+Revenue
+
+Expense
+
+Net Result
+
+Margin
+
+Margin Percentage
+
+para una dimensión analítica determinada.
+
+El motor debe funcionar para:
+
+COST_CENTER
+
+PROFIT_CENTER
+
+y cualquier dimensión futura soportada por el
+Analytical Dimension Framework.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+La rentabilidad NO es un dato almacenado.
+
+Debe derivarse:
+
+LedgerEntry
+     ↓
+Analytical Reporting
+     ↓
+Revenue
+Expense
+     ↓
+Net Result
+     ↓
+Margin
+     ↓
+Margin %
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Net Result:
+
+Revenue - Expense
+
+Margin:
+
+Net Result
+
+Margin Percentage:
+
+(Net Result / Revenue) * 100
+
+=========================================================================
+
+CASO SIN REVENUE
+
+=========================================================================
+
+Si:
+
+Revenue = 0
+
+NO realizar división.
+
+Margin Percentage debe ser:
+
+0
+
+No lanzar:
+
+ArithmeticException
+
+=========================================================================
+
+CASO DE PÉRDIDA
+
+=========================================================================
+
+Revenue:
+
+10000
+
+Expense:
+
+12000
+
+Net Result:
+
+-2000
+
+Margin:
+
+-2000
+
+Margin Percentage:
+
+-20%
+
+=========================================================================
+
+CASO DE UTILIDAD
+
+=========================================================================
+
+Revenue:
+
+10000
+
+Expense:
+
+7000
+
+Net Result:
+
+3000
+
+Margin:
+
+3000
+
+Margin Percentage:
+
+30%
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ProfitabilityLine.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+AnalyticalDimensionType dimensionType
+
+Long dimensionId
+
+String dimensionCode
+
+String dimensionName
+
+BigDecimal revenue
+
+BigDecimal expense
+
+BigDecimal netResult
+
+BigDecimal margin
+
+BigDecimal marginPercentage
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+margin:
+
+netResult
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+marginPercentage:
+
+si revenue != 0:
+
+(netResult / revenue) * 100
+
+si revenue == 0:
+
+0
+
+=========================================================================
+
+PRECISIÓN
+
+=========================================================================
+
+Utilizar:
+
+BigDecimal.divide()
+
+con escala suficiente.
+
+Utilizar:
+
+RoundingMode.HALF_UP
+
+No utilizar:
+
+double
+
+No utilizar:
+
+float
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ProfitabilityReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+AnalyticalDimensionType dimensionType
+
+List<ProfitabilityLine> lines
+
+BigDecimal totalRevenue
+
+BigDecimal totalExpense
+
+BigDecimal totalNetResult
+
+BigDecimal totalMargin
+
+BigDecimal totalMarginPercentage
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DE TOTAL MARGIN
+
+=========================================================================
+
+totalMargin:
+
+totalNetResult
+
+=========================================================================
+
+REGLA DE TOTAL MARGIN PERCENTAGE
+
+=========================================================================
+
+totalMarginPercentage:
+
+si totalRevenue != 0:
+
+(totalNetResult / totalRevenue) * 100
+
+si totalRevenue == 0:
+
+0
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No calcular:
+
+average(line.marginPercentage)
+
+para obtener el margen total.
+
+El margen total debe calcularse:
+
+totalNetResult / totalRevenue
+
+Esto evita distorsiones cuando las dimensiones tienen ingresos
+diferentes.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+ProfitabilityService.java
+
+Crear interfaz.
+
+Métodos:
+
+ProfitabilityReport generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId,
+    AnalyticalDimensionType dimensionType
+);
+
+ProfitabilityReport generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId,
+    AnalyticalDimensionType dimensionType,
+    List<Long> dimensionIds
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultProfitabilityService.java
+
+Implementar:
+
+ProfitabilityService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AnalyticalReportingService
+
+ProfitabilityCalculator
+
+ProfitabilityValidator
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No acceder directamente a:
+
+EntityManager
+
+JDBC
+
+SQL
+
+La información debe obtenerse mediante:
+
+AnalyticalReportingService
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+ProfitabilityService
+
+        ↓
+
+AnalyticalReportingService
+
+        ↓
+
+AnalyticalReport
+
+        ↓
+
+ProfitabilityCalculator
+
+        ↓
+
+ProfitabilityReport
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+ProfitabilityCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateNetResult(
+    BigDecimal revenue,
+    BigDecimal expense
+);
+
+BigDecimal calculateMarginPercentage(
+    BigDecimal revenue,
+    BigDecimal netResult
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultProfitabilityCalculator.java
+
+Implementar:
+
+ProfitabilityCalculator
+
+No debe acceder a:
+
+Repository
+
+Database
+
+EntityManager
+
+JDBC
+
+=========================================================================
+
+REGLA calculateNetResult
+
+=========================================================================
+
+netResult:
+
+revenue.subtract(expense)
+
+Si alguno de los valores es null:
+
+tratarlo como:
+
+BigDecimal.ZERO
+
+=========================================================================
+
+REGLA calculateMarginPercentage
+
+=========================================================================
+
+Si revenue == 0:
+
+return BigDecimal.ZERO
+
+De lo contrario:
+
+netResult
+    .divide(
+        revenue,
+        4,
+        RoundingMode.HALF_UP
+    )
+    .multiply(
+        BigDecimal.valueOf(100)
+    )
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+ProfitabilityValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    ProfitabilityReport report
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultProfitabilityValidator.java
+
+Implementar:
+
+ProfitabilityValidator
+
+Validar:
+
+1. report != null
+
+2. dimensionType != null
+
+3. lines != null
+
+4. totalRevenue != null
+
+5. totalExpense != null
+
+6. totalNetResult != null
+
+7. totalMargin != null
+
+8. totalMarginPercentage != null
+
+9. totalNetResult =
+   totalRevenue - totalExpense
+
+10. totalMargin =
+    totalNetResult
+
+11. Si totalRevenue == 0:
+
+    totalMarginPercentage == 0
+
+12. Si totalRevenue != 0:
+
+    totalMarginPercentage debe corresponder al cálculo definido.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ProfitabilityFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+AnalyticalDimensionType dimensionType
+
+List<Long> dimensionIds
+
+Boolean includeInactive
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+includeInactive:
+
+default = false
+
+Si false:
+
+solo dimensiones activas.
+
+Si true:
+
+permitir dimensiones históricas inactivas.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FilteredProfitabilityService.java
+
+Crear interfaz.
+
+Método:
+
+ProfitabilityReport generate(
+    ProfitabilityFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFilteredProfitabilityService.java
+
+Implementar:
+
+FilteredProfitabilityService
+
+Debe utilizar:
+
+ProfitabilityService
+
+No duplicar la lógica de cálculo.
+
+=========================================================================
+
+=========================================================================
+
+REGLAS DE CÁLCULO
+=========================================================================
+
+Para cada dimensión:
+
+Revenue =
+SUM(Revenue accounts)
+
+Expense =
+SUM(Expense accounts)
+
+NetResult =
+Revenue - Expense
+
+Margin =
+NetResult
+
+MarginPercentage =
+(NetResult / Revenue) * 100
+
+=========================================================================
+
+REGLA SOBRE ACCOUNT TYPE
+=========================================================================
+
+REVENUE:
+
+contribuye a Revenue.
+
+EXPENSE:
+
+contribuye a Expense.
+
+ASSET:
+
+no contribuye a Revenue ni Expense.
+
+LIABILITY:
+
+no contribuye a Revenue ni Expense.
+
+EQUITY:
+
+no contribuye a Revenue ni Expense.
+
+=========================================================================
+
+REGLA SOBRE SIGNOS
+=========================================================================
+
+Revenue:
+
+credit - debit
+
+Expense:
+
+debit - credit
+
+Esto mantiene la misma semántica utilizada por:
+
+IncomeStatement
+
+y:
+
+AnalyticalReport
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+PROFIT_CENTER:
+
+SERVICES
+
+Revenue:
+
+50000
+
+Expense:
+
+30000
+
+Resultado:
+
+Revenue:
+
+50000
+
+Expense:
+
+30000
+
+NetResult:
+
+20000
+
+Margin:
+
+20000
+
+MarginPercentage:
+
+40%
+
+=========================================================================
+
+SEGUNDO EJEMPLO
+
+=========================================================================
+
+PROFIT_CENTER:
+
+SOFTWARE
+
+Revenue:
+
+10000
+
+Expense:
+
+12000
+
+Resultado:
+
+Revenue:
+
+10000
+
+Expense:
+
+12000
+
+NetResult:
+
+-2000
+
+Margin:
+
+-2000
+
+MarginPercentage:
+
+-20%
+
+=========================================================================
+
+TERCER EJEMPLO
+
+=========================================================================
+
+COST_CENTER:
+
+IT
+
+Revenue:
+
+0
+
+Expense:
+
+15000
+
+Resultado:
+
+Revenue:
+
+0
+
+Expense:
+
+15000
+
+NetResult:
+
+-15000
+
+Margin:
+
+-15000
+
+MarginPercentage:
+
+0
+
+No dividir por cero.
+
+=========================================================================
+
+REGLA DE DIMENSIÓN
+
+=========================================================================
+
+El servicio debe funcionar independientemente de:
+
+COST_CENTER
+
+PROFIT_CENTER
+
+o futuras:
+
+PROJECT
+
+BUSINESS_UNIT
+
+REGION
+
+CHANNEL
+
+SEGMENT
+
+No crear lógica:
+
+if COST_CENTER
+
+if PROFIT_CENTER
+
+=========================================================================
+
+REGLA DE MÚLTIPLES DIMENSIONES
+
+=========================================================================
+
+Una línea puede tener:
+
+COST_CENTER = IT
+
+PROFIT_CENTER = SERVICES
+
+La rentabilidad por:
+
+COST_CENTER
+
+debe considerar IT.
+
+La rentabilidad por:
+
+PROFIT_CENTER
+
+debe considerar SERVICES.
+
+No duplicar movimientos dentro de un reporte de un único tipo.
+
+=========================================================================
+
+REGLA SOBRE PERÍODOS
+
+=========================================================================
+
+El reporte se genera para un:
+
+fiscalPeriodId
+
+específico.
+
+No mezclar períodos.
+
+Un período CLOSED puede consultarse.
+
+Un período OPEN también puede consultarse.
+
+La generación del reporte es una operación de lectura.
+
+=========================================================================
+
+REGLA SOBRE CHART OF ACCOUNTS
+
+=========================================================================
+
+Las dimensiones y movimientos deben pertenecer al:
+
+chartOfAccountsId
+
+solicitado.
+
+No mezclar:
+
+ChartOfAccounts A
+
+con:
+
+ChartOfAccounts B.
+
+=========================================================================
+
+REGLA SOBRE DATOS HISTÓRICOS
+
+=========================================================================
+
+Una dimensión INACTIVE puede aparecer en reportes históricos cuando:
+
+includeInactive = true
+
+No modificar su estado.
+
+No reactivarla.
+
+No modificar LedgerEntry.
+
+=========================================================================
+
+NO PERSISTIR
+
+=========================================================================
+
+No crear:
+
+ProfitabilityEntity
+
+ProfitabilityBalance
+
+ProfitabilitySnapshot
+
+ProfitabilityTable
+
+ProfitabilityAggregate
+
+Los resultados son dinámicos.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+AnalyticalReport
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Budget vs Actual
+
+Forecast
+
+Variance Analysis
+
+EBITDA
+
+EBIT
+
+Gross Margin
+
+Contribution Margin
+
+Cash Flow Margin
+
+Customer Profitability
+
+Product Profitability
+
+Project Profitability
+
+AI Financial Analysis
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede generar rentabilidad por COST_CENTER.
+
+2. Se puede generar rentabilidad por PROFIT_CENTER.
+
+3. El mismo servicio funciona para ambos tipos.
+
+4. Revenue se calcula correctamente.
+
+5. Expense se calcula correctamente.
+
+6. NetResult se calcula correctamente.
+
+7. Margin se calcula correctamente.
+
+8. MarginPercentage se calcula correctamente.
+
+9. Revenue = 0 no genera división por cero.
+
+10. Una pérdida produce MarginPercentage negativo.
+
+11. El margen total se calcula usando:
+
+    TotalNetResult / TotalRevenue
+
+12. No se utiliza promedio simple de porcentajes.
+
+13. Las dimensiones inactivas se excluyen por defecto.
+
+14. Las dimensiones inactivas pueden consultarse explícitamente.
+
+15. No se crean saldos persistentes de rentabilidad.
+
+16. El Ledger continúa siendo la fuente de verdad.
+
+17. AnalyticalReportingService continúa siendo la fuente de datos
+    del cálculo.
+
+18. Trial Balance no cambia.
+
+19. Balance Sheet no cambia.
+
+20. Income Statement no cambia.
+
+21. No se crean servicios específicos para CostCenter o ProfitCenter.
+
+22. No existe SQL nativo.
+
+23. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+Profitability es una vista derivada.
+
+No es una entidad transaccional.
+
+No es una fuente de verdad.
+
+La fuente de verdad continúa siendo:
+
+LedgerEntry
+
+El pipeline es:
+
+Ledger
+   ↓
+Analytical Reporting
+   ↓
+Revenue / Expense
+   ↓
+Profitability Calculator
+   ↓
+Profitability Report
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+                         LEDGER
+                           │
+                           ▼
+                  ANALYTICAL REPORT
+                           │
+                 ┌─────────┴─────────┐
+                 ▼                   ▼
+              REVENUE             EXPENSE
+                 │                   │
+                 └─────────┬─────────┘
+                           ▼
+                       NET RESULT
+                           │
+                           ▼
+                         MARGIN
+                           │
+                           ▼
+                       MARGIN %
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+
+=========================================================================
+
+Aurum podrá responder:
+
+¿Cuánto vendió este Profit Center?
+
+¿Cuánto gastó?
+
+¿Cuál fue su resultado?
+
+¿Cuál fue su margen?
+
+Y podrá hacerlo para:
+
+SERVICES
+SOFTWARE
+CONSULTING
+IT
+SALES
+MARKETING
+
+sin modificar el núcleo transaccional.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-016
+
+FINANCIAL DIMENSION COMPARISON
+
+Construir comparación entre dimensiones y períodos para permitir
+análisis de evolución de Revenue, Expense, Net Result y Margin.
+
+=========================================================================
+```
