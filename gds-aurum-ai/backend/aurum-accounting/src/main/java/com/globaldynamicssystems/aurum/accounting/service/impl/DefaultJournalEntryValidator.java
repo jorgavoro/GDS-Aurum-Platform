@@ -1,11 +1,14 @@
 package com.globaldynamicssystems.aurum.accounting.service.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.Account;
-import com.globaldynamicssystems.aurum.accounting.model.CostCenter;
+import com.globaldynamicssystems.aurum.accounting.model.AnalyticalDimensionType;
 import com.globaldynamicssystems.aurum.accounting.model.CostCenterStatus;
 import com.globaldynamicssystems.aurum.accounting.model.FiscalPeriodStatus;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntry;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntryLine;
+import com.globaldynamicssystems.aurum.accounting.model.JournalEntryLineDimension;
+import com.globaldynamicssystems.aurum.accounting.repository.CostCenterRepository;
+import com.globaldynamicssystems.aurum.accounting.repository.ProfitCenterRepository;
 import com.globaldynamicssystems.aurum.accounting.service.JournalEntryBalanceService;
 import com.globaldynamicssystems.aurum.accounting.service.JournalEntryValidator;
 import org.springframework.stereotype.Component;
@@ -18,9 +21,15 @@ import java.util.Set;
 public class DefaultJournalEntryValidator implements JournalEntryValidator {
 
     private final JournalEntryBalanceService balanceService;
+    private final CostCenterRepository costCenterRepository;
+    private final ProfitCenterRepository profitCenterRepository;
 
-    public DefaultJournalEntryValidator(JournalEntryBalanceService balanceService) {
+    public DefaultJournalEntryValidator(JournalEntryBalanceService balanceService,
+                                        CostCenterRepository costCenterRepository,
+                                        ProfitCenterRepository profitCenterRepository) {
         this.balanceService = balanceService;
+        this.costCenterRepository = costCenterRepository;
+        this.profitCenterRepository = profitCenterRepository;
     }
 
     @Override
@@ -64,24 +73,48 @@ public class DefaultJournalEntryValidator implements JournalEntryValidator {
             throw new IllegalArgumentException("FiscalPeriod does not belong to the JournalEntry ChartOfAccounts");
         }
         
-     // Integración de validación de CostCenter en cada línea del JournalEntry:
+     // Validate analytical dimensions on each line
         if (journalEntry.getLines() != null) {
             for (JournalEntryLine line : journalEntry.getLines()) {
-                CostCenter costCenter = line.getCostCenter();
-                if (costCenter != null) {
-                    if (costCenter.getId() == null) {
-                        throw new IllegalArgumentException("Associated CostCenter must exist.");
+                if (line.getDimensions() == null) {
+                    continue;
+                }
+                for (JournalEntryLineDimension lineDimension : line.getDimensions()) {
+                    if (lineDimension.getDimension() == null) {
+                        throw new IllegalArgumentException("JournalEntryLineDimension must have a dimension value");
                     }
-                    if (costCenter.getChartOfAccounts() == null || 
-                        !costCenter.getChartOfAccounts().getId().equals(journalEntry.getChartOfAccounts().getId())) {
-                        throw new IllegalArgumentException(
-                            "CostCenter must belong to the same ChartOfAccounts as the JournalEntry."
-                        );
+                    if (lineDimension.getDimension().getDimensionType() == null) {
+                        throw new IllegalArgumentException("AnalyticalDimensionValue must have a dimensionType");
                     }
-                    if (!CostCenterStatus.ACTIVE.equals(costCenter.getStatus()) || !Boolean.TRUE.equals(costCenter.getActive())) {
+                    if (lineDimension.getDimension().getReferenceId() == null) {
+                        throw new IllegalArgumentException("AnalyticalDimensionValue must have a referenceId");
+                    }
+                    if (lineDimension.getDimension().getCode() == null) {
+                        throw new IllegalArgumentException("AnalyticalDimensionValue must have a code");
+                    }
+                    if (!Boolean.TRUE.equals(lineDimension.getDimension().getActive())) {
                         throw new IllegalArgumentException(
-                            "CostCenter with code '" + costCenter.getCode() + "' is INACTIVE and cannot be used in new entries."
-                        );
+                                "AnalyticalDimensionValue is not active: " + lineDimension.getDimension().getCode());
+                    }
+                    if (AnalyticalDimensionType.COST_CENTER.equals(lineDimension.getDimension().getDimensionType())) {
+                        Long referenceId = lineDimension.getDimension().getReferenceId();
+                        costCenterRepository.findById(referenceId)
+                                .filter(cc -> CostCenterStatus.ACTIVE.equals(cc.getStatus())
+                                        && Boolean.TRUE.equals(cc.getActive()))
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "CostCenter with id " + referenceId + " does not exist or is not active"));
+                    }
+                    if (AnalyticalDimensionType.PROFIT_CENTER.equals(lineDimension.getDimension().getDimensionType())) {
+                        Long referenceId = lineDimension.getDimension().getReferenceId();
+                        Long coaId = journalEntry.getChartOfAccounts().getId();
+                        profitCenterRepository.findById(referenceId)
+                                .filter(pc -> CostCenterStatus.ACTIVE.equals(pc.getStatus())
+                                        && Boolean.TRUE.equals(pc.getActive())
+                                        && pc.getChartOfAccounts() != null
+                                        && coaId.equals(pc.getChartOfAccounts().getId()))
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "ProfitCenter with id " + referenceId
+                                        + " does not exist, is not active, or does not belong to the JournalEntry ChartOfAccounts"));
                     }
                 }
             }

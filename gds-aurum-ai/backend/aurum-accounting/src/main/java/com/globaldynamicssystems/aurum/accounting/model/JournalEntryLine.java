@@ -1,6 +1,7 @@
 package com.globaldynamicssystems.aurum.accounting.model;
 
 import com.globaldynamicssystems.aurum.framework.entity.AuditableEntity;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,9 +10,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "gds_journal_entry_line")
@@ -40,6 +44,14 @@ public class JournalEntryLine extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "journal_entry_id", nullable = false)
     private JournalEntry journalEntry;
+
+    @OneToMany(
+        mappedBy = "journalEntryLine",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private List<JournalEntryLineDimension> dimensions = new ArrayList<>();
 
     public JournalEntryLine() {
     }
@@ -110,18 +122,12 @@ public class JournalEntryLine extends AuditableEntity {
     public void setJournalEntry(JournalEntry journalEntry) {
         this.journalEntry = journalEntry;
     }
-    
- // Modificación: Agregar mapeo opcional a CostCenter y sus métodos accesores.
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cost_center_id")
-    private CostCenter costCenter;
-
-    public CostCenter getCostCenter() {
-        return costCenter;
+    public List<JournalEntryLineDimension> getDimensions() {
+        return dimensions;
     }
 
-    public void setCostCenter(CostCenter costCenter) {
-        this.costCenter = costCenter;
+    public void setDimensions(List<JournalEntryLineDimension> dimensions) {
+        this.dimensions = dimensions;
     }
 }

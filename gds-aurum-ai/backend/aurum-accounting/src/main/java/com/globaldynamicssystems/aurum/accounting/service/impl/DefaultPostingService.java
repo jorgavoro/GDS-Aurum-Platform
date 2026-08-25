@@ -5,8 +5,10 @@ import com.globaldynamicssystems.aurum.accounting.model.FiscalPeriod;
 import com.globaldynamicssystems.aurum.accounting.model.FiscalPeriodStatus;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntry;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntryLine;
+import com.globaldynamicssystems.aurum.accounting.model.JournalEntryLineDimension;
 import com.globaldynamicssystems.aurum.accounting.model.JournalEntryStatus;
 import com.globaldynamicssystems.aurum.accounting.model.LedgerEntry;
+import com.globaldynamicssystems.aurum.accounting.model.LedgerEntryDimension;
 import com.globaldynamicssystems.aurum.accounting.repository.FiscalPeriodRepository;
 import com.globaldynamicssystems.aurum.accounting.repository.JournalEntryRepository;
 import com.globaldynamicssystems.aurum.accounting.repository.LedgerEntryRepository;
@@ -15,6 +17,9 @@ import com.globaldynamicssystems.aurum.accounting.service.PostingService;
 import com.globaldynamicssystems.aurum.accounting.service.PostingValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class DefaultPostingService implements PostingService {
@@ -83,9 +88,18 @@ public class DefaultPostingService implements PostingService {
             ledgerEntry.setCredit(line.getCredit());
             ledgerEntry.setDescription(line.getDescription() != null ? line.getDescription() : journalEntry.getDescription());
             ledgerEntry.setLineNumber(line.getLineNumber());
-         // Durante la generación del LedgerEntry en el Posting:
-            ledgerEntry.setCostCenter(line.getCostCenter());
-            ledgerEntryRepository.save(ledgerEntry);
+
+            LedgerEntry saved = ledgerEntryRepository.save(ledgerEntry);
+
+            if (line.getDimensions() != null) {
+                List<LedgerEntryDimension> ledgerDimensions = new ArrayList<>();
+                for (JournalEntryLineDimension jeld : line.getDimensions()) {
+                    LedgerEntryDimension led = new LedgerEntryDimension(saved, jeld.getDimension());
+                    ledgerDimensions.add(led);
+                }
+                saved.setDimensions(ledgerDimensions);
+                ledgerEntryRepository.save(saved);
+            }
         }
 
         journalEntry.setStatus(JournalEntryStatus.POSTED);

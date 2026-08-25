@@ -1,5 +1,6 @@
 package com.globaldynamicssystems.aurum.accounting.service.impl;
 
+import com.globaldynamicssystems.aurum.accounting.model.AnalyticalDimensionType;
 import com.globaldynamicssystems.aurum.accounting.model.LedgerEntry;
 import com.globaldynamicssystems.aurum.accounting.repository.CostCenterRepository;
 import com.globaldynamicssystems.aurum.accounting.repository.LedgerEntryRepository;
@@ -32,29 +33,27 @@ public class DefaultCostCenterLedgerService implements CostCenterLedgerService {
         if (!costCenterRepository.existsById(costCenterId)) {
             throw new IllegalArgumentException("CostCenter not found with ID: " + costCenterId);
         }
-        return ledgerEntryRepository.findByCostCenterIdAndFiscalPeriodId(costCenterId, fiscalPeriodId);
+        return ledgerEntryRepository.findByDimensionTypeAndReferenceIdAndFiscalPeriodId(
+                AnalyticalDimensionType.COST_CENTER, costCenterId, fiscalPeriodId);
     }
 
     @Override
     public BigDecimal calculateDebit(Long costCenterId, Long fiscalPeriodId) {
-        List<LedgerEntry> entries = findEntries(costCenterId, fiscalPeriodId);
-        return entries.stream()
-                .map(entry -> entry.getDebit() != null ? entry.getDebit() : BigDecimal.ZERO)
+        return findEntries(costCenterId, fiscalPeriodId).stream()
+                .map(e -> e.getDebit() != null ? e.getDebit() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
     public BigDecimal calculateCredit(Long costCenterId, Long fiscalPeriodId) {
-        List<LedgerEntry> entries = findEntries(costCenterId, fiscalPeriodId);
-        return entries.stream()
-                .map(entry -> entry.getCredit() != null ? entry.getCredit() : BigDecimal.ZERO)
+        return findEntries(costCenterId, fiscalPeriodId).stream()
+                .map(e -> e.getCredit() != null ? e.getCredit() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
     public BigDecimal calculateBalance(Long costCenterId, Long fiscalPeriodId) {
-        BigDecimal totalDebit = calculateDebit(costCenterId, fiscalPeriodId);
-        BigDecimal totalCredit = calculateCredit(costCenterId, fiscalPeriodId);
-        return totalDebit.subtract(totalCredit);
+        return calculateDebit(costCenterId, fiscalPeriodId)
+                .subtract(calculateCredit(costCenterId, fiscalPeriodId));
     }
 }

@@ -17,4 +17,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     List<Account> findByParentId(Long parentId);
 
     boolean existsByChartOfAccountsIdAndCode(Long chartOfAccountsId, String code);
+
+    List<Account> findByChartOfAccountsIdAndActive(Long chartOfAccountsId, Boolean active);
 }
