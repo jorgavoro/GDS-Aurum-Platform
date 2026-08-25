@@ -1,0 +1,1667 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-021
+ACCOUNTING DATA QUALITY ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 implementó Analytical Reporting.
+
+ACC-015 implementó Profitability.
+
+ACC-016 implementó Financial Comparison.
+
+ACC-017 implementó Financial Period Comparison.
+
+ACC-018 implementó Account Financial Analysis.
+
+ACC-019 implementó Financial Ratios.
+
+ACC-020 implementó Cash Flow Analysis.
+
+Aurum ya posee múltiples motores que consumen:
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+Account
+
+FiscalPeriod
+
+AnalyticalDimensionValue
+
+Esto crea una necesidad crítica:
+
+los motores analíticos no deberían consumir datos estructuralmente
+inválidos sin saberlo.
+
+Un dato incorrecto en Ledger puede propagarse hacia:
+
+Financial Statements
+Profitability
+Financial Ratios
+Cash Flow
+Financial Comparison
+
+y posteriormente hacia:
+
+Aurum Engine
+
+y:
+
+AI Agents.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un:
+
+ACCOUNTING DATA QUALITY ENGINE
+
+capaz de detectar inconsistencias estructurales y contables.
+
+El motor debe identificar:
+
+- Journal Entries inválidos.
+- Journal Entries no balanceados.
+- Líneas sin Account.
+- Cuentas inexistentes.
+- Cuentas pertenecientes a otro ChartOfAccounts.
+- FiscalPeriods inconsistentes.
+- Dimensiones inválidas.
+- Dimensiones pertenecientes a otro contexto.
+- Valores nulos obligatorios.
+- LedgerEntries inconsistentes.
+- Movimientos fuera de período.
+- Referencias a entidades inexistentes.
+- Estados incompatibles.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+El Data Quality Engine:
+
+DETECTA
+
+REPORTA
+
+CLASIFICA
+
+NO CORRIGE AUTOMÁTICAMENTE.
+
+No modificar datos contables.
+
+No eliminar registros.
+
+No cambiar cuentas.
+
+No cambiar importes.
+
+No cambiar períodos.
+
+No cambiar dimensiones.
+
+=========================================================================
+
+FUENTE DE VERDAD
+=========================================================================
+
+Los datos contables existentes.
+
+El Data Quality Engine es un:
+
+READ MODEL
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                       ACCOUNTING DATA
+                              │
+                              ▼
+                    DATA QUALITY ENGINE
+                              │
+                ┌─────────────┼─────────────┐
+                ▼             ▼             ▼
+             STRUCTURAL    ACCOUNTING     REFERENCE
+              RULES          RULES          RULES
+                │             │             │
+                └─────────────┼─────────────┘
+                              ▼
+                      QUALITY FINDINGS
+                              │
+               ┌──────────────┼──────────────┐
+               ▼              ▼              ▼
+             ERROR          WARNING          INFO
+                              │
+                              ▼
+                      QUALITY REPORT
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+DataQualitySeverity.java
+
+Crear enum.
+
+Valores:
+
+ERROR
+
+WARNING
+
+INFO
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+DataQualityRuleType.java
+
+Crear enum.
+
+Valores:
+
+STRUCTURAL
+
+ACCOUNTING
+
+REFERENCE
+
+DIMENSION
+
+PERIOD
+
+LEDGER
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+DataQualityFinding.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String ruleCode
+
+DataQualityRuleType ruleType
+
+DataQualitySeverity severity
+
+String entityType
+
+Long entityId
+
+String fieldName
+
+String message
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Un finding debe identificar:
+
+qué regla falló
+
+qué entidad está involucrada
+
+qué campo está involucrado cuando corresponda
+
+qué severidad tiene
+
+qué mensaje explica el problema.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountingDataQualityReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<DataQualityFinding> findings
+
+Integer errorCount
+
+Integer warningCount
+
+Integer infoCount
+
+Boolean valid
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA VALID
+
+=========================================================================
+
+valid = true
+
+si:
+
+errorCount == 0
+
+valid = false
+
+si:
+
+errorCount > 0
+
+Los WARNING no invalidan el reporte.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingDataQualityRule.java
+
+Crear interfaz.
+
+Métodos:
+
+String getCode();
+
+DataQualityRuleType getRuleType();
+
+DataQualitySeverity getSeverity();
+
+Optional<DataQualityFinding> evaluate(
+    Object context
+);
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No utilizar Reflection para interpretar el contexto.
+
+La interfaz puede utilizar el contexto necesario según la implementación
+concreta.
+
+Si una regla necesita una entidad específica:
+
+crear una regla tipada.
+
+No construir un motor Reflection-based.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingDataQualityService.java
+
+Crear interfaz.
+
+Métodos:
+
+AccountingDataQualityReport validate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+AccountingDataQualityReport validateChartOfAccounts(
+    Long chartOfAccountsId
+);
+
+AccountingDataQualityReport validateJournalEntry(
+    Long journalEntryId
+);
+
+AccountingDataQualityReport validateLedger(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingDataQualityService.java
+
+Implementar:
+
+AccountingDataQualityService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+ChartOfAccountsRepository
+
+FiscalPeriodRepository
+
+JournalEntryRepository
+
+JournalEntryLineRepository
+
+LedgerEntryRepository
+
+AccountRepository
+
+AnalyticalDimensionValueRepository
+
+AccountingDataQualityRuleRegistry
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingDataQualityRuleRegistry.java
+
+Crear interfaz.
+
+Método:
+
+List<AccountingDataQualityRule> getRules();
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingDataQualityRuleRegistry.java
+
+Implementar:
+
+AccountingDataQualityRuleRegistry
+
+Registrar las reglas del MVP.
+
+=========================================================================
+
+PRINCIPIO
+
+=========================================================================
+
+Las reglas deben poder crecer sin modificar:
+
+AccountingDataQualityService.
+
+El Service ejecuta reglas.
+
+No contiene cientos de:
+
+if
+
+else
+
+=========================================================================
+
+REGLAS DEL MVP
+=========================================================================
+
+=========================================================================
+
+DQ-001
+
+JOURNAL_ENTRY_NOT_BALANCED
+
+Tipo:
+
+ACCOUNTING
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Total Debit != Total Credit
+
+=========================================================================
+
+DQ-002
+
+JOURNAL_ENTRY_WITHOUT_LINES
+
+Tipo:
+
+STRUCTURAL
+
+Severidad:
+
+ERROR
+
+Regla:
+
+JournalEntry sin líneas.
+
+=========================================================================
+
+DQ-003
+
+LINE_WITHOUT_ACCOUNT
+
+Tipo:
+
+STRUCTURAL
+
+Severidad:
+
+ERROR
+
+Regla:
+
+JournalEntryLine sin Account.
+
+=========================================================================
+
+DQ-004
+
+LINE_WITH_INVALID_AMOUNT
+
+Tipo:
+
+ACCOUNTING
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Debit < 0
+
+o:
+
+Credit < 0
+
+=========================================================================
+
+DQ-005
+
+LINE_WITH_BOTH_DEBIT_AND_CREDIT
+
+Tipo:
+
+ACCOUNTING
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Una línea no debe tener simultáneamente:
+
+Debit > 0
+
+y:
+
+Credit > 0
+
+=========================================================================
+
+DQ-006
+
+LINE_WITHOUT_AMOUNT
+
+Tipo:
+
+ACCOUNTING
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Debit == 0
+
+y:
+
+Credit == 0
+
+=========================================================================
+
+DQ-007
+
+ACCOUNT_NOT_IN_CHART
+
+Tipo:
+
+REFERENCE
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Account pertenece a un ChartOfAccounts diferente al JournalEntry.
+
+=========================================================================
+
+DQ-008
+
+PERIOD_MISMATCH
+
+Tipo:
+
+PERIOD
+
+Severidad:
+
+ERROR
+
+Regla:
+
+JournalEntry y FiscalPeriod no corresponden.
+
+=========================================================================
+
+DQ-009
+
+INVALID_ANALYTICAL_DIMENSION
+
+Tipo:
+
+DIMENSION
+
+Severidad:
+
+ERROR
+
+Regla:
+
+JournalEntryLineDimension referencia una dimensión inexistente.
+
+=========================================================================
+
+DQ-010
+
+DIMENSION_WRONG_CHART
+
+Tipo:
+
+DIMENSION
+
+Severidad:
+
+ERROR
+
+Regla:
+
+La dimensión pertenece a otro ChartOfAccounts.
+
+=========================================================================
+
+DQ-011
+
+LEDGER_WITHOUT_ACCOUNT
+
+Tipo:
+
+LEDGER
+
+Severidad:
+
+ERROR
+
+Regla:
+
+LedgerEntry sin Account válido.
+
+=========================================================================
+
+DQ-012
+
+LEDGER_PERIOD_MISMATCH
+
+Tipo:
+
+LEDGER
+
+Severidad:
+
+ERROR
+
+Regla:
+
+LedgerEntry no pertenece al FiscalPeriod esperado.
+
+=========================================================================
+
+DQ-013
+
+NEGATIVE_LEDGER_AMOUNT
+
+Tipo:
+
+LEDGER
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Debit < 0
+
+o:
+
+Credit < 0
+
+=========================================================================
+
+DQ-014
+
+LEDGER_BOTH_DEBIT_CREDIT
+
+Tipo:
+
+LEDGER
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Debit > 0
+
+y:
+
+Credit > 0
+
+=========================================================================
+
+DQ-015
+
+INACTIVE_ACCOUNT_USAGE
+
+Tipo:
+
+REFERENCE
+
+Severidad:
+
+WARNING
+
+Regla:
+
+Una cuenta INACTIVE aparece en una operación nueva.
+
+=========================================================================
+
+DQ-016
+
+INACTIVE_DIMENSION_USAGE
+
+Tipo:
+
+DIMENSION
+
+Severidad:
+
+WARNING
+
+Regla:
+
+Una dimensión INACTIVE aparece en una operación nueva.
+
+=========================================================================
+
+DQ-017
+
+ORPHAN_LEDGER_ENTRY
+
+Tipo:
+
+LEDGER
+
+Severidad:
+
+ERROR
+
+Regla:
+
+LedgerEntry referencia un JournalEntry inexistente.
+
+=========================================================================
+
+DQ-018
+
+ORPHAN_JOURNAL_LINE
+
+Tipo:
+
+STRUCTURAL
+
+Severidad:
+
+ERROR
+
+Regla:
+
+JournalEntryLine referencia un JournalEntry inexistente.
+
+=========================================================================
+
+DQ-019
+
+ORPHAN_DIMENSION_VALUE
+
+Tipo:
+
+DIMENSION
+
+Severidad:
+
+WARNING
+
+Regla:
+
+AnalyticalDimensionValue referencia una entidad inexistente.
+
+=========================================================================
+
+DQ-020
+
+ACCOUNT_CODE_DUPLICATE
+
+Tipo:
+
+REFERENCE
+
+Severidad:
+
+ERROR
+
+Regla:
+
+Dos Accounts con el mismo código dentro del mismo
+ChartOfAccounts.
+
+=========================================================================
+
+REGLA DE DUPLICADOS
+=========================================================================
+
+Los códigos de Account deben ser únicos dentro de:
+
+ChartOfAccounts.
+
+No necesariamente globalmente únicos.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingDataQualityReportBuilder.java
+
+Crear clase.
+
+Responsabilidad:
+
+recibir:
+
+List<DataQualityFinding>
+
+y construir:
+
+AccountingDataQualityReport.
+
+Debe calcular:
+
+errorCount
+
+warningCount
+
+infoCount
+
+valid
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No colocar lógica de conteo dentro de:
+
+AccountingDataQualityService.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountingDataQualityValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    AccountingDataQualityReport report
+);
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountingDataQualityValidator.java
+
+Implementar:
+
+AccountingDataQualityValidator
+
+Validar:
+
+1. report != null
+
+2. findings != null
+
+3. errorCount != null
+
+4. warningCount != null
+
+5. infoCount != null
+
+6. valid != null
+
+7. errorCount >= 0
+
+8. warningCount >= 0
+
+9. infoCount >= 0
+
+10. valid debe coincidir con:
+
+    errorCount == 0
+
+=========================================================================
+
+REGLA DE NO DUPLICACIÓN
+=========================================================================
+
+El mismo problema para la misma entidad y regla no debe aparecer
+duplicado en el reporte.
+
+Identidad:
+
+ruleCode
+
++
+
+entityType
+
++
+
+entityId
+
++
+
+fieldName
+
+=========================================================================
+
+REGLA DE MENSAJES
+=========================================================================
+
+Los mensajes deben ser:
+
+claros
+
+determinísticos
+
+accionables
+
+Ejemplo correcto:
+
+"JournalEntry 1005 is not balanced. Debit=10000 Credit=9500."
+
+No utilizar mensajes ambiguos como:
+
+"Invalid data."
+
+=========================================================================
+
+REGLA DE SEVERIDAD
+=========================================================================
+
+ERROR:
+
+impide considerar el conjunto de datos válido.
+
+WARNING:
+
+problema relevante pero no necesariamente invalida el conjunto.
+
+INFO:
+
+información diagnóstica.
+
+=========================================================================
+
+REGLA DE NO CORRECCIÓN
+=========================================================================
+
+El Data Quality Engine nunca debe ejecutar:
+
+save()
+
+delete()
+
+update()
+
+para corregir datos.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+ACC-021 es un motor de:
+
+DETECCIÓN
+
+no de:
+
+REMEDIACIÓN.
+
+=========================================================================
+
+REGLA DE VALIDACIÓN GLOBAL
+=========================================================================
+
+validate(
+    chartOfAccountsId,
+    fiscalPeriodId
+)
+
+debe validar:
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+dentro del contexto solicitado.
+
+=========================================================================
+
+REGLA DE VALIDACIÓN INDIVIDUAL
+=========================================================================
+
+validateJournalEntry(
+    journalEntryId
+)
+
+debe validar únicamente el JournalEntry solicitado y sus relaciones.
+
+=========================================================================
+
+REGLA DE LEDGER
+=========================================================================
+
+validateLedger(
+    chartOfAccountsId,
+    fiscalPeriodId
+)
+
+debe analizar exclusivamente:
+
+LedgerEntry
+
+del período y ChartOfAccounts solicitados.
+
+=========================================================================
+
+REGLA DE CONSISTENCIA
+=========================================================================
+
+Si:
+
+JournalEntry
+
+está balanceado
+
+pero:
+
+LedgerEntry
+
+no representa correctamente ese movimiento,
+
+debe reportarse:
+
+LEDGER inconsistency.
+
+=========================================================================
+
+REGLA DE LEDGER
+=========================================================================
+
+ACC-021 no reconstruye ni corrige el Ledger.
+
+Solamente detecta inconsistencias.
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+=========================================================================
+
+Validar:
+
+dimension exists
+
+dimension active state
+
+dimension chart context
+
+dimension reference
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES ANALÍTICAS
+=========================================================================
+
+Una línea puede contener:
+
+COST_CENTER
+
+PROFIT_CENTER
+
+PROJECT
+
+etc.
+
+La validación debe ser genérica.
+
+No crear:
+
+CostCenterQualityRule
+
+ProfitCenterQualityRule
+
+=========================================================================
+
+REGLA SOBRE ACCOUNT
+=========================================================================
+
+Account debe:
+
+existir
+
+pertenecer al ChartOfAccounts correcto
+
+tener código válido
+
+tener tipo válido
+
+=========================================================================
+
+REGLA SOBRE FISCAL PERIOD
+=========================================================================
+
+FiscalPeriod debe:
+
+existir
+
+pertenecer al ChartOfAccounts correcto
+
+tener fechas coherentes
+
+=========================================================================
+
+REGLA SOBRE FECHAS
+=========================================================================
+
+Si existe:
+
+transactionDate
+
+debe pertenecer al rango del:
+
+FiscalPeriod.
+
+Si no existe transactionDate en el modelo actual:
+
+no crear un nuevo campo solamente para ACC-021.
+
+=========================================================================
+
+REGLA SOBRE IMPORTES
+=========================================================================
+
+No permitir:
+
+Debit < 0
+
+Credit < 0
+
+No permitir simultáneamente:
+
+Debit > 0
+
+Credit > 0
+
+No permitir:
+
+Debit = 0
+
+Credit = 0
+
+para una línea contabilizable.
+
+=========================================================================
+
+REGLA DE BALANCE
+=========================================================================
+
+JournalEntry:
+
+SUM(Debit)
+
+debe ser igual a:
+
+SUM(Credit)
+
+=========================================================================
+
+PRECISIÓN
+=========================================================================
+
+Comparar:
+
+BigDecimal
+
+utilizando:
+
+compareTo()
+
+No utilizar:
+
+equals()
+
+para determinar igualdad numérica.
+
+Ejemplo:
+
+10.00
+
+y:
+
+10.0
+
+son numéricamente iguales.
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+DataQualityFindingEntity
+
+QualitySnapshot
+
+QualityHistory
+
+QualityScoreEntity
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Automatic Correction
+
+Auto Posting
+
+Auto Reversal
+
+Data Repair
+
+Journal Repair
+
+Ledger Repair
+
+AI Remediation
+
+Quality Dashboard
+
+Quality Score History
+
+Quality Trend
+
+Machine Learning Anomaly Detection
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede validar un ChartOfAccounts.
+
+2. Se puede validar un FiscalPeriod.
+
+3. Se puede validar un JournalEntry individual.
+
+4. Se puede validar un Ledger.
+
+5. Se detectan JournalEntries no balanceados.
+
+6. Se detectan JournalEntries sin líneas.
+
+7. Se detectan líneas sin Account.
+
+8. Se detectan importes negativos.
+
+9. Se detectan líneas con Debit y Credit simultáneos.
+
+10. Se detectan líneas sin importe.
+
+11. Se detectan Accounts pertenecientes a otro ChartOfAccounts.
+
+12. Se detectan FiscalPeriod inconsistentes.
+
+13. Se detectan dimensiones inexistentes.
+
+14. Se detectan dimensiones pertenecientes a otro ChartOfAccounts.
+
+15. Se detectan LedgerEntries inconsistentes.
+
+16. Se detectan LedgerEntries huérfanos.
+
+17. Se detectan Accounts duplicadas.
+
+18. Se detectan usos de Accounts inactivas.
+
+19. Se detectan usos de dimensiones inactivas.
+
+20. Los problemas se clasifican por severidad.
+
+21. Los problemas no se duplican.
+
+22. El reporte indica errorCount.
+
+23. El reporte indica warningCount.
+
+24. El reporte indica infoCount.
+
+25. El reporte indica valid.
+
+26. ERROR hace que valid = false.
+
+27. WARNING no hace que valid = false.
+
+28. El motor no modifica datos.
+
+29. El motor no persiste resultados.
+
+30. Ledger continúa siendo la fuente de verdad.
+
+31. No existe SQL nativo.
+
+32. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+ACC-021 introduce una frontera fundamental:
+
+                     ACCOUNTING DATA
+                           │
+                           ▼
+                 DATA QUALITY ENGINE
+                           │
+                     ┌─────┴─────┐
+                     ▼           ▼
+                  VALID        INVALID
+                     │           │
+                     ▼           ▼
+               ANALYTICAL      FINDINGS
+                ENGINES
+                     │
+                     ▼
+               BUSINESS DATA
+                     │
+                     ▼
+                 AURUM ENGINE
+                     │
+                     ▼
+                  AI AGENTS
+
+Los agentes no deberían recibir datos contables sin conocer su
+calidad estructural.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+El MVP comienza a tener una arquitectura de:
+
+TRANSACTIONAL DATA
+
+        ↓
+
+DATA QUALITY
+
+        ↓
+
+FINANCIAL ANALYSIS
+
+        ↓
+
+BUSINESS INSIGHT
+
+        ↓
+
+AI CONSUMPTION
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum podrá responder:
+
+"¿Los datos contables de este período son estructuralmente válidos?"
+
+"¿Qué problemas existen?"
+
+"¿Dónde están?"
+
+"¿Qué severidad tienen?"
+
+"¿El conjunto puede considerarse válido?"
+
+Pero NO:
+
+"¿Cómo debo corregirlos?"
+
+Eso pertenece a una historia posterior.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-022
+
+ACCOUNTING RULES ENGINE
+
+Construir un motor configurable de reglas contables que permita
+representar políticas de negocio y validaciones específicas sin
+hardcodearlas dentro de JournalEntry, Posting o los servicios
+financieros.
+
+=========================================================================

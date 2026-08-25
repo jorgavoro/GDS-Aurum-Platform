@@ -1,0 +1,1418 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-017
+FINANCIAL PERIOD COMPARISON ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 implementó Analytical Reporting.
+
+ACC-015 implementó Analytical Profitability.
+
+ACC-016 implementó comparación entre dos FiscalPeriod.
+
+Actualmente Aurum puede realizar:
+
+CURRENT PERIOD
+      │
+      ▼
+PREVIOUS PERIOD
+      │
+      ▼
+Revenue Variation
+Expense Variation
+Net Result Variation
+Margin Variation
+
+Sin embargo, un análisis financiero real necesita comparaciones
+temporales más flexibles:
+
+Month vs Month
+
+Quarter vs Quarter
+
+Year vs Year
+
+YTD vs YTD
+
+Month vs Previous Month
+
+Quarter vs Previous Quarter
+
+Year vs Previous Year
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear un motor genérico de comparación temporal que permita construir
+períodos comparables a partir de FiscalPeriod.
+
+El motor debe trabajar sobre:
+
+FiscalPeriod
+
+y derivar los datos desde:
+
+LedgerEntry
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+No crear:
+
+MonthlyBalance
+
+QuarterlyBalance
+
+YearlyBalance
+
+YtdBalance
+
+FinancialSnapshot
+
+Los resultados deben calcularse dinámicamente.
+
+=========================================================================
+
+FUENTE DE VERDAD
+=========================================================================
+
+LedgerEntry
+
+      ↓
+
+FiscalPeriod
+
+      ↓
+
+Temporal Comparison
+
+      ↓
+
+Analytical Reporting
+
+      ↓
+
+Profitability
+
+      ↓
+
+Comparison
+
+=========================================================================
+
+TIPOS DE COMPARACIÓN
+=========================================================================
+
+MONTH
+
+QUARTER
+
+YEAR
+
+YTD
+
+=========================================================================
+
+REGLA MONTH
+=========================================================================
+
+MONTH representa un período mensual.
+
+Ejemplo:
+
+2027-01
+
+Comparar:
+
+2027-01
+
+vs
+
+2026-01
+
+=========================================================================
+
+REGLA QUARTER
+=========================================================================
+
+QUARTER agrupa:
+
+Q1 = Enero + Febrero + Marzo
+
+Q2 = Abril + Mayo + Junio
+
+Q3 = Julio + Agosto + Septiembre
+
+Q4 = Octubre + Noviembre + Diciembre
+
+=========================================================================
+
+REGLA YEAR
+=========================================================================
+
+YEAR agrupa:
+
+Enero → Diciembre
+
+del ejercicio fiscal correspondiente.
+
+=========================================================================
+
+REGLA YTD
+=========================================================================
+
+YTD significa:
+
+Year To Date
+
+Si el período actual es:
+
+2027-08
+
+YTD:
+
+2027-01
+hasta
+2027-08
+
+La comparación correspondiente será:
+
+2026-01
+hasta
+2026-08
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialComparisonPeriodType.java
+
+Crear enum.
+
+Valores:
+
+MONTH
+
+QUARTER
+
+YEAR
+
+YTD
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialComparisonPeriod.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+FinancialComparisonPeriodType type
+
+Integer fiscalYear
+
+Integer periodNumber
+
+LocalDate startDate
+
+LocalDate endDate
+
+String label
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA periodNumber
+=========================================================================
+
+MONTH:
+
+1 → 12
+
+QUARTER:
+
+1 → 4
+
+YEAR:
+
+1
+
+YTD:
+
+mes de referencia
+
+=========================================================================
+
+REGLA LABEL
+=========================================================================
+
+Ejemplos:
+
+2027-01
+
+Q1-2027
+
+FY-2027
+
+YTD-2027-08
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialPeriodComparisonRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+FinancialComparisonPeriodType periodType
+
+Integer currentFiscalYear
+
+Integer currentPeriodNumber
+
+AnalyticalDimensionType dimensionType
+
+List<Long> dimensionIds
+
+Boolean includeInactive
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLAS
+
+=========================================================================
+
+chartOfAccountsId obligatorio.
+
+periodType obligatorio.
+
+currentFiscalYear obligatorio.
+
+currentPeriodNumber obligatorio para:
+
+MONTH
+
+QUARTER
+
+YTD
+
+Para:
+
+YEAR
+
+debe utilizarse:
+
+1
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialComparisonPeriodResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+FinancialComparisonPeriod currentPeriod
+
+FinancialComparisonPeriod previousPeriod
+
+FinancialComparisonReport comparisonReport
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialComparisonPeriodService.java
+
+Crear interfaz.
+
+Métodos:
+
+FinancialComparisonPeriod resolveCurrentPeriod(
+    Integer fiscalYear,
+    Integer periodNumber,
+    FinancialComparisonPeriodType type
+);
+
+FinancialComparisonPeriod resolvePreviousPeriod(
+    Integer fiscalYear,
+    Integer periodNumber,
+    FinancialComparisonPeriodType type
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialComparisonPeriodService.java
+
+Implementar:
+
+FinancialComparisonPeriodService
+
+Dependencia:
+
+FiscalPeriodRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA MONTH
+=========================================================================
+
+current:
+
+fiscalYear + month
+
+previous:
+
+mismo mes
+
+año anterior.
+
+Ejemplo:
+
+2027-05
+
+vs
+
+2026-05
+
+=========================================================================
+
+REGLA QUARTER
+=========================================================================
+
+current:
+
+Q2-2027
+
+previous:
+
+Q2-2026
+
+=========================================================================
+
+REGLA YEAR
+=========================================================================
+
+current:
+
+FY-2027
+
+previous:
+
+FY-2026
+
+=========================================================================
+
+REGLA YTD
+=========================================================================
+
+current:
+
+YTD-2027-05
+
+previous:
+
+YTD-2026-05
+
+=========================================================================
+
+REGLA DE FISCAL PERIOD
+=========================================================================
+
+El motor debe utilizar los FiscalPeriod existentes.
+
+No asumir que:
+
+FiscalPeriod = calendario
+
+si la arquitectura de Aurum posteriormente soporta calendarios
+fiscales diferentes.
+
+Para MVP 1:
+
+el año fiscal se considera compuesto por 12 períodos mensuales.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialPeriodAggregationService.java
+
+Crear interfaz.
+
+Método:
+
+List<Long> resolveFiscalPeriodIds(
+    Long chartOfAccountsId,
+    FinancialComparisonPeriod period
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialPeriodAggregationService.java
+
+Implementar:
+
+FinancialPeriodAggregationService
+
+Dependencia:
+
+FiscalPeriodRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLA MONTH
+=========================================================================
+
+Debe devolver un único:
+
+FiscalPeriodId
+
+=========================================================================
+
+REGLA QUARTER
+=========================================================================
+
+Debe devolver tres:
+
+FiscalPeriodId
+
+Ejemplo:
+
+Q1:
+
+01
+02
+03
+
+=========================================================================
+
+REGLA YEAR
+=========================================================================
+
+Debe devolver doce:
+
+FiscalPeriodId
+
+=========================================================================
+
+REGLA YTD
+=========================================================================
+
+Debe devolver:
+
+FiscalPeriodId
+
+desde enero hasta el período actual.
+
+Ejemplo:
+
+YTD-08
+
+01
+02
+03
+04
+05
+06
+07
+08
+
+=========================================================================
+
+REGLA SOBRE PERÍODOS FALTANTES
+=========================================================================
+
+Si un período requerido no existe:
+
+lanzar:
+
+IllegalArgumentException
+
+No crear automáticamente FiscalPeriod.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialPeriodComparisonEngine.java
+
+Crear interfaz.
+
+Método:
+
+FinancialComparisonPeriodResult compare(
+    FinancialPeriodComparisonRequest request
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialPeriodComparisonEngine.java
+
+Implementar:
+
+FinancialPeriodComparisonEngine
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+FinancialComparisonPeriodService
+
+FinancialPeriodAggregationService
+
+FinancialComparisonService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+Request
+
+   ↓
+
+Resolve Current Period
+
+   ↓
+
+Resolve Previous Period
+
+   ↓
+
+Resolve Current FiscalPeriods
+
+   ↓
+
+Resolve Previous FiscalPeriods
+
+   ↓
+
+FinancialComparisonService
+
+   ↓
+
+FinancialComparisonPeriodResult
+
+=========================================================================
+
+REGLA DE AGREGACIÓN
+=========================================================================
+
+Si:
+
+QUARTER
+
+Current:
+
+Q1-2027
+
+FiscalPeriods:
+
+2027-01
+2027-02
+2027-03
+
+Previous:
+
+Q1-2026
+
+FiscalPeriods:
+
+2026-01
+2026-02
+2026-03
+
+El resultado debe sumar los movimientos de los tres períodos.
+
+=========================================================================
+
+REGLA DE YTD
+=========================================================================
+
+Si:
+
+Current:
+
+YTD-2027-08
+
+Previous:
+
+YTD-2026-08
+
+comparar:
+
+Jan-Aug 2027
+
+vs
+
+Jan-Aug 2026
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Modificar:
+
+FinancialComparisonService
+
+Debe permitir recibir múltiples:
+
+FiscalPeriodId
+
+para:
+
+current
+
+y:
+
+previous
+
+No crear una segunda implementación del motor financiero.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El cálculo de:
+
+Revenue
+
+Expense
+
+NetResult
+
+Margin
+
+Variation
+
+VariationPercentage
+
+debe continuar utilizando la misma lógica de:
+
+ACC-016
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+No duplicar:
+
+FinancialComparisonCalculator
+
+ProfitabilityCalculator
+
+AnalyticalReportCalculator
+
+=========================================================================
+
+REGLA DE COMPATIBILIDAD
+=========================================================================
+
+La API existente de ACC-016 debe mantenerse si es posible.
+
+La nueva capacidad debe extender el comportamiento existente.
+
+No romper consumidores internos existentes.
+
+=========================================================================
+
+EJEMPLO MONTH
+
+=========================================================================
+
+CURRENT:
+
+May 2027
+
+Revenue:
+
+120000
+
+Expense:
+
+80000
+
+NetResult:
+
+40000
+
+PREVIOUS:
+
+May 2026
+
+Revenue:
+
+100000
+
+Expense:
+
+70000
+
+NetResult:
+
+30000
+
+Resultado:
+
+Revenue Variation:
+
+20000
+
+Revenue Variation %:
+
+20%
+
+Expense Variation:
+
+10000
+
+Expense Variation %:
+
+14.2857%
+
+NetResult Variation:
+
+10000
+
+NetResult Variation %:
+
+33.3333%
+
+=========================================================================
+
+EJEMPLO QUARTER
+
+=========================================================================
+
+Q1-2027
+
+January:
+
+30000
+
+February:
+
+35000
+
+March:
+
+40000
+
+Revenue:
+
+105000
+
+Q1-2026:
+
+Revenue:
+
+90000
+
+Variation:
+
+15000
+
+Variation %:
+
+16.6667%
+
+=========================================================================
+
+EJEMPLO YTD
+=========================================================================
+
+YTD-2027-06
+
+Revenue:
+
+600000
+
+Expense:
+
+420000
+
+NetResult:
+
+180000
+
+YTD-2026-06
+
+Revenue:
+
+500000
+
+Expense:
+
+380000
+
+NetResult:
+
+120000
+
+Resultado:
+
+Revenue Variation:
+
+100000
+
+Revenue Variation %:
+
+20%
+
+Expense Variation:
+
+40000
+
+Expense Variation %:
+
+10.5263%
+
+NetResult Variation:
+
+60000
+
+NetResult Variation %:
+
+50%
+
+=========================================================================
+
+REGLA SOBRE CIERRES
+=========================================================================
+
+Un FiscalPeriod CLOSED puede participar en comparación.
+
+Un FiscalPeriod OPEN puede participar en comparación.
+
+La comparación es:
+
+READ ONLY
+
+=========================================================================
+
+REGLA SOBRE YTD ACTUAL
+=========================================================================
+
+YTD puede incluir el período actual aunque esté:
+
+OPEN
+
+Esto permite:
+
+YTD reporting
+
+en tiempo casi real.
+
+No requiere cierre del período.
+
+=========================================================================
+
+REGLA SOBRE CHART OF ACCOUNTS
+=========================================================================
+
+Todos los FiscalPeriodIds deben pertenecer al:
+
+chartOfAccountsId
+
+solicitado.
+
+No mezclar ChartOfAccounts.
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+=========================================================================
+
+El engine debe funcionar con:
+
+COST_CENTER
+
+PROFIT_CENTER
+
+y futuras dimensiones.
+
+No crear lógica específica para:
+
+CostCenter
+
+ProfitCenter
+
+=========================================================================
+
+REGLA SOBRE DIMENSION IDS
+=========================================================================
+
+Si:
+
+dimensionIds != null
+
+solo esas dimensiones deben aparecer.
+
+Si:
+
+dimensionIds está vacío
+
+considerar todas las dimensiones correspondientes al tipo.
+
+=========================================================================
+
+REGLA INCLUDE INACTIVE
+=========================================================================
+
+false:
+
+excluir dimensiones inactivas.
+
+true:
+
+permitir dimensiones históricas.
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+MonthlySnapshot
+
+QuarterlySnapshot
+
+YearlySnapshot
+
+YtdSnapshot
+
+ComparisonSnapshot
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Fiscal Calendar Configuration
+
+13 Period Accounting
+
+4-4-5 Calendar
+
+4-5-4 Calendar
+
+5-4-4 Calendar
+
+53 Week Year
+
+Budget Comparison
+
+Forecast
+
+Trend Detection
+
+Moving Average
+
+Seasonality
+
+AI Analysis
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede comparar Month vs Month.
+
+2. Se puede comparar Quarter vs Quarter.
+
+3. Se puede comparar Year vs Year.
+
+4. Se puede comparar YTD vs YTD.
+
+5. Month utiliza el mismo mes del año anterior.
+
+6. Quarter utiliza el mismo trimestre del año anterior.
+
+7. Year utiliza el año anterior.
+
+8. YTD utiliza el mismo número de meses del año anterior.
+
+9. Quarter agrega correctamente tres períodos.
+
+10. Year agrega correctamente doce períodos.
+
+11. YTD agrega correctamente los períodos desde enero hasta el
+    período seleccionado.
+
+12. Los períodos faltantes generan error.
+
+13. No se crean FiscalPeriod automáticamente.
+
+14. Se pueden utilizar períodos OPEN.
+
+15. Se pueden utilizar períodos CLOSED.
+
+16. El resultado es READ ONLY.
+
+17. CostCenter funciona.
+
+18. ProfitCenter funciona.
+
+19. La comparación continúa utilizando FinancialComparisonCalculator.
+
+20. No se duplica la lógica de cálculo.
+
+21. LedgerEntry continúa siendo la fuente de verdad.
+
+22. No se almacenan snapshots.
+
+23. No existe SQL nativo.
+
+24. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+El tiempo también debe ser tratado como una dimensión de consulta.
+
+La arquitectura queda:
+
+                         LEDGER
+                           │
+                           ▼
+                   FISCAL PERIODS
+                           │
+                ┌──────────┼──────────┐
+                ▼          ▼          ▼
+              MONTH     QUARTER      YEAR
+                │          │          │
+                └──────────┼──────────┘
+                           ▼
+                          YTD
+                           │
+                           ▼
+                  ANALYTICAL REPORT
+                           │
+                           ▼
+                     PROFITABILITY
+                           │
+                           ▼
+                      COMPARISON
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum podrá responder:
+
+"¿Cómo está SERVICES este mes frente al mismo mes del año pasado?"
+
+"¿Cómo está SERVICES este trimestre frente al mismo trimestre?"
+
+"¿Cómo va SERVICES en lo que va del año?"
+
+"¿Cómo se compara el resultado de IT con el año anterior?"
+
+sin crear tablas adicionales.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-018
+
+ACCOUNT FINANCIAL ANALYSIS
+
+Construir análisis financiero directamente sobre Account y Ledger,
+permitiendo analizar Revenue, Expense, Balance, evolución y
+participación de cada cuenta dentro de la estructura contable.
+
+=========================================================================

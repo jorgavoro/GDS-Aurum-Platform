@@ -1,0 +1,1908 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-024
+ACCOUNTING QUERY MODEL
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 implementó Analytical Reporting.
+
+ACC-015 implementó Profitability.
+
+ACC-016 implementó Financial Comparison.
+
+ACC-017 implementó Financial Period Comparison.
+
+ACC-018 implementó Account Financial Analysis.
+
+ACC-019 implementó Financial Ratios.
+
+ACC-020 implementó Cash Flow Analysis.
+
+ACC-021 implementó Accounting Data Quality.
+
+ACC-022 implementó Accounting Rules Engine.
+
+ACC-023 implementó Financial KPI Engine.
+
+Aurum Accounting dispone ahora de múltiples capacidades financieras.
+
+Sin embargo, los servicios internos están diseñados alrededor de:
+
+JPA Entities
+
+Repositories
+
+Services
+
+Internal Models
+
+El:
+
+aurum-engine
+
+NO debe conocer esas implementaciones internas.
+
+Por ejemplo:
+
+aurum-engine
+
+NO debe depender directamente de:
+
+AccountRepository
+
+LedgerEntryRepository
+
+JournalEntryRepository
+
+FinancialRatioService
+
+CashFlowService
+
+ProfitabilityService
+
+EntityDefinition
+
+Account
+
+LedgerEntry
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear un:
+
+ACCOUNTING QUERY MODEL
+
+que represente las capacidades financieras de Aurum mediante un
+modelo de consulta desacoplado de la persistencia.
+
+El modelo debe permitir consultar:
+
+Accounts
+
+Balances
+
+Profitability
+
+Financial Ratios
+
+Cash Flow
+
+Financial KPIs
+
+Data Quality
+
+Financial Comparisons
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+El Query Model es:
+
+READ ONLY
+
+SEMANTIC
+
+STABLE
+
+DECOUPLED
+
+No representa directamente las entidades JPA.
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                    AURUM ACCOUNTING
+                           │
+              ┌────────────┼────────────┐
+              ▼            ▼            ▼
+           ENTITIES      SERVICES     REPORTS
+              │            │            │
+              └────────────┼────────────┘
+                           ▼
+                  ACCOUNTING QUERY
+                       MODEL
+                           │
+                           ▼
+                     AURUM ENGINE
+                           │
+                           ▼
+                       AI AGENTS
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente cuando corresponda.
+
+No exponer entidades JPA.
+
+No exponer repositories.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos salvo las interfaces estrictamente
+necesarias para integrar con aurum-engine.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PAQUETE BASE
+=========================================================================
+
+com.globaldynamicssystems.aurum.accounting.query
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Archivo:
+
+AccountingQueryType.java
+
+Crear enum.
+
+Valores:
+
+ACCOUNT
+
+PROFITABILITY
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+DATA_QUALITY
+
+COMPARISON
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Archivo:
+
+AccountingQueryRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+AccountingQueryType queryType
+
+List<Long> accountIds
+
+List<FinancialKpiType> kpiTypes
+
+List<FinancialRatioType> ratioTypes
+
+AnalyticalDimensionType dimensionType
+
+List<Long> dimensionIds
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLAS
+=========================================================================
+
+chartOfAccountsId:
+
+obligatorio.
+
+fiscalPeriodId:
+
+obligatorio para consultas financieras de período.
+
+queryType:
+
+obligatorio.
+
+=========================================================================
+
+REGLA ACCOUNT
+
+=========================================================================
+
+Si:
+
+queryType = ACCOUNT
+
+se pueden utilizar:
+
+accountIds
+
+accountTypes
+
+rangos
+
+según las capacidades existentes de:
+
+AccountFinancialAnalysisService.
+
+=========================================================================
+
+REGLA KPI
+
+=========================================================================
+
+Si:
+
+queryType = KPI
+
+kpiTypes:
+
+opcional.
+
+Si está vacío:
+
+obtener todos los KPIs disponibles.
+
+=========================================================================
+
+REGLA RATIO
+
+=========================================================================
+
+Si:
+
+queryType = RATIO
+
+ratioTypes:
+
+opcional.
+
+Si está vacío:
+
+obtener todos los ratios disponibles.
+
+=========================================================================
+
+REGLA DIMENSION
+=========================================================================
+
+dimensionType y dimensionIds son opcionales.
+
+No introducir lógica específica para:
+
+CostCenter
+
+ProfitCenter
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Archivo:
+
+AccountingQueryResponse.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+AccountingQueryType queryType
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+Object data
+
+Boolean valid
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+El campo:
+
+data
+
+representa el resultado específico de la consulta.
+
+Sin embargo:
+
+NO utilizar:
+
+Map<String,Object>
+
+para representar arbitrariamente el dominio financiero.
+
+El resultado debe ser uno de los modelos de consulta definidos
+posteriormente.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Archivo:
+
+AccountingQueryResult.java
+
+Crear interfaz.
+
+Métodos:
+
+AccountingQueryType getQueryType();
+
+Boolean isValid();
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Archivo:
+
+AccountQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<AccountFinancialAnalysis> accounts
+
+BigDecimal totalDebit
+
+BigDecimal totalCredit
+
+BigDecimal totalBalance
+
+BigDecimal totalRevenue
+
+BigDecimal totalExpense
+
+BigDecimal totalNetResult
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Archivo:
+
+ProfitabilityQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+ProfitabilityReport profitability
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Archivo:
+
+RatioQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<FinancialRatio> ratios
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Archivo:
+
+CashFlowQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+CashFlowReport cashFlow
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Archivo:
+
+KpiQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<FinancialKpi> kpis
+
+Boolean financiallyValid
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Archivo:
+
+DataQualityQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<DataQualityFinding> findings
+
+Integer errorCount
+
+Integer warningCount
+
+Integer infoCount
+
+Boolean valid
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Archivo:
+
+ComparisonQueryResult.java
+
+Implementar:
+
+AccountingQueryResult
+
+Campos:
+
+Long chartOfAccountsId
+
+Long currentFiscalPeriodId
+
+Long previousFiscalPeriodId
+
+FinancialComparisonReport comparison
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Archivo:
+
+AccountingQueryService.java
+
+Crear interfaz.
+
+Método:
+
+AccountingQueryResult execute(
+    AccountingQueryRequest request
+);
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.query.impl
+
+Archivo:
+
+DefaultAccountingQueryService.java
+
+Implementar:
+
+AccountingQueryService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AccountFinancialAnalysisService
+
+ProfitabilityService
+
+FinancialRatioService
+
+CashFlowService
+
+FinancialKpiService
+
+AccountingDataQualityService
+
+FinancialComparisonService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+=========================================================================
+
+AccountingQueryRequest
+
+        ↓
+
+AccountingQueryService
+
+        ↓
+
+Query Type
+
+        ├── ACCOUNT
+        │
+        ├── PROFITABILITY
+        │
+        ├── RATIO
+        │
+        ├── CASH_FLOW
+        │
+        ├── KPI
+        │
+        ├── DATA_QUALITY
+        │
+        └── COMPARISON
+
+        ↓
+
+Existing Accounting Service
+
+        ↓
+
+AccountingQueryResult
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+=========================================================================
+
+AccountingQueryService NO debe implementar cálculos financieros.
+
+Debe:
+
+interpretar request
+
+delegar
+
+adaptar resultado
+
+devolver query result.
+
+=========================================================================
+
+REGLA ACCOUNT
+
+=========================================================================
+
+queryType:
+
+ACCOUNT
+
+debe delegar en:
+
+AccountFinancialAnalysisService.
+
+=========================================================================
+
+REGLA PROFITABILITY
+
+=========================================================================
+
+queryType:
+
+PROFITABILITY
+
+debe delegar en:
+
+ProfitabilityService.
+
+=========================================================================
+
+REGLA RATIO
+
+=========================================================================
+
+queryType:
+
+RATIO
+
+debe delegar en:
+
+FinancialRatioService.
+
+=========================================================================
+
+REGLA CASH FLOW
+
+=========================================================================
+
+queryType:
+
+CASH_FLOW
+
+debe delegar en:
+
+CashFlowService.
+
+=========================================================================
+
+REGLA KPI
+
+=========================================================================
+
+queryType:
+
+KPI
+
+debe delegar en:
+
+FinancialKpiService.
+
+=========================================================================
+
+REGLA DATA QUALITY
+
+=========================================================================
+
+queryType:
+
+DATA_QUALITY
+
+debe delegar en:
+
+AccountingDataQualityService.
+
+=========================================================================
+
+REGLA COMPARISON
+
+=========================================================================
+
+queryType:
+
+COMPARISON
+
+debe delegar en:
+
+FinancialComparisonService.
+
+=========================================================================
+
+REGLA INVALID REQUEST
+=========================================================================
+
+Si:
+
+request == null
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA QUERY TYPE
+=========================================================================
+
+Si:
+
+queryType == null
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA CHART OF ACCOUNTS
+=========================================================================
+
+Si:
+
+chartOfAccountsId == null
+
+lanzar:
+
+IllegalArgumentException
+
+=========================================================================
+
+REGLA FISCAL PERIOD
+=========================================================================
+
+Para:
+
+ACCOUNT
+
+PROFITABILITY
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+DATA_QUALITY
+
+debe existir:
+
+fiscalPeriodId.
+
+=========================================================================
+
+COMPARISON
+=========================================================================
+
+COMPARISON requiere:
+
+currentFiscalPeriodId
+
+previousFiscalPeriodId
+
+Por tanto:
+
+AccountingQueryRequest debe soportar ambos períodos.
+
+=========================================================================
+
+MODIFICACIÓN A REQUEST
+=========================================================================
+
+Agregar:
+
+Long currentFiscalPeriodId
+
+Long previousFiscalPeriodId
+
+Estos sustituyen conceptualmente a:
+
+fiscalPeriodId
+
+para:
+
+COMPARISON.
+
+No eliminar:
+
+fiscalPeriodId
+
+porque continúa siendo válido para consultas simples.
+
+=========================================================================
+
+REGLA DE COMPARISON
+
+=========================================================================
+
+Si:
+
+queryType = COMPARISON
+
+requiere:
+
+chartOfAccountsId
+
+currentFiscalPeriodId
+
+previousFiscalPeriodId
+
+dimensionType
+
+=========================================================================
+
+REGLA DE ERROR
+=========================================================================
+
+No devolver:
+
+null
+
+como respuesta de consulta válida.
+
+Los errores de entrada deben producir:
+
+IllegalArgumentException.
+
+=========================================================================
+
+REGLA DE RESULTADO
+
+=========================================================================
+
+Cada resultado debe indicar:
+
+queryType
+
+chartOfAccountsId
+
+fiscalPeriodId
+
+valid
+
+cuando corresponda.
+
+=========================================================================
+
+REGLA SOBRE ENTIDADES JPA
+=========================================================================
+
+El Query Model NO debe exponer directamente:
+
+Account
+
+LedgerEntry
+
+JournalEntry
+
+JournalEntryLine
+
+FiscalPeriod
+
+ChartOfAccounts
+
+AnalyticalDimensionValue
+
+como campos del modelo de consulta.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Aunque los servicios internos puedan utilizar esas entidades:
+
+el Query Model debe exponer modelos financieros.
+
+Ejemplo:
+
+CORRECTO:
+
+AccountFinancialAnalysis
+
+INCORRECTO:
+
+List<Account>
+
+=========================================================================
+
+REGLA SOBRE PROFITABILITY REPORT
+
+=========================================================================
+
+Si:
+
+ProfitabilityReport
+
+es actualmente un modelo de dominio sin dependencia JPA:
+
+puede reutilizarse.
+
+Si contiene entidades JPA:
+
+crear un modelo:
+
+ProfitabilityQueryResult
+
+que exponga únicamente valores financieros.
+
+No propagar JPA hacia:
+
+aurum-engine.
+
+=========================================================================
+
+REGLA SOBRE CASH FLOW
+
+=========================================================================
+
+El mismo principio aplica a:
+
+CashFlowReport.
+
+No exponer entidades JPA.
+
+=========================================================================
+
+REGLA SOBRE RATIO
+
+=========================================================================
+
+FinancialRatio ya es un modelo de lectura.
+
+Puede ser reutilizado.
+
+=========================================================================
+
+REGLA SOBRE KPI
+
+=========================================================================
+
+FinancialKpi ya es un modelo de lectura.
+
+Puede ser reutilizado.
+
+=========================================================================
+
+REGLA SOBRE DATA QUALITY
+
+=========================================================================
+
+DataQualityFinding ya es un modelo de lectura.
+
+Puede ser reutilizado.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+Archivo:
+
+AccountingQueryValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    AccountingQueryRequest request
+);
+
+=========================================================================
+
+ARCHIVO 15
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.query.impl
+
+Archivo:
+
+DefaultAccountingQueryValidator.java
+
+Implementar:
+
+AccountingQueryValidator
+
+Validar:
+
+1. request != null
+
+2. queryType != null
+
+3. chartOfAccountsId != null
+
+4. FiscalPeriod cuando corresponda
+
+5. currentFiscalPeriodId para COMPARISON
+
+6. previousFiscalPeriodId para COMPARISON
+
+7. dimensionType para COMPARISON
+
+=========================================================================
+
+REGLA DE VALIDACIÓN
+=========================================================================
+
+El Validator valida la estructura de la consulta.
+
+No consulta la base de datos.
+
+No verifica si:
+
+ChartOfAccounts
+
+existe.
+
+Eso pertenece al servicio delegado.
+
+=========================================================================
+
+ARCHIVO 16
+=========================================================================
+
+Archivo:
+
+AccountingQueryException.java
+
+Crear excepción:
+
+public class AccountingQueryException extends RuntimeException
+
+Debe contener:
+
+constructor vacío
+
+constructor con message
+
+constructor con message y cause
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Utilizar:
+
+AccountingQueryException
+
+para errores internos de ejecución del Query Model.
+
+Utilizar:
+
+IllegalArgumentException
+
+para requests inválidos.
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+AccountingQueryRepository
+
+AccountingQueryEntity
+
+AccountingQueryController
+
+AccountingQueryDto
+
+AccountingQueryMapper
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+AccountingQueryHistory
+
+QueryExecution
+
+QueryResultEntity
+
+QueryCacheEntity
+
+=========================================================================
+
+REGLA DE CACHE
+=========================================================================
+
+ACC-024 no implementa caching.
+
+Aunque ACC-023 y ACC-024 puedan posteriormente beneficiarse de cache:
+
+no implementar todavía.
+
+=========================================================================
+
+REGLA DE SEGURIDAD
+=========================================================================
+
+ACC-024 no implementa:
+
+Authentication
+
+Authorization
+
+RBAC
+
+ABAC
+
+Tenant Security
+
+Company Security
+
+Estas capacidades pertenecen a capas superiores.
+
+=========================================================================
+
+REGLA MULTITENANT
+=========================================================================
+
+No implementar todavía lógica específica de tenant.
+
+Sin embargo:
+
+chartOfAccountsId
+
+debe mantenerse en todos los modelos relevantes para evitar perder
+el contexto contable.
+
+=========================================================================
+
+EJEMPLO 1
+
+QUERY:
+
+queryType:
+
+KPI
+
+chartOfAccountsId:
+
+1
+
+fiscalPeriodId:
+
+202701
+
+kpiTypes:
+
+REVENUE
+
+NET_RESULT
+
+NET_MARGIN
+
+=========================================================================
+
+RESULTADO:
+
+KpiQueryResult
+
+Revenue:
+
+300000
+
+Net Result:
+
+120000
+
+Net Margin:
+
+40%
+
+=========================================================================
+
+EJEMPLO 2
+
+QUERY:
+
+queryType:
+
+RATIO
+
+chartOfAccountsId:
+
+1
+
+fiscalPeriodId:
+
+202701
+
+ratioTypes:
+
+CURRENT_RATIO
+
+DEBT_RATIO
+
+=========================================================================
+
+RESULTADO:
+
+Current Ratio:
+
+2.1
+
+Debt Ratio:
+
+0.35
+
+=========================================================================
+
+EJEMPLO 3
+
+QUERY:
+
+queryType:
+
+CASH_FLOW
+
+chartOfAccountsId:
+
+1
+
+fiscalPeriodId:
+
+202701
+
+=========================================================================
+
+RESULTADO:
+
+Operating:
+
+100000
+
+Investing:
+
+-30000
+
+Financing:
+
+50000
+
+Net:
+
+120000
+
+=========================================================================
+
+EJEMPLO 4
+
+QUERY:
+
+queryType:
+
+ACCOUNT
+
+chartOfAccountsId:
+
+1
+
+fiscalPeriodId:
+
+202701
+
+accountIds:
+
+510505
+
+410505
+
+=========================================================================
+
+RESULTADO:
+
+AccountQueryResult
+
+con análisis financiero de ambas cuentas.
+
+=========================================================================
+
+EJEMPLO 5
+
+QUERY:
+
+queryType:
+
+DATA_QUALITY
+
+chartOfAccountsId:
+
+1
+
+fiscalPeriodId:
+
+202701
+
+=========================================================================
+
+RESULTADO:
+
+errors:
+
+0
+
+warnings:
+
+2
+
+valid:
+
+true
+
+=========================================================================
+
+EJEMPLO 6
+
+QUERY:
+
+queryType:
+
+COMPARISON
+
+chartOfAccountsId:
+
+1
+
+currentFiscalPeriodId:
+
+202701
+
+previousFiscalPeriodId:
+
+202601
+
+dimensionType:
+
+PROFIT_CENTER
+
+=========================================================================
+
+RESULTADO:
+
+FinancialComparisonReport
+
+=========================================================================
+
+REGLA SOBRE BIGDECIMAL
+=========================================================================
+
+Los valores financieros deben conservar:
+
+BigDecimal
+
+No convertir a:
+
+double
+
+float
+
+String
+
+=========================================================================
+
+REGLA DE SERIALIZACIÓN
+=========================================================================
+
+ACC-024 NO define todavía JSON.
+
+El modelo debe ser serializable posteriormente por la capa API.
+
+No agregar:
+
+Jackson annotations
+
+Gson annotations
+
+JSON-B annotations
+
+en esta historia salvo que ya formen parte del estándar existente
+del proyecto.
+
+=========================================================================
+
+REGLA DE VERSIONAMIENTO
+=========================================================================
+
+No implementar versionado del Query Model todavía.
+
+Sin embargo:
+
+evitar depender directamente de nombres de tablas o columnas.
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+REST API
+
+GraphQL
+
+OData
+
+JSON Schema
+
+OpenAPI
+
+API Gateway
+
+Authentication
+
+Authorization
+
+Caching
+
+Pagination
+
+Query History
+
+Query Auditing
+
+AI Query Planning
+
+Natural Language Query
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST DTOs
+
+Mappers
+
+Repositories nuevos
+
+Entities nuevas
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos salvo las modificaciones expresamente
+indicadas.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe AccountingQueryType.
+
+2. Existe AccountingQueryRequest.
+
+3. Existe AccountingQueryResult.
+
+4. Existe AccountingQueryService.
+
+5. Existe AccountingQueryValidator.
+
+6. Existe AccountingQueryException.
+
+7. Se puede consultar ACCOUNT.
+
+8. Se puede consultar PROFITABILITY.
+
+9. Se puede consultar RATIO.
+
+10. Se puede consultar CASH_FLOW.
+
+11. Se puede consultar KPI.
+
+12. Se puede consultar DATA_QUALITY.
+
+13. Se puede consultar COMPARISON.
+
+14. El Query Model no expone entidades JPA.
+
+15. El Query Model no expone repositories.
+
+16. ACCOUNT delega en AccountFinancialAnalysisService.
+
+17. PROFITABILITY delega en ProfitabilityService.
+
+18. RATIO delega en FinancialRatioService.
+
+19. CASH_FLOW delega en CashFlowService.
+
+20. KPI delega en FinancialKpiService.
+
+21. DATA_QUALITY delega en AccountingDataQualityService.
+
+22. COMPARISON delega en FinancialComparisonService.
+
+23. No se duplican cálculos.
+
+24. No se consulta directamente Ledger desde el Query Service.
+
+25. Los resultados son READ ONLY.
+
+26. Los valores financieros utilizan BigDecimal.
+
+27. Requests inválidos son rechazados.
+
+28. No existe SQL nativo.
+
+29. No existe Reflection.
+
+30. No existe persistencia del Query Model.
+
+31. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+ACC-024 establece una frontera arquitectónica:
+
+             INTERNAL ACCOUNTING
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+     JPA MODEL              SERVICES
+        │                       │
+        └───────────┬───────────┘
+                    ▼
+           ACCOUNTING QUERY
+                 MODEL
+                    │
+              CONTRACT
+                    │
+                    ▼
+              AURUM ENGINE
+                    │
+                    ▼
+                AI AGENTS
+
+El Engine no necesita saber cómo se almacenan los datos.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+
+Antes:
+
+aurum-engine
+      │
+      ├── AccountRepository
+      ├── LedgerEntryRepository
+      ├── FinancialRatioService
+      ├── CashFlowService
+      └── ProfitabilityService
+
+Después:
+
+aurum-engine
+      │
+      ▼
+AccountingQueryService
+      │
+      ▼
+AccountingQueryModel
+      │
+      ▼
+Existing Accounting Services
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+
+Aurum Engine podrá solicitar:
+
+"Give me the KPIs for fiscal period 2027."
+
+"Give me the profitability report."
+
+"Give me the current ratios."
+
+"Give me cash flow."
+
+"Validate accounting data."
+
+"Compare Profit Center performance."
+
+sin conocer la estructura interna de:
+
+aurum-accounting.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Este es uno de los puntos más importantes del MVP 1.
+
+A partir de ACC-024:
+
+aurum-accounting
+
+se comporta como un:
+
+DOMAIN CAPABILITY PROVIDER
+
+y:
+
+aurum-engine
+
+se convierte en:
+
+ORCHESTRATOR
+
+No estamos creando todavía una API HTTP.
+
+Estamos creando el contrato de dominio que posteriormente podrá ser
+expuesto mediante API.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-025
+
+ACCOUNTING MVP INTEGRATION
+
+Integrar formalmente `aurum-accounting` con `aurum-engine`, exponiendo
+el Accounting Query Model como capacidad de dominio consumible por el
+Engine, sin acoplarlo a JPA, Spring Data ni a la infraestructura de
+persistencia.
+
+=========================================================================

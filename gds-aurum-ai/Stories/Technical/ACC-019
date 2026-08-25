@@ -1,0 +1,1481 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-019
+FINANCIAL RATIOS ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 implementó Analytical Reporting.
+
+ACC-015 implementó Analytical Profitability.
+
+ACC-016 implementó Financial Comparison.
+
+ACC-017 implementó Financial Period Comparison.
+
+ACC-018 implementó Account Financial Analysis.
+
+Aurum ya puede obtener:
+
+Revenue
+Expense
+Net Result
+Assets
+Liabilities
+Equity
+Debit
+Credit
+Balance
+
+directamente desde el Ledger.
+
+El siguiente paso es convertir estos valores en indicadores financieros
+normalizados.
+
+Ejemplos:
+
+Current Ratio
+
+Quick Ratio
+
+Debt Ratio
+
+Debt-to-Equity
+
+Gross Margin
+
+Net Profit Margin
+
+Return on Assets
+
+Return on Equity
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un motor genérico de ratios financieros que permita calcular
+indicadores derivados de la información contable.
+
+Los ratios deben calcularse dinámicamente.
+
+No deben almacenarse.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Los ratios no son fuente de verdad.
+
+Son información derivada.
+
+La cadena debe ser:
+
+Ledger
+   ↓
+Financial Statements / Account Analysis
+   ↓
+Financial Metrics
+   ↓
+Financial Ratios
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialRatioType.java
+
+Crear enum.
+
+Valores:
+
+CURRENT_RATIO
+
+QUICK_RATIO
+
+DEBT_RATIO
+
+DEBT_TO_EQUITY
+
+GROSS_MARGIN
+
+NET_PROFIT_MARGIN
+
+RETURN_ON_ASSETS
+
+RETURN_ON_EQUITY
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialRatio.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+FinancialRatioType type
+
+String code
+
+String name
+
+BigDecimal value
+
+String unit
+
+String description
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA UNIT
+
+=========================================================================
+
+Ratios:
+
+CURRENT_RATIO
+QUICK_RATIO
+DEBT_TO_EQUITY
+
+unit:
+
+RATIO
+
+Ratios:
+
+DEBT_RATIO
+GROSS_MARGIN
+NET_PROFIT_MARGIN
+RETURN_ON_ASSETS
+RETURN_ON_EQUITY
+
+unit:
+
+PERCENTAGE
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialRatioReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+List<FinancialRatio> ratios
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialRatioInput.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Representa los valores utilizados para calcular los ratios.
+
+Campos:
+
+BigDecimal currentAssets
+
+BigDecimal inventory
+
+BigDecimal cashAndCashEquivalents
+
+BigDecimal totalAssets
+
+BigDecimal totalLiabilities
+
+BigDecimal totalEquity
+
+BigDecimal revenue
+
+BigDecimal costOfRevenue
+
+BigDecimal netIncome
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si un valor no existe:
+
+utilizar:
+
+BigDecimal.ZERO
+
+No utilizar null dentro del cálculo.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialRatioCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateCurrentRatio(
+    BigDecimal currentAssets,
+    BigDecimal currentLiabilities
+);
+
+BigDecimal calculateQuickRatio(
+    BigDecimal currentAssets,
+    BigDecimal inventory,
+    BigDecimal currentLiabilities
+);
+
+BigDecimal calculateDebtRatio(
+    BigDecimal totalLiabilities,
+    BigDecimal totalAssets
+);
+
+BigDecimal calculateDebtToEquity(
+    BigDecimal totalLiabilities,
+    BigDecimal totalEquity
+);
+
+BigDecimal calculateGrossMargin(
+    BigDecimal revenue,
+    BigDecimal costOfRevenue
+);
+
+BigDecimal calculateNetProfitMargin(
+    BigDecimal netIncome,
+    BigDecimal revenue
+);
+
+BigDecimal calculateReturnOnAssets(
+    BigDecimal netIncome,
+    BigDecimal totalAssets
+);
+
+BigDecimal calculateReturnOnEquity(
+    BigDecimal netIncome,
+    BigDecimal totalEquity
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialRatioCalculator.java
+
+Implementar:
+
+FinancialRatioCalculator
+
+No debe acceder a:
+
+Repository
+
+Database
+
+EntityManager
+
+JDBC
+
+=========================================================================
+
+REGLAS DE CÁLCULO
+=========================================================================
+
+CURRENT RATIO
+
+currentAssets / currentLiabilities
+
+=========================================================================
+
+QUICK RATIO
+
+(currentAssets - inventory) / currentLiabilities
+
+=========================================================================
+
+DEBT RATIO
+
+totalLiabilities / totalAssets
+
+=========================================================================
+
+DEBT TO EQUITY
+
+totalLiabilities / totalEquity
+
+=========================================================================
+
+GROSS MARGIN
+
+((revenue - costOfRevenue) / revenue) * 100
+
+=========================================================================
+
+NET PROFIT MARGIN
+
+(netIncome / revenue) * 100
+
+=========================================================================
+
+RETURN ON ASSETS
+
+(netIncome / totalAssets) * 100
+
+=========================================================================
+
+RETURN ON EQUITY
+
+(netIncome / totalEquity) * 100
+
+=========================================================================
+
+REGLA DE DIVISIÓN POR CERO
+=========================================================================
+
+Si el denominador es:
+
+0
+
+el resultado debe ser:
+
+BigDecimal.ZERO
+
+No lanzar:
+
+ArithmeticException
+
+No devolver:
+
+null
+
+No devolver:
+
+Infinity
+
+No devolver:
+
+NaN
+
+=========================================================================
+
+PRECISIÓN
+=========================================================================
+
+Utilizar:
+
+BigDecimal
+
+Escala:
+
+4
+
+RoundingMode:
+
+HALF_UP
+
+Para porcentajes:
+
+multiplicar por:
+
+100
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialRatioService.java
+
+Crear interfaz.
+
+Método:
+
+FinancialRatioReport calculate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialRatioService.java
+
+Implementar:
+
+FinancialRatioService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AccountFinancialAnalysisService
+
+FinancialRatioCalculator
+
+FinancialRatioValidator
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+=========================================================================
+
+FinancialRatioService
+
+        ↓
+
+AccountFinancialAnalysisService
+
+        ↓
+
+Account balances
+
+        ↓
+
+FinancialRatioInput
+
+        ↓
+
+FinancialRatioCalculator
+
+        ↓
+
+FinancialRatioReport
+
+=========================================================================
+
+REGLA DE FUENTE
+
+=========================================================================
+
+No consultar directamente:
+
+LedgerEntry
+
+desde:
+
+FinancialRatioCalculator.
+
+El Calculator únicamente recibe:
+
+FinancialRatioInput
+
+=========================================================================
+
+REGLA DEL SERVICE
+=========================================================================
+
+DefaultFinancialRatioService debe obtener los datos financieros
+necesarios utilizando los servicios existentes.
+
+No duplicar la lógica de:
+
+AccountFinancialAnalysisService.
+
+=========================================================================
+
+CONSTRUCCIÓN DEL INPUT
+=========================================================================
+
+currentAssets:
+
+suma de cuentas:
+
+ASSET
+
+clasificadas como corrientes.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+El modelo actual de Account debe permitir identificar si una cuenta es
+corriente.
+
+Si dicha clasificación todavía no existe en MVP 1:
+
+NO inventar una nueva estructura compleja.
+
+Utilizar únicamente la información actualmente disponible.
+
+En ese caso:
+
+currentAssets
+
+y:
+
+inventory
+
+deben obtenerse únicamente si el modelo existente permite distinguirlas.
+
+=========================================================================
+
+REGLA DE INVENTORY
+=========================================================================
+
+Si el modelo actual no permite identificar Inventory:
+
+inventory = 0
+
+No crear:
+
+InventoryAccountType
+
+InventoryClassification
+
+InventoryEntity
+
+=========================================================================
+
+CURRENT LIABILITIES
+=========================================================================
+
+Debe utilizarse únicamente si el modelo actual permite distinguir
+pasivos corrientes.
+
+Si no existe dicha clasificación:
+
+currentLiabilities = totalLiabilities
+
+=========================================================================
+
+REGLA DE MVP
+
+=========================================================================
+
+El objetivo es construir el motor de ratios.
+
+No rediseñar:
+
+Account
+
+ChartOfAccounts
+
+AccountType
+
+para soportar cada ratio posible.
+
+=========================================================================
+
+TOTAL ASSETS
+=========================================================================
+
+Obtener del conjunto:
+
+AccountType.ASSET
+
+=========================================================================
+
+TOTAL LIABILITIES
+=========================================================================
+
+Obtener del conjunto:
+
+AccountType.LIABILITY
+
+=========================================================================
+
+TOTAL EQUITY
+=========================================================================
+
+Obtener del conjunto:
+
+AccountType.EQUITY
+
+=========================================================================
+
+REVENUE
+=========================================================================
+
+Obtener del conjunto:
+
+AccountType.REVENUE
+
+=========================================================================
+
+NET INCOME
+=========================================================================
+
+Utilizar:
+
+Revenue - Expense
+
+=========================================================================
+
+COST OF REVENUE
+=========================================================================
+
+Si el modelo actual no distingue:
+
+Cost of Revenue
+
+utilizar:
+
+Expense
+
+como aproximación de MVP.
+
+No crear todavía:
+
+CostOfRevenueAccountType
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FinancialRatioValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    FinancialRatioReport report
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFinancialRatioValidator.java
+
+Implementar:
+
+FinancialRatioValidator
+
+Validar:
+
+1. report != null
+
+2. chartOfAccountsId != null
+
+3. fiscalPeriodId != null
+
+4. ratios != null
+
+5. Cada ratio debe tener:
+
+   type
+
+   code
+
+   name
+
+   value
+
+   unit
+
+=========================================================================
+
+REGLA DE VALORES
+=========================================================================
+
+Los ratios pueden ser:
+
+positivos
+
+cero
+
+negativos
+
+No rechazar ratios negativos.
+
+Ejemplo:
+
+NET_PROFIT_MARGIN = -15%
+
+es válido.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FinancialRatioFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<FinancialRatioType> ratioTypes
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si ratioTypes:
+
+null
+
+o vacío:
+
+calcular todos los ratios soportados.
+
+Si contiene valores:
+
+calcular únicamente los solicitados.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FilteredFinancialRatioService.java
+
+Crear interfaz.
+
+Método:
+
+FinancialRatioReport calculate(
+    FinancialRatioFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFilteredFinancialRatioService.java
+
+Implementar:
+
+FilteredFinancialRatioService
+
+Debe delegar en:
+
+FinancialRatioService
+
+No duplicar cálculos.
+
+=========================================================================
+
+EJEMPLO
+=========================================================================
+
+INPUT:
+
+Current Assets:
+
+100000
+
+Current Liabilities:
+
+50000
+
+Total Assets:
+
+200000
+
+Total Liabilities:
+
+80000
+
+Total Equity:
+
+120000
+
+Revenue:
+
+300000
+
+Cost Of Revenue:
+
+180000
+
+Net Income:
+
+60000
+
+=========================================================================
+
+RESULTADOS
+=========================================================================
+
+Current Ratio:
+
+2.0000
+
+Quick Ratio:
+
+2.0000
+
+si Inventory = 0
+
+Debt Ratio:
+
+0.4000
+
+Debt To Equity:
+
+0.6667
+
+Gross Margin:
+
+40%
+
+Net Profit Margin:
+
+20%
+
+Return On Assets:
+
+30%
+
+Return On Equity:
+
+50%
+
+=========================================================================
+
+REGLA SOBRE QUICK RATIO
+=========================================================================
+
+Si:
+
+Inventory = 20000
+
+Current Assets = 100000
+
+Current Liabilities = 50000
+
+Quick Ratio:
+
+(100000 - 20000) / 50000
+
+=
+
+1.6000
+
+=========================================================================
+
+REGLA SOBRE PORCENTAJES
+=========================================================================
+
+Los siguientes ratios se expresan en porcentaje:
+
+GROSS_MARGIN
+
+NET_PROFIT_MARGIN
+
+RETURN_ON_ASSETS
+
+RETURN_ON_EQUITY
+
+Ejemplo:
+
+0.30
+
+debe representarse como:
+
+30
+
+y no:
+
+0.30%
+
+=========================================================================
+
+REGLA SOBRE RATIOS NO PORCENTUALES
+=========================================================================
+
+Current Ratio:
+
+2.0000
+
+Debt Ratio:
+
+0.4000
+
+Debt To Equity:
+
+0.6667
+
+No multiplicar por 100.
+
+=========================================================================
+
+REGLA DE NEGATIVE NET INCOME
+=========================================================================
+
+Si:
+
+Revenue = 100000
+
+Net Income = -10000
+
+Net Profit Margin:
+
+-10%
+
+Debe ser considerado un resultado válido.
+
+=========================================================================
+
+REGLA SOBRE PERÍODO
+=========================================================================
+
+El reporte se genera para:
+
+un FiscalPeriod
+
+Puede ser:
+
+OPEN
+
+o:
+
+CLOSED
+
+=========================================================================
+
+REGLA SOBRE CHART OF ACCOUNTS
+=========================================================================
+
+Todos los datos deben pertenecer al:
+
+chartOfAccountsId
+
+solicitado.
+
+No mezclar ChartOfAccounts.
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+=========================================================================
+
+ACC-019 calcula ratios globales del ChartOfAccounts.
+
+No calcular todavía:
+
+Current Ratio by ProfitCenter
+
+Debt Ratio by CostCenter
+
+ROE by Project
+
+Esto pertenece a una evolución posterior.
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+FinancialRatioEntity
+
+FinancialRatioSnapshot
+
+RatioHistory
+
+RatioBalance
+
+RatioAggregate
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+AnalyticalReport
+
+ProfitabilityReport
+
+FinancialComparisonReport
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+EBITDA
+
+EBIT
+
+Working Capital
+
+Cash Conversion Cycle
+
+DSO
+
+DPO
+
+Inventory Turnover
+
+ROIC
+
+ROCE
+
+Economic Value Added
+
+DuPont Analysis
+
+Cash Flow Ratios
+
+Budget Ratios
+
+Forecast Ratios
+
+Industry Benchmarking
+
+AI Interpretation
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede calcular Current Ratio.
+
+2. Se puede calcular Quick Ratio.
+
+3. Se puede calcular Debt Ratio.
+
+4. Se puede calcular Debt To Equity.
+
+5. Se puede calcular Gross Margin.
+
+6. Se puede calcular Net Profit Margin.
+
+7. Se puede calcular Return On Assets.
+
+8. Se puede calcular Return On Equity.
+
+9. Los ratios se calculan con BigDecimal.
+
+10. No existe división por cero.
+
+11. Los resultados de división por cero son cero.
+
+12. Los porcentajes se expresan correctamente.
+
+13. Los ratios no porcentuales no se multiplican por 100.
+
+14. Los ratios negativos son válidos.
+
+15. Se puede solicitar un subconjunto de ratios.
+
+16. Se pueden calcular todos los ratios.
+
+17. El cálculo utiliza AccountFinancialAnalysisService.
+
+18. No se duplica la lógica contable.
+
+19. El Ledger continúa siendo la fuente de verdad.
+
+20. No se almacenan ratios.
+
+21. OPEN FiscalPeriod funciona.
+
+22. CLOSED FiscalPeriod funciona.
+
+23. ChartOfAccounts se respeta.
+
+24. No existe SQL nativo.
+
+25. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+FinancialRatioCalculator debe ser una pieza pura de dominio.
+
+No debe conocer:
+
+Spring
+
+JPA
+
+Repositories
+
+Database
+
+HTTP
+
+REST
+
+Controllers
+
+Su responsabilidad es exclusivamente:
+
+Financial Inputs
+       ↓
+Financial Ratios
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                       LEDGER
+                          │
+                          ▼
+                    ACCOUNT DATA
+                          │
+                          ▼
+               ACCOUNT FINANCIAL
+                   ANALYSIS
+                          │
+                          ▼
+                FINANCIAL INPUTS
+                          │
+                          ▼
+                RATIO CALCULATOR
+                          │
+        ┌─────────────────┼─────────────────┐
+        ▼                 ▼                 ▼
+      LIQUIDITY       LEVERAGE         PROFITABILITY
+        │                 │                 │
+        ▼                 ▼                 ▼
+ Current Ratio       Debt Ratio       Gross Margin
+ Quick Ratio         Debt/Equity      Net Margin
+                                      ROA
+                                      ROE
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum podrá responder:
+
+"¿Tenemos suficiente activo corriente para cubrir los pasivos?"
+
+"¿Qué proporción de nuestros activos está financiada con deuda?"
+
+"¿Cuánto retorno estamos generando sobre los activos?"
+
+"¿Cuál es nuestro margen neto?"
+
+"¿Cuál es nuestro retorno sobre patrimonio?"
+
+Y podrá hacerlo a partir de los datos contables reales.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-020
+
+CASH FLOW ANALYSIS
+
+Construir el análisis de flujo de caja derivado del Ledger, separando
+las actividades operativas, de inversión y financiación, sin convertir
+el Cash Flow en una fuente de verdad independiente del Ledger.
+
+=========================================================================
