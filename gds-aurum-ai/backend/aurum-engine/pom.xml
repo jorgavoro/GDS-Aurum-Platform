@@ -30,5 +30,11 @@
 	    <artifactId>aurum-common</artifactId>
 	    <version>${project.version}</version>
 	</dependency>
+	
+	<dependency>
+	    <groupId>com.globaldynamicssystems.aurum</groupId>
+	    <artifactId>aurum-accounting</artifactId>
+	    <version>${project.version}</version>
+	</dependency>
  </dependencies>
 </project>

@@ -1,6 +1,8 @@
 package com.globaldynamicssystems.aurum.accounting.query.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.AccountFinancialAnalysis;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryType;
 
 import java.math.BigDecimal;
 import java.util.List;

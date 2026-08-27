@@ -1,6 +1,7 @@
 package com.globaldynamicssystems.aurum.accounting.query.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.AccountFinancialAnalysis;
+import com.globaldynamicssystems.aurum.accounting.model.AccountFinancialAnalysisReport;
 import com.globaldynamicssystems.aurum.accounting.model.AccountingDataQualityReport;
 import com.globaldynamicssystems.aurum.accounting.model.CashFlowReport;
 import com.globaldynamicssystems.aurum.accounting.model.FinancialComparisonReport;
@@ -9,17 +10,18 @@ import com.globaldynamicssystems.aurum.accounting.model.FinancialKpiReport;
 import com.globaldynamicssystems.aurum.accounting.model.FinancialRatio;
 import com.globaldynamicssystems.aurum.accounting.model.FinancialRatioReport;
 import com.globaldynamicssystems.aurum.accounting.model.ProfitabilityReport;
-import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryException;
+import com.globaldynamicssystems.aurum.accounting.query.impl.AccountQueryResult;
+import com.globaldynamicssystems.aurum.accounting.exception.AccountingQueryException;
 import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryRequest;
 import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryResult;
 import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryService;
 import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryValidator;
-import com.globaldynamicssystems.aurum.accounting.query.CashFlowQueryResult;
-import com.globaldynamicssystems.aurum.accounting.query.ComparisonQueryResult;
-import com.globaldynamicssystems.aurum.accounting.query.DataQualityQueryResult;
-import com.globaldynamicssystems.aurum.accounting.query.KpiQueryResult;
-import com.globaldynamicssystems.aurum.accounting.query.ProfitabilityQueryResult;
-import com.globaldynamicssystems.aurum.accounting.query.RatioQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.impl.CashFlowQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.impl.ComparisonQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.impl.DataQualityQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.impl.KpiQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.impl.ProfitabilityQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.impl.RatioQueryResult;
 import com.globaldynamicssystems.aurum.accounting.service.AccountFinancialAnalysisService;
 import com.globaldynamicssystems.aurum.accounting.service.AccountingDataQualityService;
 import com.globaldynamicssystems.aurum.accounting.service.CashFlowService;
@@ -96,17 +98,23 @@ public class DefaultAccountingQueryService implements AccountingQueryService {
     }
 
     private AccountQueryResult handleAccountQuery(AccountingQueryRequest request) {
-        List<AccountFinancialAnalysis> accounts = accountFinancialAnalysisService.analyze(
+        AccountFinancialAnalysisReport report = accountFinancialAnalysisService.analyze(
                 request.getChartOfAccountsId(),
                 request.getFiscalPeriodId(),
                 request.getAccountIds()
         );
 
+        List<AccountFinancialAnalysis> accounts = (report != null && report.getAccounts() != null)
+                ? report.getAccounts()
+                : new ArrayList<>();
+
         return new AccountQueryResult(
                 request.getChartOfAccountsId(),
                 request.getFiscalPeriodId(),
                 accounts,
-                BigDecimal.ZERO,
+                // Nota: Si 'AccountFinancialAnalysisReport' expone los totales, 
+                // puedes reemplazar estos BigDecimal.ZERO por 'report.getTotalDebit()', etc.
+                BigDecimal.ZERO, 
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
@@ -150,7 +158,7 @@ public class DefaultAccountingQueryService implements AccountingQueryService {
     }
 
     private CashFlowQueryResult handleCashFlowQuery(AccountingQueryRequest request) {
-        CashFlowReport report = cashFlowService.calculate(
+        CashFlowReport report = cashFlowService.generate(
                 request.getChartOfAccountsId(),
                 request.getFiscalPeriodId()
         );
@@ -177,12 +185,12 @@ public class DefaultAccountingQueryService implements AccountingQueryService {
                 request.getChartOfAccountsId(),
                 request.getFiscalPeriodId(),
                 report != null ? report.getKpis() : new ArrayList<>(),
-                report != null ? report.getValid() : false
+                report != null ? report.getFinanciallyValid() : false
         );
     }
 
     private DataQualityQueryResult handleDataQualityQuery(AccountingQueryRequest request) {
-        AccountingDataQualityReport report = accountingDataQualityService.evaluate(
+        AccountingDataQualityReport report = accountingDataQualityService.validate(
                 request.getChartOfAccountsId(),
                 request.getFiscalPeriodId()
         );

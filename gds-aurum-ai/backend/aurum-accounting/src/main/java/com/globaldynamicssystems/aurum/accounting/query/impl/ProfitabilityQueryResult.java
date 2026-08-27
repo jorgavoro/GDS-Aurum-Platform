@@ -1,6 +1,8 @@
 package com.globaldynamicssystems.aurum.accounting.query.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.ProfitabilityReport;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryType;
 
 public class ProfitabilityQueryResult implements AccountingQueryResult {
 

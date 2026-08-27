@@ -1,6 +1,9 @@
 package com.globaldynamicssystems.aurum.accounting.query.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.DataQualityFinding;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryType;
+
 import java.util.List;
 
 public class DataQualityQueryResult implements AccountingQueryResult {

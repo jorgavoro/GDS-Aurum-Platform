@@ -1,6 +1,9 @@
-package com.globaldynamicssystems.aurum.accounting.query;
+package com.globaldynamicssystems.aurum.accounting.query.impl;
 
 import com.globaldynamicssystems.aurum.accounting.model.FinancialKpi;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryType;
+
 import java.util.List;
 
 public class KpiQueryResult implements AccountingQueryResult {
