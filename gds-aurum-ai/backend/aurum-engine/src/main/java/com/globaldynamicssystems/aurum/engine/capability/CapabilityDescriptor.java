@@ -2,6 +2,7 @@ package com.globaldynamicssystems.aurum.engine.capability;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class CapabilityDescriptor {
 
@@ -9,6 +10,7 @@ public class CapabilityDescriptor {
     private String name;
     private String description;
     private CapabilityType capabilityType;
+    private Map<String,String> descriptions;
     private List<String> supportedOperations;
     private List<String> requiredParameters;
     private List<String> optionalParameters;
@@ -20,9 +22,14 @@ public class CapabilityDescriptor {
         this.optionalParameters = new ArrayList<>();
     }
 
-    public CapabilityDescriptor(String code, String name, String description, CapabilityType capabilityType,
-                                List<String> supportedOperations, List<String> requiredParameters,
-                                List<String> optionalParameters, Boolean enabled) {
+    public CapabilityDescriptor(String code, 
+    		                    String name, 
+    		                    String description, 
+    		                    CapabilityType capabilityType,
+                                List<String> supportedOperations, 
+                                List<String> requiredParameters,
+                                List<String> optionalParameters, 
+                                Boolean enabled) {
         this.code = code;
         this.name = name;
         this.description = description;
@@ -32,6 +39,18 @@ public class CapabilityDescriptor {
         this.optionalParameters = optionalParameters;
         this.enabled = enabled;
     }
+    
+    public CapabilityDescriptor(String code, 
+		                        String name, 
+		                        String description, 
+		                        String capabilityType,
+		                        Boolean enabled) {
+		this.code = code;
+		this.name = name;
+		this.description = description;
+		this.enabled = enabled;
+		}
+    
 
     public String getCode() {
         return code;
@@ -96,4 +115,12 @@ public class CapabilityDescriptor {
     public void setEnabled(Boolean enabled) {
         this.enabled = enabled;
     }
+
+	public Map<String,String> getDescriptions() {
+		return descriptions;
+	}
+
+	public void setDescriptions(Map<String,String> descriptions) {
+		this.descriptions = descriptions;
+	}
 }

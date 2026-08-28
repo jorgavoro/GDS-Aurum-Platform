@@ -2,6 +2,8 @@ package com.globaldynamicssystems.aurum.engine.capability;
 
 import org.springframework.stereotype.Service;
 
+import com.globaldynamicssystems.aurum.engine.exception.CapabilityExecutionException;
+
 @Service
 public class DefaultCapabilityExecutor implements CapabilityExecutor {
 

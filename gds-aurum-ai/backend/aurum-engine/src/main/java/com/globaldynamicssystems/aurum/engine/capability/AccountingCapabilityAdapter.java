@@ -1,9 +1,9 @@
 package com.globaldynamicssystems.aurum.engine.capability;
 
-import com.globaldynamicssystems.aurum.accounting.model.AccountingQueryRequest;
-import com.globaldynamicssystems.aurum.accounting.model.AccountingQueryResult;
-import com.globaldynamicssystems.aurum.accounting.model.AccountingQueryType;
-import com.globaldynamicssystems.aurum.accounting.service.AccountingQueryService;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryRequest;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryResult;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryType;
+import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryService;
 import com.globaldynamicssystems.aurum.engine.capability.metadata.CapabilityMetadata;
 import com.globaldynamicssystems.aurum.engine.capability.metadata.CapabilityMetadataRegistry;
 import com.globaldynamicssystems.aurum.engine.exception.CapabilityExecutionException;
@@ -49,7 +49,7 @@ public class AccountingCapabilityAdapter implements Capability {
     public CapabilityResult execute(CapabilityRequest request) {
         try {
             AccountingQueryRequest queryRequest = mapToAccountingQueryRequest(request.getParameters());
-            AccountingQueryResult queryResult = accountingQueryService.executeQuery(queryRequest);
+            AccountingQueryResult queryResult = accountingQueryService.execute(queryRequest);
 
             return new CapabilityResult(CAPT_CODE, true, queryResult, "Execution successful");
         } catch (Exception e) {
@@ -96,7 +96,12 @@ public class AccountingCapabilityAdapter implements Capability {
         }
 
         if (parameters.containsKey("dimensionType")) {
-            queryRequest.setDimensionType((String) parameters.get("dimensionType"));
+            Object dt = parameters.get("dimensionType");
+            if (dt instanceof com.globaldynamicssystems.aurum.accounting.model.AnalyticalDimensionType) {
+                queryRequest.setDimensionType((com.globaldynamicssystems.aurum.accounting.model.AnalyticalDimensionType) dt);
+            } else if (dt instanceof String) {
+                queryRequest.setDimensionType(com.globaldynamicssystems.aurum.accounting.model.AnalyticalDimensionType.valueOf((String) dt));
+            }
         }
 
         if (parameters.containsKey("dimensionIds")) {

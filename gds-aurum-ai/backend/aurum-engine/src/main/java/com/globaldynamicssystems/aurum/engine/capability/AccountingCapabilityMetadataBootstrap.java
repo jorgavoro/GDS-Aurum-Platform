@@ -5,8 +5,7 @@ import com.globaldynamicssystems.aurum.engine.capability.metadata.CapabilityMeta
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
 
 @Component
 public class AccountingCapabilityMetadataBootstrap {
@@ -34,20 +33,17 @@ public class AccountingCapabilityMetadataBootstrap {
         );
         discoveryRegistry.register(descriptor);
 
-        // Registrar Metadatos de Parámetros
-        Map<String, String> descriptions = new HashMap<>();
-        descriptions.put("chartOfAccountsId", "Unique identifier for the Chart of Accounts");
-        descriptions.put("fiscalPeriodId", "Unique identifier for the Fiscal Period");
-        descriptions.put("queryType", "Type of accounting query to execute (e.g., TRIAL_BALANCE, GENERAL_LEDGER)");
-        descriptions.put("accountIds", "List of account IDs to filter the query");
+        // Registrar Metadatos utilizando el constructor vacío y setters
+        CapabilityMetadata metadata = new CapabilityMetadata();
+        metadata.setCode(code);
+        metadata.setName("Accounting Query Capability");
+        metadata.setDescription("Capability to perform accounting queries such as trial balances, ledger accounts, and financial statements.");
+        metadata.setEnabled(true);
+        metadata.setInputs(new ArrayList<>());
+        metadata.setConcepts(new ArrayList<>());
+        metadata.setOutputs(new ArrayList<>());
+        metadata.setDependencies(new ArrayList<>());
 
-        Map<String, Class<?>> types = new HashMap<>();
-        types.put("chartOfAccountsId", Long.class);
-        types.put("fiscalPeriodId", Long.class);
-        types.put("queryType", String.class);
-        types.put("accountIds", java.util.List.class);
-
-        CapabilityMetadata metadata = new CapabilityMetadata(code, descriptions, types, new HashMap<>());
         metadataRegistry.register(metadata);
     }
 }

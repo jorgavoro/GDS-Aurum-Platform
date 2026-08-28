@@ -1,6 +1,6 @@
 package com.globaldynamicssystems.aurum.engine.accounting.impl;
 
-import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryException;
+import com.globaldynamicssystems.aurum.accounting.exception.AccountingQueryException;
 import com.globaldynamicssystems.aurum.accounting.query.AccountingQueryType;
 import com.globaldynamicssystems.aurum.engine.accounting.AccountingCapability;
 import com.globaldynamicssystems.aurum.engine.accounting.AccountingCapabilityExecutor;
