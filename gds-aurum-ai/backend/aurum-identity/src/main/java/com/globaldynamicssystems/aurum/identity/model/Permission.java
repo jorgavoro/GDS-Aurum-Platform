@@ -6,14 +6,23 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.UUID;
 
 @Entity
 @Table(name = "gds_permission", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"capability", "resource", "action", "scopeType"})
 })
 public class Permission extends AuditableEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @Column(nullable = false, unique = true, length = 150)
     private String code;

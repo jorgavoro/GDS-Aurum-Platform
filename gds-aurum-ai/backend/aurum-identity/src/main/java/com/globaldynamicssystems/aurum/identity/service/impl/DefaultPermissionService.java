@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DefaultPermissionService implements PermissionService {
@@ -56,7 +57,7 @@ public class DefaultPermissionService implements PermissionService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Permission> findById(Long id) {
+    public Optional<Permission> findById(UUID id) {
         return permissionRepository.findById(id);
     }
 

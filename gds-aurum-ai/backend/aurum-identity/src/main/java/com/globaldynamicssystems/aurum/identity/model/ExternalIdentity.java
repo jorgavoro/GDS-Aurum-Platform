@@ -2,6 +2,7 @@ package com.globaldynamicssystems.aurum.identity.model;
 
 import com.globaldynamicssystems.aurum.framework.entity.AuditableEntity;
 import jakarta.persistence.*;
+import java.util.UUID;
 
 @Entity
 @Table(
@@ -13,8 +14,9 @@ import jakarta.persistence.*;
 public class ExternalIdentity extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -36,8 +38,7 @@ public class ExternalIdentity extends AuditableEntity {
         this.active = true;
     }
 
-    public ExternalIdentity(Long id, User user, String provider, String subject, String email, Boolean active) {
-        this.id = id;
+    public ExternalIdentity(User user, String provider, String subject, String email, Boolean active) {
         this.user = user;
         this.provider = provider;
         this.subject = subject;
@@ -45,12 +46,8 @@ public class ExternalIdentity extends AuditableEntity {
         this.active = active != null ? active : true;
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public User getUser() {

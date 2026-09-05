@@ -1,18 +1,20 @@
 package com.globaldynamicssystems.aurum.identity.authorization;
 
+import java.util.UUID;
+
 public class AuthorizationResult {
 
     private AuthorizationDecision decision;
     private AuthorizationReason reason;
     private String message;
-    private Long userId;
+    private UUID userId;
     private String permissionCode;
 
     public AuthorizationResult() {
     }
 
     public AuthorizationResult(AuthorizationDecision decision, AuthorizationReason reason, 
-                               String message, Long userId, String permissionCode) {
+                               String message, UUID userId, String permissionCode) {
         this.decision = decision;
         this.reason = reason;
         this.message = message;
@@ -44,11 +46,11 @@ public class AuthorizationResult {
         this.message = message;
     }
 
-    public Long getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 

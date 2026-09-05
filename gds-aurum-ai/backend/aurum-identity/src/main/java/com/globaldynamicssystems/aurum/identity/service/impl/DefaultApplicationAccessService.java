@@ -8,7 +8,6 @@ import com.globaldynamicssystems.aurum.identity.service.AuthorizationService;
 import com.globaldynamicssystems.aurum.identity.model.PermissionAction;
 import com.globaldynamicssystems.aurum.identity.model.PermissionScopeType;
 import com.globaldynamicssystems.aurum.identity.service.ApplicationAccessService;
-import com.globaldynamicssystems.aurum.identity.service.AuthorizationService;
 import com.globaldynamicssystems.aurum.identity.service.SecurityContextService;
 
 import org.springframework.stereotype.Service;

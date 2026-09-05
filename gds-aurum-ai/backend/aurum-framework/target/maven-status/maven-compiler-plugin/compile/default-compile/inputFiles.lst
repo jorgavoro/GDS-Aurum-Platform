@@ -1,0 +1,10 @@
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\api\response\ApiResponse.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\api\response\ErrorResponse.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\api\response\PagedResult.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\api\response\PageResponse.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\configuration\JpaConfiguration.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\entity\AuditableEntity.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\entity\BaseEntity.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\repository\BaseRepository.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\service\BaseService.java
+C:\Users\ejgo0\git\GDS-Aurum-Platform\gds-aurum-ai\backend\aurum-framework\src\main\java\com\globaldynamicssystems\aurum\framework\service\impl\BaseServiceImpl.java

@@ -89,8 +89,8 @@
 
         <module>backend/aurum-bootstrap</module>
 
-        <module>aurum-model</module>
-        <module>aurum-identity</module>
+        <module>backend/aurum-model</module>
+        <module>backend/aurum-identity</module>
     </modules>
 
     <!-- ====================================================== -->

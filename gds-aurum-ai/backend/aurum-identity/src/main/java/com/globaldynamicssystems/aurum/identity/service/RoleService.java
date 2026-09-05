@@ -12,5 +12,5 @@ public interface RoleService {
     Optional<Role> findById(UUID id);
     Optional<Role> findByCode(String code);
     List<Role> findActive();
-    Role updateStatus(Long roleId, RoleStatus status);
+    Role updateStatus(UUID roleId, RoleStatus status);
 }

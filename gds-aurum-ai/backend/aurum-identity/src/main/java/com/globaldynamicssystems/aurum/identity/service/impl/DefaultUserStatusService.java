@@ -9,6 +9,8 @@ import com.globaldynamicssystems.aurum.identity.service.UserStatusService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 public class DefaultUserStatusService implements UserStatusService {
 
@@ -20,7 +22,7 @@ public class DefaultUserStatusService implements UserStatusService {
 
     @Override
     @Transactional
-    public User changeStatus(Long userId, UserStatus newStatus) {
+    public User changeStatus(UUID userId, UserStatus newStatus) {
         if (userId == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }

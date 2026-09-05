@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DefaultExternalIdentityService implements ExternalIdentityService {
@@ -29,7 +30,7 @@ public class DefaultExternalIdentityService implements ExternalIdentityService {
 
     @Override
     @Transactional
-    public ExternalIdentity link(Long userId, String provider, String subject, String email) {
+    public ExternalIdentity link(UUID userId, String provider, String subject, String email) {
         if (userId == null) {
             throw new IllegalArgumentException("UserId cannot be null");
         }
@@ -74,7 +75,7 @@ public class DefaultExternalIdentityService implements ExternalIdentityService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ExternalIdentity> findByUserId(Long userId) {
+    public List<ExternalIdentity> findByUserId(UUID userId) {
         if (userId == null) {
             return List.of();
         }
@@ -83,7 +84,7 @@ public class DefaultExternalIdentityService implements ExternalIdentityService {
 
     @Override
     @Transactional
-    public void unlink(Long userId, String provider, String subject) {
+    public void unlink(UUID userId, String provider, String subject) {
         if (userId == null || provider == null || subject == null) {
             return;
         }

@@ -4,10 +4,11 @@ import com.globaldynamicssystems.aurum.identity.model.PermissionAction;
 import com.globaldynamicssystems.aurum.identity.model.PermissionScopeType;
 
 import java.util.Map;
+import java.util.UUID;
 
 public class AuthorizationRequest {
 
-    private Long userId;
+    private UUID userId;
     private String capability;
     private String resource;
     private PermissionAction action;
@@ -17,7 +18,7 @@ public class AuthorizationRequest {
     public AuthorizationRequest() {
     }
 
-    public AuthorizationRequest(Long userId, String capability, String resource, 
+    public AuthorizationRequest(UUID userId, String capability, String resource, 
                                 PermissionAction action, PermissionScopeType scopeType, 
                                 Map<String, Object> context) {
         this.userId = userId;
@@ -28,11 +29,11 @@ public class AuthorizationRequest {
         this.context = context;
     }
 
-    public Long getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(UUID userId) {
         this.userId = userId;
     }
 

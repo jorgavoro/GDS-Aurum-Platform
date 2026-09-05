@@ -45,7 +45,7 @@ public class DefaultRoleAssignmentService implements RoleAssignmentService {
             throw new IllegalStateException("Cannot assign non-active role.");
         }
 
-        boolean exists = userRoleRepository.existsByUserIdAndRoleId(userId, roleId);
+        boolean exists = userRoleRepository.existsByUserIdAndRoleId(user.getId(), roleId);
         if (!exists) {
             UserRole userRole = new UserRole();
             userRole.setUser(user);
@@ -57,17 +57,20 @@ public class DefaultRoleAssignmentService implements RoleAssignmentService {
     @Override
     @Transactional
     public void removeRole(UUID userId, UUID roleId) {
-        boolean exists = userRoleRepository.existsByUserIdAndRoleId(userId, roleId);
-        if (exists) {
-            userRoleRepository.deleteByUserIdAndRoleId(userId, roleId);
-        }
+        userRepository.findById(userId)
+                .ifPresent(user -> {
+                    if (userRoleRepository.existsByUserIdAndRoleId(user.getId(), roleId)) {
+                        userRoleRepository.deleteByUserIdAndRoleId(user.getId(), roleId);
+                    }
+                });
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Role> findUserRoles(UUID userId) {
-        List<UserRole> userRoles = userRoleRepository.findByUserId(userId);
-        return userRoles.stream()
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User with id " + userId + " not found."));
+        return userRoleRepository.findByUserId(user.getId()).stream()
                 .map(UserRole::getRole)
                 .collect(Collectors.toList());
     }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class DefaultUserService implements UserService {
@@ -49,7 +50,7 @@ public class DefaultUserService implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(UUID id) {
         if (id == null) {
             return Optional.empty();
         }
@@ -76,7 +77,7 @@ public class DefaultUserService implements UserService {
 
     @Override
     @Transactional
-    public User updateStatus(Long id, UserStatus status) {
+    public User updateStatus(UUID id, UserStatus status) {
         return userStatusService.changeStatus(id, status);
     }
 

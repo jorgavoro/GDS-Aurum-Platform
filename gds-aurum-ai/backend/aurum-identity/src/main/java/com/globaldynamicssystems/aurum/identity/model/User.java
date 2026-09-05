@@ -4,14 +4,16 @@ import com.globaldynamicssystems.aurum.framework.entity.AuditableEntity;
 import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "gds_user")
 public class User extends AuditableEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
 
     @Column(nullable = false, unique = true, length = 100)
     private String username;
@@ -41,8 +43,7 @@ public class User extends AuditableEntity {
         this.externalIdentities = new ArrayList<>();
     }
 
-    public User(Long id, String username, String email, String firstName, String lastName, UserStatus status, Boolean emailVerified) {
-        this.id = id;
+    public User(String username, String email, String firstName, String lastName, UserStatus status, Boolean emailVerified) {
         this.username = username;
         this.email = email;
         this.firstName = firstName;
@@ -52,12 +53,8 @@ public class User extends AuditableEntity {
         this.externalIdentities = new ArrayList<>();
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getUsername() {

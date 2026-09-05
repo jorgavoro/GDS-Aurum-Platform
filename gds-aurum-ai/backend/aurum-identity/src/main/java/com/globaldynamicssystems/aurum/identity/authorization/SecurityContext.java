@@ -1,20 +1,21 @@
 package com.globaldynamicssystems.aurum.identity.authorization;
 
 import java.util.Set;
+import java.util.UUID;
 
 public class SecurityContext {
 
-    private final Long userId;
+    private final UUID userId;
     private final String username;
     private final String email;
     private final Set<String> roles;
     private final Set<String> permissions;
-    private final Long tenantId;
-    private final Long companyId;
+    private final UUID tenantId;
+    private final UUID companyId;
 
-    public SecurityContext(Long userId, String username, String email,
+    public SecurityContext(UUID userId, String username, String email,
                            Set<String> roles, Set<String> permissions,
-                           Long tenantId, Long companyId) {
+                           UUID tenantId, UUID companyId) {
         this.userId = userId;
         this.username = username;
         this.email = email;
@@ -25,7 +26,7 @@ public class SecurityContext {
     }
 
 
-	public Long getUserId() {
+	public UUID getUserId() {
         return userId;
     }
 
@@ -45,11 +46,11 @@ public class SecurityContext {
         return permissions;
     }
 
-    public Long getTenantId() {
+    public UUID getTenantId() {
         return tenantId;
     }
 
-    public Long getCompanyId() {
+    public UUID getCompanyId() {
         return companyId;
     }
 

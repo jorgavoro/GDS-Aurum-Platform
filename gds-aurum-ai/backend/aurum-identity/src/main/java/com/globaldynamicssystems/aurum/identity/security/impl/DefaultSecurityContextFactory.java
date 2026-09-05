@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class DefaultSecurityContextFactory implements SecurityContextFactory {
@@ -37,7 +38,7 @@ public class DefaultSecurityContextFactory implements SecurityContextFactory {
 
     @Override
     @Transactional(readOnly = true)
-    public SecurityContext create(Long userId) {
+    public SecurityContext create(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + userId));
 
@@ -64,8 +65,8 @@ public class DefaultSecurityContextFactory implements SecurityContextFactory {
             }
         }
 
-        Long tenantId = null;
-        Long companyId = null;
+        UUID tenantId = null;
+        UUID companyId = null;
 
         return new SecurityContext(
                 user.getId(),

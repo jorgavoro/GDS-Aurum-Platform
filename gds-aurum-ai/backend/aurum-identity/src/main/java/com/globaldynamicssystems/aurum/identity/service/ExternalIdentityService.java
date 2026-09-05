@@ -5,14 +5,15 @@ import com.globaldynamicssystems.aurum.identity.model.User;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ExternalIdentityService {
 
-    ExternalIdentity link(Long userId, String provider, String subject, String email);
+    ExternalIdentity link(UUID userId, String provider, String subject, String email);
 
     Optional<User> findUserByExternalIdentity(String provider, String subject);
 
-    List<ExternalIdentity> findByUserId(Long userId);
+    List<ExternalIdentity> findByUserId(UUID userId);
 
-    void unlink(Long userId, String provider, String subject);
+    void unlink(UUID userId, String provider, String subject);
 }

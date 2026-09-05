@@ -6,15 +6,22 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.util.UUID;
 
 @Entity
 @Table(name = "gds_role")
 public class Role extends AuditableEntity {
 
-//    @Column(nullable = false, unique = true)
-//    private Long id;	
-	
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false)
+    private UUID id;
+
     @Column(nullable = false, unique = true, length = 100)
     private String code;
 
@@ -30,15 +37,6 @@ public class Role extends AuditableEntity {
 
     public Role() {}
 
-//    public Long getId() {
-//        return id;
-//    }
-//
-//    public void setId(Long id) {
-//        this.id = id;
-//    }    
-    
-    
     public String getCode() {
         return code;
     }
