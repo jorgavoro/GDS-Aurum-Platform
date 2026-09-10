@@ -1,0 +1,1581 @@
+=========================================================================
+HISTORIA DE USUARIO: WEB-002
+AURUM LOGIN EXPERIENCE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - Web / IAM
+
+MÓDULO
+
+aurum-web
+
+=========================================================================
+
+HISTORIA DE USUARIO
+=========================================================================
+
+COMO usuario de Aurum
+
+QUIERO disponer de una pantalla de autenticación clara, segura y
+consistente con la identidad visual de la plataforma
+
+PARA poder iniciar sesión y acceder al Aurum Workspace de acuerdo con
+mi identidad y permisos.
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+WEB-001 creó:
+
+Aurum Web Application Shell.
+
+IAM-001 creó:
+
+User
+
+ExternalIdentity
+
+UserStatus
+
+IAM-002 creó:
+
+Role
+
+Permission
+
+UserRole
+
+RolePermission
+
+IAM-003 creó:
+
+Authorization Engine
+
+IAM-004 creó:
+
+SecurityContext
+
+IAM-005 creó:
+
+Local Authentication
+
+Aurum ya dispone conceptualmente de:
+
+username + password
+        ↓
+Local Authentication
+        ↓
+AuthenticationResult
+        ↓
+SecurityContext
+
+WEB-002 debe conectar la experiencia de usuario con ese contrato.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear la experiencia de Login de Aurum.
+
+Debe soportar inicialmente:
+
+LOCAL LOGIN
+
+y quedar preparada visualmente para:
+
+GOOGLE SSO
+
+MICROSOFT SSO
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+La UI no implementa autenticación.
+
+La UI solicita autenticación al backend.
+
+Frontend:
+
+Login Form
+     ↓
+Authentication API
+     ↓
+Authentication Service
+     ↓
+Identity
+     ↓
+SecurityContext
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Google y Microsoft:
+
+NO se implementan funcionalmente en WEB-002.
+
+Se prepara únicamente el contrato visual y de navegación.
+
+=========================================================================
+
+RUTA
+=========================================================================
+
+/login
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Si el usuario ya está autenticado:
+
+/login
+
+debe redirigir a:
+
+/
+
+=========================================================================
+
+LOGIN PAGE
+=========================================================================
+
+Crear:
+
+LoginPage.tsx
+
+=========================================================================
+
+ESTRUCTURA VISUAL
+=========================================================================
+
+┌──────────────────────────────────────────────────────┐
+│                                                      │
+│                       AURUM                          │
+│                                                      │
+│             Intelligent Business Platform            │
+│                                                      │
+│       ┌──────────────────────────────────────┐       │
+│       │ Email / Username                     │       │
+│       └──────────────────────────────────────┘       │
+│                                                      │
+│       ┌──────────────────────────────────────┐       │
+│       │ Password                       👁    │       │
+│       └──────────────────────────────────────┘       │
+│                                                      │
+│                 [ Sign In ]                          │
+│                                                      │
+│              Forgot password?                        │
+│                                                      │
+│              ─────── OR ───────                      │
+│                                                      │
+│        [ Continue with Google ]                      │
+│                                                      │
+│        [ Continue with Microsoft ]                   │
+│                                                      │
+│                                                      │
+│              Create an account                       │
+│                                                      │
+└──────────────────────────────────────────────────────┘
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Los botones:
+
+Continue with Google
+
+Continue with Microsoft
+
+deben aparecer como:
+
+"Coming soon"
+
+o permanecer deshabilitados.
+
+No deben ejecutar autenticación falsa.
+
+=========================================================================
+
+LOGIN FORM
+=========================================================================
+
+Crear:
+
+LoginForm.tsx
+
+Campos:
+
+username
+
+password
+
+=========================================================================
+
+USERNAME
+=========================================================================
+
+Tipo:
+
+text
+
+autocomplete:
+
+username
+
+required:
+
+true
+
+=========================================================================
+
+PASSWORD
+=========================================================================
+
+Tipo:
+
+password
+
+autocomplete:
+
+current-password
+
+required:
+
+true
+
+=========================================================================
+
+PASSWORD VISIBILITY
+=========================================================================
+
+Agregar control:
+
+Show / Hide password.
+
+Debe permitir alternar:
+
+password
+
+text
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Nunca almacenar la contraseña en:
+
+localStorage
+
+sessionStorage
+
+cookies no seguras
+
+global state persistente.
+
+=========================================================================
+
+SUBMIT
+=========================================================================
+
+Botón:
+
+Sign In
+
+=========================================================================
+
+ESTADOS
+=========================================================================
+
+El formulario debe soportar:
+
+IDLE
+
+SUBMITTING
+
+SUCCESS
+
+ERROR
+
+=========================================================================
+
+IDLE
+=========================================================================
+
+Formulario disponible.
+
+=========================================================================
+
+SUBMITTING
+=========================================================================
+
+Mostrar:
+
+loading indicator
+
+Deshabilitar:
+
+username
+
+password
+
+Sign In
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Evitar múltiples submissions simultáneos.
+
+=========================================================================
+
+SUCCESS
+=========================================================================
+
+Al recibir autenticación exitosa:
+
+actualizar SecurityState.
+
+Después:
+
+redirigir a:
+
+/
+
+=========================================================================
+
+ERROR
+=========================================================================
+
+Mostrar mensaje:
+
+"Unable to sign in. Please check your credentials and try again."
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No mostrar al usuario:
+
+USER_NOT_FOUND
+
+LOCAL_AUTHENTICATION_NOT_ENABLED
+
+passwordHash
+
+AuthenticationException stack trace
+
+información interna del backend.
+
+=========================================================================
+
+SECURITY
+=========================================================================
+
+Los mensajes públicos deben evitar:
+
+User Enumeration.
+
+=========================================================================
+
+API
+=========================================================================
+
+Crear:
+
+AuthenticationApi
+
+=========================================================================
+
+ARCHIVO
+
+src/services/AuthenticationApi.ts
+
+=========================================================================
+
+MÉTODO
+
+login():
+
+Promise<AuthenticationResponse>
+
+=========================================================================
+
+REQUEST
+
+=========================================================================
+
+AuthenticationRequest:
+
+username
+
+password
+
+provider
+
+=========================================================================
+
+PROVIDER
+
+=========================================================================
+
+Para login local:
+
+LOCAL
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+{
+    provider: "LOCAL",
+    username: "john",
+    password: "********"
+}
+
+=========================================================================
+
+RESPONSE
+=========================================================================
+
+AuthenticationResponse
+
+Debe representar:
+
+authenticated
+
+user
+
+securityContext
+
+=========================================================================
+
+NO incluir:
+
+password
+
+passwordHash
+
+clientSecret
+
+refreshToken
+
+OAuth secrets
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+WEB-002 no define todavía el mecanismo de persistencia de sesión.
+
+Ese mecanismo pertenece a:
+
+IAM-006
+
+Authentication Session & Token Management.
+
+=========================================================================
+
+AUTHENTICATION CLIENT
+=========================================================================
+
+Crear:
+
+AuthenticationClient
+
+=========================================================================
+
+RESPONSABILIDAD
+
+=========================================================================
+
+Abstraer:
+
+AuthenticationApi
+
+del:
+
+LoginPage
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+LoginPage
+
+   ↓
+
+LoginForm
+
+   ↓
+
+AuthenticationClient
+
+   ↓
+
+AuthenticationApi
+
+   ↓
+
+Backend
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+LoginPage NO debe realizar:
+
+fetch()
+
+directamente.
+
+=========================================================================
+
+SECURITY PROVIDER
+=========================================================================
+
+Modificar:
+
+SecurityProvider
+
+para soportar:
+
+login()
+
+logout()
+
+authenticated
+
+user
+
+securityContext
+
+=========================================================================
+
+NUEVOS MÉTODOS
+
+=========================================================================
+
+login(
+    username,
+    password
+);
+
+logout();
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+SecurityProvider debe delegar autenticación en:
+
+AuthenticationClient.
+
+=========================================================================
+
+NO IMPLEMENTAR
+=========================================================================
+
+Password hashing en frontend.
+
+Password validation criptográfica.
+
+JWT generation.
+
+Token decoding para determinar permisos.
+
+=========================================================================
+
+SECURITY STATE
+=========================================================================
+
+Después de login exitoso:
+
+SecurityState:
+
+authenticated = true
+
+user = authenticated user
+
+roles = user roles
+
+permissions = user permissions
+
+capabilities = available capabilities
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Los permisos recibidos por frontend son utilizados para:
+
+UX
+
+navigation
+
+visibility
+
+route protection.
+
+No representan autoridad de seguridad.
+
+=========================================================================
+
+BACKEND AUTHORIZATION
+=========================================================================
+
+La autoridad continúa siendo:
+
+Authorization Engine.
+
+=========================================================================
+
+REDIRECT
+=========================================================================
+
+Login exitoso:
+
+→ /
+
+=========================================================================
+
+PROTECTED ROUTE
+=========================================================================
+
+Si:
+
+authenticated = false
+
+y el usuario intenta:
+
+/accounting
+
+redirigir:
+
+/login
+
+=========================================================================
+
+RETURN URL
+=========================================================================
+
+Si el usuario intenta:
+
+/accounting
+
+sin autenticarse:
+
+guardar temporalmente:
+
+/accounting
+
+Después de login exitoso:
+
+redirigir a:
+
+/accounting
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La return URL debe validarse.
+
+No aceptar redirecciones arbitrarias a dominios externos.
+
+=========================================================================
+
+Ejemplo incorrecto:
+
+/login?returnUrl=https://malicious.example
+
+=========================================================================
+
+Debe rechazarse.
+
+=========================================================================
+
+LOCAL LOGIN
+=========================================================================
+
+El flujo funcional inicial es:
+
+User
+
+↓
+
+LoginPage
+
+↓
+
+AuthenticationClient
+
+↓
+
+Authentication API
+
+↓
+
+AuthenticationManager
+
+↓
+
+LOCAL AuthenticationProvider
+
+↓
+
+PasswordHasher
+
+↓
+
+User
+
+↓
+
+SecurityContextFactory
+
+↓
+
+AuthenticationResult
+
+↓
+
+Frontend SecurityProvider
+
+↓
+
+Aurum Workspace
+
+=========================================================================
+
+GOOGLE
+=========================================================================
+
+Mostrar:
+
+Continue with Google
+
+pero:
+
+disabled = true
+
+o:
+
+Coming Soon.
+
+=========================================================================
+
+MICROSOFT
+=========================================================================
+
+Mostrar:
+
+Continue with Microsoft
+
+pero:
+
+disabled = true
+
+o:
+
+Coming Soon.
+
+=========================================================================
+
+NO HACER
+=========================================================================
+
+No crear OAuth URL manualmente.
+
+No crear Google OAuth client.
+
+No crear Microsoft OAuth client.
+
+No almacenar client secrets.
+
+=========================================================================
+
+FORGOT PASSWORD
+=========================================================================
+
+Mostrar:
+
+Forgot password?
+
+pero:
+
+no implementar funcionalidad todavía.
+
+=========================================================================
+
+COMPORTAMIENTO
+
+Puede:
+
+redirigir a placeholder:
+
+/forgot-password
+
+=========================================================================
+
+Crear:
+
+ForgotPasswordPage.tsx
+
+como placeholder.
+
+=========================================================================
+
+CREATE ACCOUNT
+=========================================================================
+
+Mostrar:
+
+Create an account
+
+pero no implementar todavía onboarding completo.
+
+Puede dirigir a:
+
+/register
+
+=========================================================================
+
+Crear:
+
+RegisterPage.tsx
+
+como placeholder.
+
+=========================================================================
+
+REGISTRO
+=========================================================================
+
+NO implementar creación real de usuario en WEB-002.
+
+=========================================================================
+
+LAYOUT
+=========================================================================
+
+Crear:
+
+AuthLayout.tsx
+
+=========================================================================
+
+RESPONSABILIDAD
+
+=========================================================================
+
+Proporcionar layout independiente del:
+
+AppShell.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Login NO debe mostrar:
+
+Sidebar
+
+Application Header
+
+Accounting navigation
+
+Workspace navigation.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+Public Routes:
+
+/login
+
+/register
+
+/forgot-password
+
+        ↓
+
+AuthLayout
+
+
+Authenticated Routes:
+
+/
+
+ /assistant
+
+ /accounting
+
+ /analytics
+
+ /admin
+
+ /profile
+
+ /security
+
+        ↓
+
+AppShell
+
+=========================================================================
+
+VISUAL DESIGN
+=========================================================================
+
+Login debe utilizar:
+
+Design Tokens
+
+creados en WEB-001.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No duplicar:
+
+colors
+
+spacing
+
+typography
+
+border-radius
+
+breakpoints.
+
+=========================================================================
+
+BRANDING
+=========================================================================
+
+Mostrar:
+
+AURUM
+
+y:
+
+Intelligent Business Platform
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No definir todavía un logo corporativo definitivo.
+
+Debe existir un componente:
+
+AurumLogo
+
+que posteriormente pueda reemplazarse.
+
+=========================================================================
+
+RESPONSIVE
+=========================================================================
+
+Login debe funcionar en:
+
+Desktop
+
+Tablet
+
+Mobile.
+
+=========================================================================
+
+MOBILE
+=========================================================================
+
+En pantallas pequeñas:
+
+formulario ocupa el ancho disponible.
+
+No debe existir:
+
+horizontal scrolling.
+
+=========================================================================
+
+ACCESSIBILITY
+=========================================================================
+
+Login debe soportar:
+
+keyboard navigation
+
+labels
+
+focus states
+
+ARIA donde corresponda
+
+autocomplete correcto.
+
+=========================================================================
+
+FOCUS
+=========================================================================
+
+Al cargar LoginPage:
+
+focus inicial:
+
+username.
+
+=========================================================================
+
+ERROR ACCESSIBILITY
+=========================================================================
+
+Los errores deben estar asociados al formulario y ser anunciables por
+tecnologías asistivas.
+
+=========================================================================
+
+FORM VALIDATION
+=========================================================================
+
+Frontend debe validar:
+
+username requerido.
+
+password requerido.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Frontend validation es UX.
+
+Backend validation continúa siendo obligatoria.
+
+=========================================================================
+
+NO PASSWORD POLICY DUPLICATION
+=========================================================================
+
+No replicar en frontend:
+
+BCrypt.
+
+Password hash.
+
+Password verification.
+
+=========================================================================
+
+SESSION EXPIRATION
+=========================================================================
+
+No implementar todavía.
+
+Debe quedar preparado un estado:
+
+SESSION_EXPIRED
+
+para historias posteriores.
+
+=========================================================================
+
+ERROR STATES
+=========================================================================
+
+Soportar conceptualmente:
+
+INVALID_CREDENTIALS
+
+ACCOUNT_LOCKED
+
+ACCOUNT_DISABLED
+
+SESSION_EXPIRED
+
+NETWORK_ERROR
+
+SERVER_ERROR
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No mostrar detalles internos.
+
+=========================================================================
+
+NETWORK ERROR
+=========================================================================
+
+Mostrar:
+
+"Unable to connect to Aurum. Please try again."
+
+=========================================================================
+
+SERVER ERROR
+=========================================================================
+
+Mostrar:
+
+"Something went wrong. Please try again later."
+
+=========================================================================
+
+ACCOUNT LOCKED
+=========================================================================
+
+Puede mostrarse:
+
+"Your account is currently unavailable. Please contact your
+administrator."
+
+No mostrar:
+
+internal security details.
+
+=========================================================================
+
+SECURITY EVENTS
+=========================================================================
+
+No implementar auditoría en frontend.
+
+=========================================================================
+
+NO LOGGING
+=========================================================================
+
+Nunca ejecutar:
+
+console.log(password)
+
+console.log(authenticationRequest)
+
+console.log(authenticationResponse)
+
+=========================================================================
+
+ERROR LOGGING
+=========================================================================
+
+No incluir:
+
+password
+
+tokens
+
+securityContext completo
+
+en errores del navegador.
+
+=========================================================================
+
+TESTING
+=========================================================================
+
+Utilizar:
+
+Vitest
+
+React Testing Library
+
+=========================================================================
+
+TESTS OBLIGATORIOS
+=========================================================================
+
+1. LoginPage renderiza.
+
+2. Username field existe.
+
+3. Password field existe.
+
+4. Password inicialmente oculto.
+
+5. Password puede mostrarse.
+
+6. Password puede ocultarse.
+
+7. Sign In existe.
+
+8. Submit con campos vacíos muestra validación.
+
+9. Submit ejecuta AuthenticationClient.
+
+10. Durante submit se deshabilita formulario.
+
+11. Login exitoso actualiza SecurityState.
+
+12. Login exitoso redirige a /.
+
+13. Login exitoso conserva roles.
+
+14. Login exitoso conserva permissions.
+
+15. Login fallido muestra mensaje genérico.
+
+16. Login fallido no muestra password.
+
+17. Login fallido no muestra passwordHash.
+
+18. Login fallido no muestra stack trace.
+
+19. Google aparece preparado.
+
+20. Google no ejecuta autenticación.
+
+21. Microsoft aparece preparado.
+
+22. Microsoft no ejecuta autenticación.
+
+23. Forgot Password aparece preparado.
+
+24. Register aparece preparado.
+
+25. ProtectedRoute redirige a Login.
+
+26. Return URL funciona.
+
+27. Return URL externa es rechazada.
+
+28. Logout limpia SecurityState.
+
+29. AuthLayout funciona.
+
+30. Login funciona en mobile viewport.
+
+31. Login soporta keyboard navigation.
+
+32. No se almacena password en localStorage.
+
+33. No se almacena password en sessionStorage.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe /login.
+
+2. Existe LoginPage.
+
+3. Existe LoginForm.
+
+4. Existe AuthLayout.
+
+5. Existe AuthenticationApi.
+
+6. Existe AuthenticationClient.
+
+7. SecurityProvider soporta login.
+
+8. SecurityProvider soporta logout.
+
+9. Login utiliza provider LOCAL.
+
+10. Login utiliza Authentication API.
+
+11. Login exitoso actualiza SecurityState.
+
+12. Login exitoso genera contexto autenticado.
+
+13. Usuario no autenticado no puede acceder a rutas protegidas.
+
+14. Usuario autenticado puede acceder al Workspace.
+
+15. Return URL funciona.
+
+16. Return URL externa es rechazada.
+
+17. Errores de autenticación son genéricos.
+
+18. No existe user enumeration desde la UI.
+
+19. Password nunca se persiste en frontend.
+
+20. Password nunca aparece en logs.
+
+21. PasswordHash nunca llega al frontend.
+
+22. Google está visualmente preparado.
+
+23. Microsoft está visualmente preparado.
+
+24. Google todavía no autentica.
+
+25. Microsoft todavía no autentica.
+
+26. Forgot Password está preparado.
+
+27. Register está preparado.
+
+28. AuthLayout no utiliza AppShell.
+
+29. Login utiliza Design Tokens.
+
+30. Login es responsive.
+
+31. Login es accesible.
+
+32. Existe loading state.
+
+33. Existe error state.
+
+34. Existe success flow.
+
+35. Existe logout flow.
+
+36. No se implementa JWT.
+
+37. No se implementa OAuth2.
+
+38. No se implementa OIDC.
+
+39. No se implementa Google OAuth.
+
+40. No se implementa Microsoft OAuth.
+
+41. No se implementa MFA.
+
+42. No se implementa Password Recovery.
+
+43. No se implementa Session Persistence.
+
+44. El frontend continúa sin ser autoridad de seguridad.
+
+45. El backend Authorization Engine continúa siendo la autoridad.
+
+46. Los tests principales pasan.
+
+=========================================================================
+
+ESTRUCTURA RESULTANTE
+=========================================================================
+
+aurum-web
+│
+├── src
+│   │
+│   ├── app
+│   │
+│   ├── layouts
+│   │   ├── AppShell.tsx
+│   │   └── AuthLayout.tsx
+│   │
+│   ├── pages
+│   │   ├── HomePage.tsx
+│   │   ├── LoginPage.tsx
+│   │   ├── RegisterPage.tsx
+│   │   ├── ForgotPasswordPage.tsx
+│   │   ├── AssistantPage.tsx
+│   │   ├── AccountingPage.tsx
+│   │   ├── AnalyticsPage.tsx
+│   │   ├── AdministrationPage.tsx
+│   │   ├── ProfilePage.tsx
+│   │   ├── SecurityPage.tsx
+│   │   ├── AccessDeniedPage.tsx
+│   │   └── NotFoundPage.tsx
+│   │
+│   ├── security
+│   │   ├── SecurityProvider.tsx
+│   │   ├── SecurityState.ts
+│   │   ├── AuthenticationClient.ts
+│   │   ├── MockSecurityProvider.tsx
+│   │   ├── useSecurity.ts
+│   │   ├── useAuthorization.ts
+│   │   ├── ProtectedRoute.tsx
+│   │   └── AuthorizedRoute.tsx
+│   │
+│   ├── services
+│   │   ├── ApiClient.ts
+│   │   └── AuthenticationApi.ts
+│   │
+│   └── components
+│       ├── login
+│       │   └── LoginForm.tsx
+│       └── branding
+│           └── AurumLogo.tsx
+
+=========================================================================
+
+FLUJO FINAL
+=========================================================================
+
+                     USER
+                      │
+                      ▼
+                 /login
+                      │
+                      ▼
+                 LoginForm
+                      │
+                      ▼
+             AuthenticationClient
+                      │
+                      ▼
+              Authentication API
+                      │
+                      ▼
+             LOCAL AUTHENTICATION
+                      │
+                      ▼
+              AuthenticationResult
+                      │
+                      ▼
+                SecurityContext
+                      │
+                      ▼
+               SecurityProvider
+                      │
+                      ▼
+                   / HOME
+                      │
+                      ▼
+                  AppShell
+                      │
+             ┌────────┼─────────┐
+             ▼        ▼         ▼
+         Accounting Assistant Administration
+             │
+             ▼
+        Authorization
+             │
+         ALLOW / DENY
+
+=========================================================================
+
+EVOLUCIÓN DE AUTENTICACIÓN
+=========================================================================
+
+IAM-005
+
+LOCAL AUTHENTICATION
+
+        │
+        ▼
+
+WEB-002
+
+LOGIN EXPERIENCE
+
+        │
+        ▼
+
+IAM-006
+
+SESSION & TOKEN MANAGEMENT
+
+        │
+        ├───────────────┐
+        ▼               ▼
+IAM-007               IAM-008
+GOOGLE OIDC           MICROSOFT OIDC
+        │               │
+        └───────┬───────┘
+                ▼
+        EXTERNAL IDENTITY
+                │
+                ▼
+           AURUM USER
+                │
+                ▼
+        SECURITY CONTEXT
+                │
+                ▼
+          AUTHORIZATION
+                │
+                ▼
+           CAPABILITY
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+La pantalla de Login no define la identidad.
+
+La autenticación define la identidad.
+
+La identidad genera el SecurityContext.
+
+El SecurityContext permite autorización.
+
+La autorización permite capabilities.
+
+Las capabilities ejecutan negocio.
+
+Por tanto:
+
+LOGIN
+  ≠
+IDENTITY
+  ≠
+AUTHORIZATION
+  ≠
+BUSINESS LOGIC
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+=========================================================================
+
+IAM-006
+
+AUTHENTICATION SESSION & TOKEN MANAGEMENT
+
+Implementar el mecanismo de sesión autenticada para que una
+autenticación exitosa pueda mantenerse de forma segura entre
+solicitudes, preparando la arquitectura para aplicaciones web, APIs,
+Google OIDC y Microsoft OIDC.
+
+=========================================================================
