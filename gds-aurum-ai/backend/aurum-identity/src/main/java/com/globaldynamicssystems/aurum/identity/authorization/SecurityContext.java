@@ -25,8 +25,7 @@ public class SecurityContext {
         this.companyId = companyId;
     }
 
-
-	public UUID getUserId() {
+    public UUID getUserId() {
         return userId;
     }
 
@@ -55,16 +54,12 @@ public class SecurityContext {
     }
 
     public boolean hasRole(String roleCode) {
-        if (roleCode == null) {
-            return false;
-        }
+        if (roleCode == null) return false;
         return roles.contains(roleCode.trim().toUpperCase());
     }
 
     public boolean hasPermission(String permissionCode) {
-        if (permissionCode == null) {
-            return false;
-        }
+        if (permissionCode == null) return false;
         return permissions.contains(permissionCode.trim().toUpperCase());
     }
 }

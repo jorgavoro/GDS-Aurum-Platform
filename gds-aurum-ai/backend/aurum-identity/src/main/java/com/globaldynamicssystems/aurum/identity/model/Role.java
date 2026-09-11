@@ -37,6 +37,14 @@ public class Role extends AuditableEntity {
 
     public Role() {}
 
+    public UUID getId() {
+        return id;
+    }
+
+    public void setId(UUID id) {
+        this.id = id;
+    }    
+    
     public String getCode() {
         return code;
     }

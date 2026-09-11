@@ -34,6 +34,9 @@ public class User extends AuditableEntity {
     @Column(name = "email_verified", nullable = false)
     private Boolean emailVerified;
 
+    @Column(name = "password_hash", length = 72)
+    private String passwordHash;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<ExternalIdentity> externalIdentities;
 
@@ -103,6 +106,14 @@ public class User extends AuditableEntity {
 
     public void setEmailVerified(Boolean emailVerified) {
         this.emailVerified = emailVerified;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public List<ExternalIdentity> getExternalIdentities() {
