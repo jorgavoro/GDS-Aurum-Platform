@@ -1,6 +1,10 @@
 package com.globaldynamicssystems.aurum.accounting.model;
 
+<<<<<<< HEAD
 import com.globaldynamicssystems.aurum.model.AuditableEntity;
+=======
+import com.globaldynamicssystems.aurum.framework.entity.AuditableEntity;
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

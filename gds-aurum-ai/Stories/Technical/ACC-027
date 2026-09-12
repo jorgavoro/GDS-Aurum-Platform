@@ -1,0 +1,1534 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-027
+CAPABILITY METADATA MODEL
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULOS
+
+aurum-engine
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-025 implementó:
+
+ACCOUNTING CAPABILITY INTEGRATION
+
+ACC-026 implementó:
+
+ACCOUNTING CAPABILITY DISCOVERY
+
+ACC-026 permite descubrir:
+
+ACCOUNTING
+
+y conocer operaciones como:
+
+ACCOUNT
+PROFITABILITY
+RATIO
+CASH_FLOW
+KPI
+DATA_QUALITY
+COMPARISON
+
+Sin embargo, el descriptor actual todavía es superficial.
+
+Actualmente una capability puede declarar:
+
+code
+name
+description
+operations
+requiredParameters
+optionalParameters
+
+Pero Aurum Engine todavía no conoce de forma estructurada:
+
+qué conceptos de negocio maneja
+
+qué entidades conceptuales utiliza
+
+qué entradas espera
+
+qué resultados produce
+
+qué dependencias tiene
+
+qué categoría funcional representa
+
+qué capacidades relacionadas existen
+
+Esto limita la evolución hacia:
+
+semantic capability selection
+
+capability orchestration
+
+AI agents
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un:
+
+CAPABILITY METADATA MODEL
+
+que permita describir una capability mediante metadatos semánticos.
+
+El modelo debe permitir responder:
+
+¿Qué hace esta capability?
+
+¿Sobre qué dominio trabaja?
+
+¿Qué conceptos conoce?
+
+¿Qué necesita?
+
+¿Qué produce?
+
+¿Qué otras capabilities puede utilizar?
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Capability Metadata describe:
+
+WHAT
+
+no:
+
+HOW.
+
+El modelo no debe describir:
+
+clases Java internas
+
+repositories
+
+queries SQL
+
+JPA mappings
+
+implementaciones Spring
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                 CAPABILITY
+                      │
+                      ▼
+             CAPABILITY METADATA
+                      │
+       ┌──────────────┼──────────────┐
+       ▼              ▼              ▼
+    DOMAIN         INPUTS         OUTPUTS
+       │              │              │
+       ▼              ▼              ▼
+   CONCEPTS      PARAMETERS      RESULTS
+                      │
+                      ▼
+                AURUM ENGINE
+                      │
+                      ▼
+              CAPABILITY SELECTION
+                      │
+                      ▼
+               CAPABILITY EXECUTION
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente cuando corresponda.
+
+No utilizar EntityManager.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear API HTTP.
+
+No crear Flyway.
+
+No persistir metadata.
+
+No crear dependencias hacia infraestructura.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Java 21.
+
+=========================================================================
+
+PAQUETE
+=========================================================================
+
+MÓDULO:
+
+aurum-engine
+
+Paquete:
+
+com.globaldynamicssystems.aurum.engine.capability.metadata
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+CapabilityDomain.java
+
+Crear enum.
+
+Valores:
+
+ACCOUNTING
+
+SALES
+
+PURCHASING
+
+INVENTORY
+
+TREASURY
+
+PROJECT
+
+HUMAN_RESOURCES
+
+CRM
+
+GENERIC
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+En MVP 1 únicamente:
+
+ACCOUNTING
+
+estará activo.
+
+Los demás valores preparan la arquitectura.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+CapabilityInputType.java
+
+Crear enum.
+
+Valores:
+
+IDENTIFIER
+
+PERIOD
+
+ACCOUNT
+
+DIMENSION
+
+AMOUNT
+
+FILTER
+
+COLLECTION
+
+CONTEXT
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+CapabilityOutputType.java
+
+Crear enum.
+
+Valores:
+
+ENTITY
+
+REPORT
+
+KPI
+
+RATIO
+
+CASH_FLOW
+
+VALIDATION
+
+COMPARISON
+
+COLLECTION
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+CapabilityParameterMetadata.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String name
+
+String description
+
+CapabilityInputType type
+
+Boolean required
+
+Boolean multiple
+
+String semanticType
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+EJEMPLOS
+
+=========================================================================
+
+name:
+
+chartOfAccountsId
+
+type:
+
+IDENTIFIER
+
+required:
+
+true
+
+multiple:
+
+false
+
+semanticType:
+
+ChartOfAccounts
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+name:
+
+fiscalPeriodId
+
+type:
+
+PERIOD
+
+required:
+
+true
+
+multiple:
+
+false
+
+semanticType:
+
+FiscalPeriod
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+name:
+
+kpiTypes
+
+type:
+
+COLLECTION
+
+required:
+
+false
+
+multiple:
+
+true
+
+semanticType:
+
+FinancialKpiType
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+CapabilityConcept.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String code
+
+String name
+
+String description
+
+String semanticType
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+EJEMPLOS DE CONCEPTOS
+
+=========================================================================
+
+ACCOUNT
+
+FISCAL_PERIOD
+
+LEDGER
+
+REVENUE
+
+EXPENSE
+
+NET_RESULT
+
+FINANCIAL_RATIO
+
+CASH_FLOW
+
+FINANCIAL_KPI
+
+DATA_QUALITY
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+CapabilityOutputMetadata.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String name
+
+String description
+
+CapabilityOutputType type
+
+String semanticType
+
+Boolean collection
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+name:
+
+financialKpis
+
+type:
+
+KPI
+
+semanticType:
+
+FinancialKpi
+
+collection:
+
+true
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+CapabilityDependency.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String capabilityCode
+
+String reason
+
+Boolean required
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+capabilityCode:
+
+ACCOUNTING
+
+reason:
+
+Provides accounting financial data.
+
+required:
+
+true
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Una dependency identifica otra capability.
+
+No debe identificar:
+
+Java class
+
+Spring bean
+
+Repository
+
+Database
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+CapabilityMetadata.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+String code
+
+String name
+
+String description
+
+CapabilityDomain domain
+
+Boolean enabled
+
+List<CapabilityParameterMetadata> inputs
+
+List<CapabilityConcept> concepts
+
+List<CapabilityOutputMetadata> outputs
+
+List<CapabilityDependency> dependencies
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+CapabilityMetadata representa la descripción semántica completa de una
+capability.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+CapabilityMetadataRegistry.java
+
+Crear interfaz.
+
+Métodos:
+
+void register(
+    CapabilityMetadata metadata
+);
+
+Optional<CapabilityMetadata> findByCode(
+    String code
+);
+
+List<CapabilityMetadata> findAll();
+
+List<CapabilityMetadata> findByDomain(
+    CapabilityDomain domain
+);
+
+boolean exists(
+    String code
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+InMemoryCapabilityMetadataRegistry.java
+
+Implementar:
+
+CapabilityMetadataRegistry
+
+Utilizar:
+
+ConcurrentHashMap
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El registry debe ser:
+
+thread-safe.
+
+No debe persistir información.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+CapabilityMetadataService.java
+
+Crear interfaz.
+
+Métodos:
+
+List<CapabilityMetadata> discoverMetadata();
+
+Optional<CapabilityMetadata> getMetadata(
+    String capabilityCode
+);
+
+List<CapabilityMetadata> findByDomain(
+    CapabilityDomain domain
+);
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+DefaultCapabilityMetadataService.java
+
+Implementar:
+
+CapabilityMetadataService
+
+Anotación:
+
+@Service
+
+Dependencia:
+
+CapabilityMetadataRegistry
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+AccountingCapabilityMetadataFactory.java
+
+Crear clase.
+
+Método:
+
+CapabilityMetadata create();
+
+Responsabilidad:
+
+construir metadata semántica para:
+
+ACCOUNTING.
+
+=========================================================================
+
+METADATA ACCOUNTING
+
+=========================================================================
+
+code:
+
+ACCOUNTING
+
+name:
+
+Accounting Business Capability
+
+domain:
+
+ACCOUNTING
+
+enabled:
+
+true
+
+=========================================================================
+
+DESCRIPTION
+
+=========================================================================
+
+Debe indicar que la capability proporciona:
+
+financial reporting
+
+profitability analysis
+
+financial ratios
+
+cash flow
+
+financial KPIs
+
+accounting data quality
+
+financial comparison
+
+=========================================================================
+
+CONCEPTOS
+
+=========================================================================
+
+ACCOUNT
+
+FISCAL_PERIOD
+
+LEDGER
+
+REVENUE
+
+EXPENSE
+
+NET_RESULT
+
+FINANCIAL_RATIO
+
+CASH_FLOW
+
+FINANCIAL_KPI
+
+DATA_QUALITY
+
+=========================================================================
+
+INPUTS
+
+=========================================================================
+
+chartOfAccountsId
+
+fiscalPeriodId
+
+accountIds
+
+kpiTypes
+
+ratioTypes
+
+dimensionType
+
+dimensionIds
+
+currentFiscalPeriodId
+
+previousFiscalPeriodId
+
+=========================================================================
+
+OUTPUTS
+
+=========================================================================
+
+ACCOUNT
+
+REPORT
+
+RATIO
+
+CASH_FLOW
+
+KPI
+
+VALIDATION
+
+COMPARISON
+
+=========================================================================
+
+DEPENDENCIES
+
+=========================================================================
+
+Para MVP:
+
+ninguna dependency obligatoria.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Aunque Accounting internamente utilice múltiples servicios, esto NO
+debe expresarse como dependencies.
+
+Por ejemplo:
+
+FinancialRatioService
+
+NO es una capability.
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+CapabilityMetadataBootstrap.java
+
+Crear componente:
+
+@Component
+
+Responsabilidad:
+
+registrar metadata de:
+
+ACCOUNTING.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+Application Startup
+
+        ↓
+
+CapabilityMetadataBootstrap
+
+        ↓
+
+AccountingCapabilityMetadataFactory
+
+        ↓
+
+CapabilityMetadataRegistry
+
+        ↓
+
+ACCOUNTING metadata
+
+=========================================================================
+
+INTEGRACIÓN CON ACC-026
+
+=========================================================================
+
+ACC-026 utiliza:
+
+CapabilityDescriptor
+
+ACC-027 introduce:
+
+CapabilityMetadata.
+
+=========================================================================
+
+REGLA DE COMPATIBILIDAD
+
+=========================================================================
+
+No eliminar:
+
+CapabilityDescriptor
+
+en esta historia.
+
+No romper:
+
+CapabilityDiscoveryService.
+
+=========================================================================
+
+RELACIÓN
+
+=========================================================================
+
+CapabilityDescriptor:
+
+descripción básica para discovery.
+
+CapabilityMetadata:
+
+descripción semántica ampliada.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+CapabilityDescriptor
+        │
+        ▼
+DISCOVERY
+
+CapabilityMetadata
+        │
+        ▼
+SEMANTIC UNDERSTANDING
+
+CapabilityExecution
+        │
+        ▼
+EXECUTION
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+ACC-027 NO reemplaza ACC-026.
+
+Lo extiende.
+
+=========================================================================
+
+EJEMPLO DE METADATA
+
+=========================================================================
+
+ACCOUNTING
+
+Domain:
+
+ACCOUNTING
+
+Concepts:
+
+ACCOUNT
+FISCAL_PERIOD
+REVENUE
+EXPENSE
+NET_RESULT
+FINANCIAL_RATIO
+CASH_FLOW
+FINANCIAL_KPI
+DATA_QUALITY
+
+Inputs:
+
+chartOfAccountsId
+fiscalPeriodId
+kpiTypes
+ratioTypes
+
+Outputs:
+
+KPI
+RATIO
+CASH_FLOW
+REPORT
+VALIDATION
+
+=========================================================================
+
+CASO DE USO FUTURO
+
+=========================================================================
+
+Un Engine puede recibir una intención:
+
+"Analiza la liquidez de la empresa."
+
+El Engine puede consultar metadata.
+
+Encontrar:
+
+ACCOUNTING
+
+porque contiene conceptos:
+
+FINANCIAL_RATIO
+
+CASH_FLOW
+
+FINANCIAL_KPI
+
+y seleccionar la capability apropiada.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+ACC-027 NO implementa todavía:
+
+Natural Language Understanding.
+
+La metadata únicamente prepara la información necesaria.
+
+=========================================================================
+
+REGLA SEMÁNTICA
+
+=========================================================================
+
+Los conceptos deben representar:
+
+BUSINESS CONCEPTS
+
+No:
+
+Java classes.
+
+=========================================================================
+
+CORRECTO:
+
+FINANCIAL_KPI
+
+INCORRECTO:
+
+FinancialKpiService
+
+=========================================================================
+
+CORRECTO:
+
+FISCAL_PERIOD
+
+INCORRECTO:
+
+FiscalPeriodRepository
+
+=========================================================================
+
+REGLA DE semanticType
+
+=========================================================================
+
+semanticType debe utilizar nombres de dominio.
+
+Ejemplos:
+
+Account
+
+FiscalPeriod
+
+FinancialKpi
+
+FinancialRatio
+
+CashFlowReport
+
+DataQualityFinding
+
+No utilizar:
+
+com.globaldynamicssystems.aurum.accounting.model.FinancialKpi
+
+=========================================================================
+
+REGLA DE VERSIONAMIENTO
+
+=========================================================================
+
+No implementar versionamiento.
+
+No agregar:
+
+version
+
+majorVersion
+
+minorVersion
+
+=========================================================================
+
+REGLA DE ACTIVACIÓN
+
+=========================================================================
+
+enabled:
+
+true
+
+para:
+
+ACCOUNTING.
+
+=========================================================================
+
+REGLA DE FILTRO
+
+=========================================================================
+
+CapabilityMetadataService debe permitir:
+
+findByDomain(ACCOUNTING)
+
+=========================================================================
+
+REGLA NULL
+
+=========================================================================
+
+findByDomain(null)
+
+debe devolver:
+
+empty list.
+
+=========================================================================
+
+REGLA CODE
+
+=========================================================================
+
+getMetadata(null)
+
+debe devolver:
+
+Optional.empty().
+
+=========================================================================
+
+NO PERSISTIR
+
+=========================================================================
+
+No crear:
+
+CapabilityMetadataEntity
+
+CapabilityMetadataRepository
+
+CapabilityMetadataHistory
+
+CapabilityMetadataVersion
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+=========================================================================
+
+Semantic Search
+
+Vector Database
+
+Embeddings
+
+LLM
+
+Natural Language Processing
+
+AI Capability Selection
+
+Capability Ranking
+
+Machine Learning
+
+Dynamic Metadata Editor
+
+Metadata UI
+
+REST
+
+GraphQL
+
+=========================================================================
+
+NO MODIFICAR
+
+=========================================================================
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntry
+
+JournalEntryLine
+
+LedgerEntry
+
+AnalyticalDimensionValue
+
+Profitability
+
+FinancialRatio
+
+CashFlow
+
+FinancialKpi
+
+AccountingDataQuality
+
+=========================================================================
+
+NO MODIFICAR LÓGICA FINANCIERA
+
+=========================================================================
+
+No modificar:
+
+ProfitabilityService
+
+FinancialRatioService
+
+CashFlowService
+
+FinancialKpiService
+
+AccountingDataQualityService
+
+FinancialComparisonService
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+Controllers
+
+REST DTOs
+
+Mappers
+
+Repositories
+
+JPA Entities
+
+Database tables
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe CapabilityDomain.
+
+2. Existe CapabilityInputType.
+
+3. Existe CapabilityOutputType.
+
+4. Existe CapabilityParameterMetadata.
+
+5. Existe CapabilityConcept.
+
+6. Existe CapabilityOutputMetadata.
+
+7. Existe CapabilityDependency.
+
+8. Existe CapabilityMetadata.
+
+9. Existe CapabilityMetadataRegistry.
+
+10. Existe CapabilityMetadataService.
+
+11. ACCOUNTING posee metadata semántica.
+
+12. ACCOUNTING declara su dominio.
+
+13. ACCOUNTING declara sus conceptos.
+
+14. ACCOUNTING declara sus inputs.
+
+15. ACCOUNTING declara sus outputs.
+
+16. La metadata puede consultarse por code.
+
+17. La metadata puede consultarse por domain.
+
+18. El Registry es thread-safe.
+
+19. La metadata no se persiste.
+
+20. Discovery de ACC-026 continúa funcionando.
+
+21. No se exponen entidades JPA.
+
+22. Los conceptos representan términos de negocio.
+
+23. semanticType no contiene nombres de paquetes Java.
+
+24. No existe Reflection.
+
+25. No existe SQL nativo.
+
+26. No se utiliza Lombok.
+
+27. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+Después de ACC-027:
+
+                    AURUM ENGINE
+                         │
+                         ▼
+                 CAPABILITY DISCOVERY
+                         │
+                         ▼
+                CAPABILITY DESCRIPTOR
+                         │
+                         ▼
+                 CAPABILITY METADATA
+                         │
+             ┌───────────┼───────────┐
+             ▼           ▼           ▼
+          CONCEPTS     INPUTS      OUTPUTS
+             │           │           │
+             └───────────┼───────────┘
+                         ▼
+                 CAPABILITY SELECTION
+                         │
+                         ▼
+                 CAPABILITY EXECUTION
+                         │
+                         ▼
+                  AURUM ACCOUNTING
+
+=========================================================================
+
+EVOLUCIÓN DE LA ARQUITECTURA
+=========================================================================
+
+ACC-025
+
+EXECUTION
+
+↓
+
+ACC-026
+
+DISCOVERY
+
+↓
+
+ACC-027
+
+SEMANTIC METADATA
+
+↓
+
+ACC-028
+
+GENERIC CAPABILITY EXECUTION
+
+↓
+
+ACC-029
+
+BUSINESS CONTEXT
+
+↓
+
+ACC-030
+
+AGENT-READY ACCOUNTING INTERFACE
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+Estamos construyendo tres capas distintas:
+
+1. DISCOVERY
+
+"¿Qué capacidades existen?"
+
+2. SEMANTIC DESCRIPTION
+
+"¿Qué significa cada capacidad?"
+
+3. EXECUTION
+
+"Ejecuta esta capacidad."
+
+Esto evita convertir:
+
+aurum-engine
+
+en un conjunto gigantesco de:
+
+if/else
+
+específicos de cada módulo.
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum Engine podrá conocer no solamente:
+
+"Existe ACCOUNTING."
+
+sino:
+
+"ACCOUNTING pertenece al dominio financiero, trabaja con cuentas,
+períodos fiscales, ingresos, gastos, ratios, cash flow y KPIs, requiere
+determinados inputs y produce determinados outputs."
+
+Ese nivel de información es el prerrequisito para que posteriormente
+un agente pueda seleccionar capacidades de manera semántica.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-028
+
+GENERIC CAPABILITY EXECUTION
+
+Construir un mecanismo genérico de ejecución de capabilities en
+`aurum-engine`, desacoplando el Engine de `AccountingCapability` y
+permitiendo que una misma infraestructura pueda ejecutar capacidades
+de Accounting, Metadata y futuros dominios empresariales mediante un
+contrato común.
+
+=========================================================================

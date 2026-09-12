@@ -1,0 +1,1941 @@
+=========================================================================
+HISTORIA DE USUARIO: WEB-001
+AURUM WEB APPLICATION SHELL
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - Web
+
+MÓDULO
+
+aurum-web
+
+=========================================================================
+
+HISTORIA DE USUARIO
+=========================================================================
+
+COMO usuario de Aurum
+
+QUIERO disponer de una interfaz web consistente que proporcione la
+estructura principal de navegación, identidad visual, contexto de
+usuario y áreas de trabajo
+
+PARA poder utilizar Accounting, Administration, AI Assistant y las
+futuras capabilities de Aurum desde una única aplicación.
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+Aurum dispone actualmente de:
+
+Identity
+
+Roles
+
+Permissions
+
+Authorization Engine
+
+Security Context
+
+Capability Engine
+
+Accounting Core.
+
+El backend está diseñado como una plataforma de capacidades.
+
+La interfaz web debe reflejar esta arquitectura.
+
+El frontend NO debe convertirse en una colección de pantallas aisladas.
+
+Debe existir una Application Shell común.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear:
+
+aurum-web
+
+como aplicación frontend independiente.
+
+El Application Shell debe proporcionar:
+
+1. Layout principal.
+
+2. Header.
+
+3. Sidebar.
+
+4. Main Content Area.
+
+5. User Menu.
+
+6. Navigation.
+
+7. Breadcrumbs.
+
+8. Notification Area.
+
+9. Responsive behavior.
+
+10. Authentication-aware behavior.
+
+11. Authorization-aware navigation.
+
+12. Capability-aware navigation.
+
+=========================================================================
+
+PRINCIPIO ARQUITECTÓNICO
+=========================================================================
+
+La aplicación web es un CLIENTE de Aurum.
+
+NO es el lugar donde reside la lógica de negocio.
+
+Frontend:
+
+Presentation
+
+Navigation
+
+Interaction
+
+Visualization
+
+Backend:
+
+Authentication
+
+Authorization
+
+Business Rules
+
+Capabilities
+
+Persistence
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                     AURUM WEB
+                         │
+             ┌───────────┼───────────┐
+             ▼           ▼           ▼
+          SHELL       ROUTING      UI COMPONENTS
+             │
+             ▼
+          AURUM API
+             │
+       ┌─────┴─────┐
+       ▼           ▼
+      IAM        ENGINE
+                   │
+                   ▼
+              CAPABILITIES
+                   │
+                   ▼
+               ACCOUNTING
+
+=========================================================================
+
+TECNOLOGÍA FRONTEND
+=========================================================================
+
+Utilizar:
+
+React
+
+TypeScript
+
+Vite
+
+=========================================================================
+
+REGLA
+=========================================================================
+
+No utilizar JavaScript puro para la lógica principal.
+
+El código de aplicación debe utilizar:
+
+TypeScript.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No utilizar:
+
+Angular
+
+Vue
+
+Next.js
+
+en esta historia.
+
+=========================================================================
+
+RAZÓN
+
+=========================================================================
+
+El frontend debe mantenerse como SPA inicialmente.
+
+La necesidad de SSR será evaluada posteriormente.
+
+=========================================================================
+
+MÓDULO
+=========================================================================
+
+Crear:
+
+aurum-web
+
+como proyecto frontend independiente.
+
+NO debe formar parte del reactor Maven.
+
+=========================================================================
+
+ESTRUCTURA
+=========================================================================
+
+aurum-web
+
+├── src
+│   ├── app
+│   ├── components
+│   ├── layouts
+│   ├── navigation
+│   ├── pages
+│   ├── services
+│   ├── security
+│   ├── capabilities
+│   ├── hooks
+│   ├── types
+│   ├── assets
+│   └── styles
+│
+├── public
+│
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── index.html
+
+=========================================================================
+
+APPLICATION SHELL
+=========================================================================
+
+Crear:
+
+AppShell
+
+Debe contener:
+
+Header
+
+Sidebar
+
+Main Content
+
+=========================================================================
+
+ESTRUCTURA VISUAL
+=========================================================================
+
+┌───────────────────────────────────────────────────────────────┐
+│ AURUM                         🔔   ?   USER ▼                  │
+├──────────────┬────────────────────────────────────────────────┤
+│              │                                                │
+│  HOME        │                                                │
+│              │                                                │
+│  ASSISTANT   │                                                │
+│              │             MAIN CONTENT                       │
+│  ACCOUNTING  │                                                │
+│              │                                                │
+│  ANALYTICS   │                                                │
+│              │                                                │
+│  ADMIN       │                                                │
+│              │                                                │
+│              │                                                │
+│  SETTINGS    │                                                │
+│              │                                                │
+└──────────────┴────────────────────────────────────────────────┘
+
+=========================================================================
+
+HEADER
+=========================================================================
+
+Crear:
+
+AppHeader
+
+Debe contener:
+
+Logo / Brand
+
+Application Name
+
+Notification button
+
+Help button
+
+User menu
+
+=========================================================================
+
+HEADER
+
+=========================================================================
+
+No colocar lógica de negocio.
+
+=========================================================================
+
+USER MENU
+=========================================================================
+
+Debe mostrar:
+
+User name
+
+User email
+
+Profile
+
+Security
+
+Logout
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Logout será solamente una acción visual/mock en WEB-001.
+
+La implementación real dependerá de:
+
+Authentication Session
+
+=========================================================================
+
+SIDEBAR
+=========================================================================
+
+Crear:
+
+AppSidebar
+
+Secciones iniciales:
+
+Home
+
+AI Assistant
+
+Accounting
+
+Analytics
+
+Administration
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La Sidebar debe ser:
+
+configurable.
+
+No hardcodear toda la navegación dentro del componente React.
+
+=========================================================================
+
+NAVIGATION MODEL
+=========================================================================
+
+Crear:
+
+NavigationItem
+
+Campos conceptuales:
+
+id
+
+label
+
+path
+
+icon
+
+requiredPermission
+
+requiredCapability
+
+children
+
+=========================================================================
+
+EJEMPLO
+=========================================================================
+
+{
+    id: "accounting",
+    label: "Accounting",
+    path: "/accounting",
+    requiredCapability: "ACCOUNTING"
+}
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+requiredPermission debe ser opcional.
+
+requiredCapability debe ser opcional.
+
+=========================================================================
+
+BREADCRUMBS
+=========================================================================
+
+Crear:
+
+Breadcrumbs
+
+Debe reflejar:
+
+Home
+
+>
+
+Accounting
+
+>
+
+Journal Entries
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No almacenar breadcrumbs manualmente por página.
+
+Deben derivarse de:
+
+route configuration.
+
+=========================================================================
+
+MAIN CONTENT
+=========================================================================
+
+Crear:
+
+MainContent
+
+Responsabilidad:
+
+renderizar la página correspondiente a la ruta actual.
+
+=========================================================================
+
+ROUTING
+=========================================================================
+
+Utilizar:
+
+React Router.
+
+=========================================================================
+
+RUTAS INICIALES
+=========================================================================
+
+/
+
+→ Home
+
+/assistant
+
+→ AI Assistant
+
+/accounting
+
+→ Accounting Dashboard
+
+/analytics
+
+→ Analytics
+
+/admin
+
+→ Administration
+
+/profile
+
+→ User Profile
+
+/security
+
+→ Security
+
+=========================================================================
+
+PÁGINAS
+=========================================================================
+
+Crear inicialmente páginas placeholder:
+
+HomePage
+
+AssistantPage
+
+AccountingPage
+
+AnalyticsPage
+
+AdministrationPage
+
+ProfilePage
+
+SecurityPage
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Estas páginas NO implementan todavía funcionalidades completas.
+
+Deben demostrar únicamente que:
+
+routing
+
+navigation
+
+layout
+
+breadcrumbs
+
+authorization visibility
+
+funcionan.
+
+=========================================================================
+
+HOME PAGE
+=========================================================================
+
+Debe mostrar:
+
+Welcome
+
+Current user
+
+Application overview
+
+Quick Actions placeholder
+
+Recent Activity placeholder
+
+=========================================================================
+
+AI ASSISTANT PAGE
+=========================================================================
+
+Debe mostrar:
+
+Aurum Assistant
+
+Input placeholder
+
+Send button
+
+Empty conversation state
+
+=========================================================================
+
+ACCOUNTING PAGE
+=========================================================================
+
+Debe mostrar:
+
+Accounting
+
+Available capabilities placeholder
+
+Accounting dashboard placeholder
+
+=========================================================================
+
+ANALYTICS PAGE
+=========================================================================
+
+Debe mostrar:
+
+Analytics
+
+Financial Analytics placeholder
+
+=========================================================================
+
+ADMINISTRATION PAGE
+=========================================================================
+
+Debe mostrar:
+
+Administration
+
+Users
+
+Roles
+
+Permissions
+
+Security
+
+como opciones visuales.
+
+=========================================================================
+
+PROFILE PAGE
+=========================================================================
+
+Debe mostrar:
+
+Name
+
+Email
+
+Status
+
+Roles
+
+=========================================================================
+
+SECURITY PAGE
+=========================================================================
+
+Debe mostrar:
+
+Authentication
+
+Connected Identities
+
+Sessions
+
+Security settings
+
+como placeholders.
+
+=========================================================================
+
+DESIGN SYSTEM
+=========================================================================
+
+Crear una base mínima de Design System.
+
+Componentes:
+
+Button
+
+Input
+
+Card
+
+Badge
+
+IconButton
+
+Dropdown
+
+Modal
+
+Table
+
+NavigationItem
+
+PageHeader
+
+Breadcrumbs
+
+EmptyState
+
+LoadingState
+
+ErrorState
+
+=========================================================================
+
+REGLA
+=========================================================================
+
+No instalar un UI framework completo todavía.
+
+Evitar dependencia innecesaria en:
+
+Material UI
+
+Ant Design
+
+Bootstrap
+
+etc.
+
+=========================================================================
+
+RAZÓN
+=========================================================================
+
+Aurum debe mantener control sobre:
+
+visual identity
+
+component behavior
+
+design tokens
+
+future AI interaction patterns.
+
+=========================================================================
+
+DESIGN TOKENS
+=========================================================================
+
+Crear:
+
+design-tokens.css
+
+Debe definir al menos:
+
+font family
+
+font sizes
+
+spacing
+
+border radius
+
+layout widths
+
+header height
+
+sidebar width
+
+breakpoints
+
+=========================================================================
+
+NO FIJAR TODAVÍA
+=========================================================================
+
+No establecer una paleta cromática definitiva.
+
+La identidad visual completa será una historia posterior.
+
+=========================================================================
+
+THEME
+=========================================================================
+
+Preparar:
+
+light
+
+dark
+
+=========================================================================
+
+REGLA
+=========================================================================
+
+El Application Shell debe funcionar en ambos modos.
+
+La preferencia puede almacenarse inicialmente en:
+
+localStorage.
+
+=========================================================================
+
+RESPONSIVE DESIGN
+=========================================================================
+
+Desktop:
+
+Sidebar visible.
+
+Tablet:
+
+Sidebar adaptable.
+
+Mobile:
+
+Sidebar colapsable.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No crear una segunda UI específica para mobile.
+
+Utilizar:
+
+responsive layout.
+
+=========================================================================
+
+SECURITY MODEL
+=========================================================================
+
+Crear:
+
+SecurityState
+
+Campos conceptuales:
+
+authenticated
+
+user
+
+roles
+
+permissions
+
+capabilities
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Esto es un modelo frontend.
+
+NO sustituye:
+
+SecurityContext
+
+del backend.
+
+=========================================================================
+
+REGLA CRÍTICA
+=========================================================================
+
+Frontend security state:
+
+NO es autoridad.
+
+La autoridad continúa siendo:
+
+Backend Authorization Engine.
+
+=========================================================================
+
+AUTHORIZATION-AWARE NAVIGATION
+=========================================================================
+
+Crear:
+
+NavigationAuthorizationService
+
+Responsabilidad:
+
+determinar qué elementos de navegación deben mostrarse.
+
+=========================================================================
+
+EJEMPLO
+=========================================================================
+
+Usuario:
+
+ACCOUNTING_CLERK
+
+permissions:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+ACCOUNTING.JOURNAL_ENTRY.CREATE
+
+La UI puede mostrar:
+
+Accounting
+
+Journal Entries
+
+Create Journal Entry
+
+pero no:
+
+Reverse Journal Entry
+
+si no posee:
+
+ACCOUNTING.JOURNAL_ENTRY.REVERSE.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Ocultar un elemento:
+
+NO significa autorización.
+
+La API debe validar nuevamente.
+
+=========================================================================
+
+CAPABILITY-AWARE NAVIGATION
+=========================================================================
+
+La navegación debe poder determinar si una capability está disponible.
+
+Ejemplo:
+
+requiredCapability:
+
+ACCOUNTING
+
+=========================================================================
+
+RESULTADO
+=========================================================================
+
+Si:
+
+Capability = ACCOUNTING
+
+disponible
+
+y:
+
+Permission = ACCOUNTING.*
+
+corresponde
+
+entonces:
+
+mostrar Accounting.
+
+=========================================================================
+
+MVP INITIAL MOCK
+=========================================================================
+
+Como todavía no existe Authentication API:
+
+SecurityState puede utilizar datos mock.
+
+Ejemplo:
+
+User:
+
+Jorge
+
+Status:
+
+ACTIVE
+
+Roles:
+
+ACCOUNTING_SUPERVISOR
+
+Permissions:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+ACCOUNTING.JOURNAL_ENTRY.CREATE
+ACCOUNTING.JOURNAL_ENTRY.UPDATE
+ACCOUNTING.JOURNAL_ENTRY.POST
+ACCOUNTING.JOURNAL_ENTRY.REVERSE
+ACCOUNTING.JOURNAL_ENTRY.APPROVE
+ACCOUNTING.JOURNAL_ENTRY.PRINT
+
+=========================================================================
+
+REGLA
+=========================================================================
+
+El mock debe estar claramente aislado.
+
+Crear:
+
+MockSecurityProvider
+
+=========================================================================
+
+NO HACER
+=========================================================================
+
+No colocar:
+
+mockUser
+
+directamente dentro de:
+
+App.tsx
+
+=========================================================================
+
+SECURITY PROVIDER
+=========================================================================
+
+Crear:
+
+SecurityProvider
+
+Responsabilidad:
+
+proporcionar SecurityState a los componentes.
+
+=========================================================================
+
+HOOK
+=========================================================================
+
+Crear:
+
+useSecurity()
+
+Debe permitir:
+
+obtener usuario
+
+obtener roles
+
+obtener permisos
+
+obtener capabilities
+
+consultar authenticated
+
+=========================================================================
+
+HOOK
+=========================================================================
+
+Crear:
+
+useAuthorization()
+
+Debe permitir:
+
+hasPermission()
+
+hasRole()
+
+hasCapability()
+
+=========================================================================
+
+CAPABILITY PROVIDER
+=========================================================================
+
+Crear:
+
+CapabilityProvider
+
+Inicialmente puede utilizar:
+
+mock capability data.
+
+=========================================================================
+
+HOOK
+=========================================================================
+
+Crear:
+
+useCapabilities()
+
+Debe permitir:
+
+isAvailable()
+
+getCapabilities()
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+Estos providers deben poder ser reemplazados posteriormente por:
+
+Aurum API.
+
+=========================================================================
+
+API ABSTRACTION
+=========================================================================
+
+Crear:
+
+ApiClient
+
+como abstracción mínima.
+
+No implementar todavía autenticación HTTP.
+
+=========================================================================
+
+SERVICIOS
+=========================================================================
+
+Crear:
+
+UserService
+
+CapabilityService
+
+NavigationService
+
+pero como interfaces/abstracciones simples donde sea útil.
+
+=========================================================================
+
+NO SOBREDISEÑAR
+=========================================================================
+
+No crear:
+
+Redux
+
+MobX
+
+Zustand
+
+u otro global state manager
+
+en esta historia.
+
+Utilizar inicialmente:
+
+React Context
+
+y hooks.
+
+=========================================================================
+
+ERROR HANDLING
+=========================================================================
+
+Crear:
+
+ErrorState
+
+Debe poder mostrar:
+
+mensaje
+
+retry
+
+back action.
+
+=========================================================================
+
+LOADING
+=========================================================================
+
+Crear:
+
+LoadingState.
+
+=========================================================================
+
+EMPTY STATE
+=========================================================================
+
+Crear:
+
+EmptyState.
+
+=========================================================================
+
+NOTIFICATIONS
+=========================================================================
+
+Crear:
+
+NotificationCenter
+
+Inicialmente:
+
+mock.
+
+Debe soportar conceptualmente:
+
+INFO
+
+SUCCESS
+
+WARNING
+
+ERROR
+
+=========================================================================
+
+ACCESS DENIED
+=========================================================================
+
+Crear:
+
+AccessDeniedPage
+
+Ruta:
+
+/access-denied
+
+=========================================================================
+
+NOT FOUND
+=========================================================================
+
+Crear:
+
+NotFoundPage
+
+Ruta:
+
+*
+
+=========================================================================
+
+PROTECTED ROUTE
+=========================================================================
+
+Crear:
+
+ProtectedRoute.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+ProtectedRoute debe comprobar:
+
+authenticated.
+
+Si:
+
+false
+
+redirigir a:
+
+/login
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Aunque:
+
+/login
+
+se cree únicamente como placeholder en esta historia,
+
+la ruta debe existir para que el shell quede preparado.
+
+=========================================================================
+
+PERMISSION ROUTE
+=========================================================================
+
+Crear:
+
+AuthorizedRoute.
+
+=========================================================================
+
+RESPONSABILIDAD
+
+=========================================================================
+
+Permitir:
+
+requiredPermission
+
+y:
+
+requiredCapability.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+/accounting/journal-entries
+
+requiredPermission:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+=========================================================================
+
+COMPORTAMIENTO
+=========================================================================
+
+Si permission existe:
+
+render.
+
+Si no:
+
+/access-denied.
+
+=========================================================================
+
+CAPABILITY ROUTE
+=========================================================================
+
+Ejemplo:
+
+/accounting
+
+requiredCapability:
+
+ACCOUNTING
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El frontend puede impedir navegación no autorizada.
+
+El backend seguirá siendo responsable de seguridad.
+
+=========================================================================
+
+LOGOUT
+=========================================================================
+
+Crear:
+
+logout()
+
+en SecurityProvider.
+
+Inicialmente:
+
+limpiar estado mock.
+
+Posteriormente será conectado con:
+
+Authentication Session.
+
+=========================================================================
+
+NO IMPLEMENTAR
+=========================================================================
+
+Real authentication.
+
+JWT.
+
+OAuth2.
+
+OIDC.
+
+Google.
+
+Microsoft.
+
+Password.
+
+Refresh tokens.
+
+Session persistence.
+
+=========================================================================
+
+ACCESSIBILITY
+=========================================================================
+
+Los componentes deben utilizar:
+
+semantic HTML
+
+ARIA cuando corresponda
+
+keyboard navigation
+
+visible focus state.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No utilizar:
+
+<div>
+
+como sustituto universal de:
+
+button
+
+nav
+
+main
+
+header
+
+aside
+
+section
+
+=========================================================================
+
+OBSERVABILITY
+=========================================================================
+
+Preparar:
+
+ApplicationErrorBoundary.
+
+Debe capturar errores de renderizado React.
+
+=========================================================================
+
+NO IMPLEMENTAR
+=========================================================================
+
+Remote telemetry.
+
+Analytics tracking.
+
+User behavior tracking.
+
+=========================================================================
+
+TESTING
+=========================================================================
+
+Utilizar:
+
+Vitest
+
+React Testing Library
+
+=========================================================================
+
+TESTS OBLIGATORIOS
+=========================================================================
+
+1. AppShell renderiza correctamente.
+
+2. Header renderiza.
+
+3. Sidebar renderiza.
+
+4. MainContent renderiza.
+
+5. Navigation funciona.
+
+6. Breadcrumbs funcionan.
+
+7. User menu funciona.
+
+8. Dark mode funciona.
+
+9. Light mode funciona.
+
+10. Mobile sidebar funciona.
+
+11. ProtectedRoute bloquea usuario no autenticado.
+
+12. ProtectedRoute permite usuario autenticado.
+
+13. AuthorizedRoute bloquea permiso inexistente.
+
+14. AuthorizedRoute permite permiso existente.
+
+15. Capability navigation respeta capability disponible.
+
+16. useSecurity funciona.
+
+17. useAuthorization funciona.
+
+18. useCapabilities funciona.
+
+19. Logout limpia SecurityState.
+
+20. AccessDeniedPage funciona.
+
+21. NotFoundPage funciona.
+
+22. ErrorBoundary funciona.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe aurum-web.
+
+2. Utiliza React.
+
+3. Utiliza TypeScript.
+
+4. Utiliza Vite.
+
+5. Existe AppShell.
+
+6. Existe AppHeader.
+
+7. Existe AppSidebar.
+
+8. Existe MainContent.
+
+9. Existe routing.
+
+10. Existe navegación centralizada.
+
+11. Existe NavigationItem.
+
+12. Existe Breadcrumbs.
+
+13. Existe User Menu.
+
+14. Existe Notification Center.
+
+15. Existe SecurityProvider.
+
+16. Existe SecurityState.
+
+17. Existe useSecurity.
+
+18. Existe useAuthorization.
+
+19. Existe CapabilityProvider.
+
+20. Existe useCapabilities.
+
+21. Existe ProtectedRoute.
+
+22. Existe AuthorizedRoute.
+
+23. Existe AccessDeniedPage.
+
+24. Existe NotFoundPage.
+
+25. Existe ErrorBoundary.
+
+26. Existe LoadingState.
+
+27. Existe EmptyState.
+
+28. Existe ErrorState.
+
+29. Existe Design System mínimo.
+
+30. Existe design-tokens.css.
+
+31. Existe soporte Light Theme.
+
+32. Existe soporte Dark Theme.
+
+33. Existe responsive layout.
+
+34. Navigation no está hardcoded dentro de AppSidebar.
+
+35. Navigation puede utilizar requiredPermission.
+
+36. Navigation puede utilizar requiredCapability.
+
+37. El frontend no es autoridad de seguridad.
+
+38. No existe dependencia directa de entidades JPA.
+
+39. No existe dependencia directa con aurum-accounting backend.
+
+40. No existe dependencia directa con aurum-identity backend.
+
+41. Existe abstracción ApiClient.
+
+42. Existe MockSecurityProvider.
+
+43. MockSecurityProvider está aislado.
+
+44. No existe JWT.
+
+45. No existe OAuth2.
+
+46. No existe OIDC.
+
+47. No existe Google Authentication.
+
+48. No existe Microsoft Authentication.
+
+49. No existe password authentication.
+
+50. No existe refresh token.
+
+51. No existe SessionEntity.
+
+52. La aplicación funciona como SPA.
+
+53. El proyecto frontend compila.
+
+54. Los tests principales pasan.
+
+=========================================================================
+
+ESTRUCTURA RESULTANTE
+=========================================================================
+
+aurum-web
+│
+├── src
+│   │
+│   ├── app
+│   │   ├── App.tsx
+│   │   └── routes.tsx
+│   │
+│   ├── layouts
+│   │   └── AppShell.tsx
+│   │
+│   ├── components
+│   │   ├── AppHeader
+│   │   ├── AppSidebar
+│   │   ├── Breadcrumbs
+│   │   ├── UserMenu
+│   │   ├── NotificationCenter
+│   │   ├── Button
+│   │   ├── Input
+│   │   ├── Card
+│   │   ├── Badge
+│   │   ├── Modal
+│   │   ├── Table
+│   │   ├── LoadingState
+│   │   ├── EmptyState
+│   │   └── ErrorState
+│   │
+│   ├── navigation
+│   │   ├── navigation.config.ts
+│   │   └── NavigationAuthorizationService.ts
+│   │
+│   ├── security
+│   │   ├── SecurityProvider.tsx
+│   │   ├── SecurityState.ts
+│   │   ├── MockSecurityProvider.tsx
+│   │   ├── useSecurity.ts
+│   │   ├── useAuthorization.ts
+│   │   ├── ProtectedRoute.tsx
+│   │   └── AuthorizedRoute.tsx
+│   │
+│   ├── capabilities
+│   │   ├── CapabilityProvider.tsx
+│   │   ├── CapabilityState.ts
+│   │   └── useCapabilities.ts
+│   │
+│   ├── services
+│   │   ├── ApiClient.ts
+│   │   ├── UserService.ts
+│   │   └── CapabilityService.ts
+│   │
+│   ├── pages
+│   │   ├── HomePage.tsx
+│   │   ├── AssistantPage.tsx
+│   │   ├── AccountingPage.tsx
+│   │   ├── AnalyticsPage.tsx
+│   │   ├── AdministrationPage.tsx
+│   │   ├── ProfilePage.tsx
+│   │   ├── SecurityPage.tsx
+│   │   ├── AccessDeniedPage.tsx
+│   │   ├── NotFoundPage.tsx
+│   │   └── LoginPage.tsx
+│   │
+│   ├── hooks
+│   │
+│   ├── types
+│   │
+│   ├── styles
+│   │   └── design-tokens.css
+│   │
+│   └── assets
+│
+├── public
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── index.html
+
+=========================================================================
+
+FLUJO DE LA APLICACIÓN
+=========================================================================
+
+                    AURUM WEB
+                        │
+                        ▼
+                    APP SHELL
+                        │
+              ┌─────────┼─────────┐
+              ▼         ▼         ▼
+            HEADER    SIDEBAR    CONTENT
+              │         │         │
+              │         ▼         ▼
+              │      NAVIGATION  ROUTER
+              │         │         │
+              │         ▼         ▼
+              │    AUTHORIZATION  PAGE
+              │
+              ▼
+         SECURITY STATE
+              │
+              ▼
+         CAPABILITY STATE
+
+=========================================================================
+
+SEGURIDAD
+=========================================================================
+
+Frontend:
+
+SecurityState
+
+        ↓
+
+Navigation filtering
+
+        ↓
+
+Route filtering
+
+        ↓
+
+UX
+
+        ↓
+
+Backend:
+
+AuthorizationService
+
+        ↓
+
+ALLOW / DENY
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+El frontend nunca debe considerarse una frontera de seguridad.
+
+La regla es:
+
+HIDE IN UI
+
++
+
+PROTECT ROUTE
+
++
+
+AUTHORIZE IN BACKEND
+
+=========================================================================
+
+EVOLUCIÓN
+=========================================================================
+
+WEB-001
+
+APPLICATION SHELL
+
+        ↓
+
+WEB-002
+
+LOGIN UI
+
+        ↓
+
+WEB-003
+
+AUTHENTICATION INTEGRATION
+
+        ↓
+
+WEB-004
+
+USER & ROLE ADMINISTRATION
+
+        ↓
+
+WEB-005
+
+ACCOUNTING UI
+
+        ↓
+
+WEB-006
+
+AI ASSISTANT UI
+
+        ↓
+
+WEB-007
+
+CAPABILITY-AWARE WORKSPACE
+
+=========================================================================
+
+INTEGRACIÓN FUTURA
+=========================================================================
+
+WEB-001 utiliza:
+
+MockSecurityProvider
+
+Posteriormente:
+
+MockSecurityProvider
+
+        ↓ reemplazar por
+
+AurumAuthenticationProvider
+
+        ↓
+
+Aurum API
+
+        ↓
+
+IAM
+
+        ↓
+
+Authentication
+
+        ↓
+
+SecurityContext
+
+=========================================================================
+
+RESULTADO ESTRATÉGICO
+=========================================================================
+
+El Application Shell no debe saber cómo funciona:
+
+Accounting.
+
+Sales.
+
+Inventory.
+
+Treasury.
+
+CRM.
+
+etc.
+
+Solo conoce:
+
+Navigation
+
+Security
+
+Capabilities
+
+Routes
+
+UI.
+
+=========================================================================
+
+Esto permite:
+
+                AURUM WEB
+                    │
+          ┌─────────┼─────────┐
+          ▼         ▼         ▼
+      ACCOUNTING   SALES   INVENTORY
+          │         │         │
+          └─────────┼─────────┘
+                    ▼
+              AURUM API
+                    │
+                    ▼
+              CAPABILITY ENGINE
+                    │
+                    ▼
+                BUSINESS
+
+=========================================================================
+
+PRINCIPIO FINAL
+=========================================================================
+
+Aurum Web no será "el Accounting frontend".
+
+Será:
+
+THE USER INTERFACE OF THE AURUM PLATFORM.
+
+Accounting será solamente una capability/module dentro de la plataforma.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+=========================================================================
+
+WEB-002
+
+AURUM LOGIN EXPERIENCE
+
+Construir la interfaz de autenticación de Aurum, incluyendo login local,
+manejo de estados de autenticación, errores, loading states y estructura
+visual preparada para posteriormente incorporar:
+
+Google SSO
+
+Microsoft SSO
+
+sin modificar el Application Shell.
+
+=========================================================================

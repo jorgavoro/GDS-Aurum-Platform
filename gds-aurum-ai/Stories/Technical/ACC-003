@@ -1,0 +1,1103 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-003
+ASIENTO CONTABLE — JOURNAL ENTRY
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven construido sobre:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+Infraestructura existente:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+Capacidades genéricas existentes:
+
+Metadata Engine
+Validation Engine
+Dynamic Form Engine
+Dynamic Query Engine
+Business Rules Engine
+
+El módulo aurum-accounting contiene actualmente:
+
+ChartOfAccounts
+Account
+AccountType
+AccountNature
+FiscalPeriod
+FiscalPeriodStatus
+
+ACC-003 introduce el primer documento contable.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar el modelo de Asiento Contable (Journal Entry).
+
+Un Journal Entry representa una operación contable compuesta por:
+
+- cabecera
+- período fiscal
+- fecha contable
+- descripción
+- múltiples líneas contables
+- débitos
+- créditos
+
+El sistema debe garantizar que un asiento contable esté balanceado:
+
+TOTAL DÉBITOS = TOTAL CRÉDITOS
+
+antes de poder ser considerado válido.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa todavía:
+
+Posting
+
+General Ledger
+
+Trial Balance
+
+Financial Statements
+
+Accounts Receivable
+
+Accounts Payable
+
+Taxes
+
+Currency Revaluation
+
+Bank Reconciliation
+
+Closing
+
+Reversal
+
+Recurring Entries
+
+Multi-Currency
+
+El asiento será creado y validado, pero NO será contabilizado en
+el mayor.
+
+=========================================================================
+
+REGLA CONTABLE FUNDAMENTAL
+=========================================================================
+
+Para cualquier Journal Entry válido:
+
+SUM(debit) = SUM(credit)
+
+Ejemplo válido:
+
+Debit  Cash       1000
+Credit Revenue    1000
+
+Ejemplo inválido:
+
+Debit  Cash       1000
+Credit Revenue     900
+
+El segundo asiento debe ser rechazado.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben escribirse manualmente.
+
+Todos los constructores deben escribirse manualmente.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal para valores monetarios.
+
+NO utilizar double.
+
+NO utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+JournalEntryStatus.java
+
+Crear enum.
+
+Valores:
+
+DRAFT
+
+VALIDATED
+
+POSTED
+
+VOIDED
+
+En esta historia solo se utilizarán:
+
+DRAFT
+
+VALIDATED
+
+Las demás constantes existen para preparar la evolución futura.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+JournalEntry.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_journal_entry
+
+Campos:
+
+Long id
+
+String documentNumber
+
+LocalDate accountingDate
+
+String description
+
+JournalEntryStatus status
+
+ChartOfAccounts chartOfAccounts
+
+FiscalPeriod fiscalPeriod
+
+List<JournalEntryLine> lines
+
+Restricciones:
+
+documentNumber obligatorio
+
+accountingDate obligatorio
+
+description obligatorio
+
+status obligatorio
+
+chartOfAccounts obligatorio
+
+fiscalPeriod obligatorio
+
+lines obligatorio
+
+Relación:
+
+@ManyToOne hacia ChartOfAccounts
+
+@ManyToOne hacia FiscalPeriod
+
+@OneToMany hacia JournalEntryLine
+
+La relación con JournalEntryLine debe utilizar:
+
+cascade = CascadeType.ALL
+
+fetch = FetchType.LAZY
+
+orphanRemoval = true
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+JournalEntryLine.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_journal_entry_line
+
+Campos:
+
+Long id
+
+Integer lineNumber
+
+Account account
+
+BigDecimal debit
+
+BigDecimal credit
+
+String description
+
+JournalEntry journalEntry
+
+Relaciones:
+
+@ManyToOne hacia Account
+
+@ManyToOne hacia JournalEntry
+
+Restricciones:
+
+lineNumber obligatorio
+
+account obligatorio
+
+debit obligatorio
+
+credit obligatorio
+
+journalEntry obligatorio
+
+=========================================================================
+
+REGLAS DE VALORES
+=========================================================================
+
+Una línea debe representar:
+
+débito
+
+o
+
+crédito
+
+pero no ambos.
+
+Valores permitidos:
+
+debit > 0
+credit = 0
+
+O:
+
+debit = 0
+credit > 0
+
+No se permite:
+
+debit > 0
+credit > 0
+
+No se permite:
+
+debit = 0
+credit = 0
+
+No se permiten valores negativos.
+
+Utilizar:
+
+BigDecimal.ZERO
+
+para representar el valor cero.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+JournalEntryRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<JournalEntry, Long>
+
+Métodos:
+
+Optional<JournalEntry> findByDocumentNumber(
+    String documentNumber
+);
+
+boolean existsByDocumentNumber(
+    String documentNumber
+);
+
+List<JournalEntry> findByFiscalPeriodId(
+    Long fiscalPeriodId
+);
+
+List<JournalEntry> findByChartOfAccountsId(
+    Long chartOfAccountsId
+);
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+JournalEntryService.java
+
+Crear interfaz.
+
+Métodos:
+
+JournalEntry create(
+    JournalEntry journalEntry
+);
+
+Optional<JournalEntry> findById(
+    Long id
+);
+
+Optional<JournalEntry> findByDocumentNumber(
+    String documentNumber
+);
+
+JournalEntry validate(
+    Long id
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultJournalEntryService.java
+
+Implementar:
+
+JournalEntryService
+
+Anotación:
+
+@Service
+
+Utilizar Constructor Injection.
+
+Dependencias:
+
+JournalEntryRepository
+
+ChartOfAccountsRepository
+
+FiscalPeriodRepository
+
+=========================================================================
+
+REGLAS DEL MÉTODO create()
+=========================================================================
+
+1. journalEntry no puede ser null.
+
+2. documentNumber no puede ser null.
+
+3. documentNumber no puede estar vacío.
+
+4. documentNumber debe ser único.
+
+5. accountingDate no puede ser null.
+
+6. description no puede ser null.
+
+7. chartOfAccounts no puede ser null.
+
+8. fiscalPeriod no puede ser null.
+
+9. lines no puede ser null.
+
+10. Debe existir al menos una línea.
+
+11. El ChartOfAccounts debe existir.
+
+12. El FiscalPeriod debe existir.
+
+13. El FiscalPeriod debe pertenecer al mismo ChartOfAccounts.
+
+14. accountingDate debe pertenecer al FiscalPeriod.
+
+15. El FiscalPeriod debe estar OPEN.
+
+16. status debe comenzar como DRAFT.
+
+17. Las líneas deben validarse.
+
+=========================================================================
+
+REGLAS DE LAS LÍNEAS
+=========================================================================
+
+Cada JournalEntryLine debe cumplir:
+
+account != null
+
+debit != null
+
+credit != null
+
+debit >= 0
+
+credit >= 0
+
+No ambos mayores que cero.
+
+No ambos iguales a cero.
+
+La cuenta debe pertenecer al mismo ChartOfAccounts que el JournalEntry.
+
+La cuenta debe estar activa.
+
+La cuenta debe ser postable.
+
+lineNumber debe ser positivo.
+
+No debe haber dos líneas con el mismo lineNumber.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+JournalEntryValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    JournalEntry journalEntry
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultJournalEntryValidator.java
+
+Implementar:
+
+JournalEntryValidator
+
+Validar:
+
+1. JournalEntry no puede ser null.
+
+2. documentNumber obligatorio.
+
+3. accountingDate obligatorio.
+
+4. description obligatorio.
+
+5. ChartOfAccounts obligatorio.
+
+6. FiscalPeriod obligatorio.
+
+7. lines no puede estar vacío.
+
+8. FiscalPeriod debe estar OPEN.
+
+9. accountingDate debe estar dentro del FiscalPeriod.
+
+10. Cada línea debe tener una cuenta.
+
+11. Cada cuenta debe estar activa.
+
+12. Cada cuenta debe ser postable.
+
+13. debit >= 0.
+
+14. credit >= 0.
+
+15. No permitir debit > 0 y credit > 0.
+
+16. No permitir debit = 0 y credit = 0.
+
+17. No permitir valores negativos.
+
+18. No permitir líneas duplicadas.
+
+19. La cuenta debe pertenecer al ChartOfAccounts.
+
+20. La suma de débitos debe ser igual a la suma de créditos.
+
+Si alguna regla falla:
+
+lanzar IllegalArgumentException.
+
+=========================================================================
+
+REGLA DE BALANCE
+=========================================================================
+
+Utilizar BigDecimal.
+
+Ejemplo:
+
+BigDecimal totalDebit = BigDecimal.ZERO;
+
+BigDecimal totalCredit = BigDecimal.ZERO;
+
+Recorrer todas las líneas.
+
+Acumular:
+
+totalDebit = totalDebit.add(line.getDebit());
+
+totalCredit = totalCredit.add(line.getCredit());
+
+Finalmente:
+
+if (totalDebit.compareTo(totalCredit) != 0) {
+    throw new IllegalArgumentException(...);
+}
+
+NO utilizar:
+
+totalDebit.equals(totalCredit)
+
+para comparar valores monetarios.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+JournalEntryBalanceService.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateDebitTotal(
+    JournalEntry journalEntry
+);
+
+BigDecimal calculateCreditTotal(
+    JournalEntry journalEntry
+);
+
+boolean isBalanced(
+    JournalEntry journalEntry
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultJournalEntryBalanceService.java
+
+Implementar:
+
+JournalEntryBalanceService
+
+Debe utilizar BigDecimal.
+
+No acceder a la base de datos.
+
+No utilizar repositories.
+
+No utilizar EntityManager.
+
+Debe calcular los totales únicamente a partir de las líneas
+contenidas en JournalEntry.
+
+=========================================================================
+
+REGLA DE ESTADO
+=========================================================================
+
+Al crear:
+
+status = DRAFT
+
+Cuando:
+
+JournalEntryValidator
+
+determina que todas las reglas son válidas:
+
+status = VALIDATED
+
+En esta historia NO cambiar a:
+
+POSTED
+
+El estado POSTED pertenece a la futura historia de Posting.
+
+=========================================================================
+
+REGLAS DE FISCAL PERIOD
+=========================================================================
+
+JournalEntry solamente puede crearse si:
+
+FiscalPeriod.status == OPEN
+
+Además:
+
+accountingDate >= fiscalPeriod.startDate
+
+y
+
+accountingDate <= fiscalPeriod.endDate
+
+Las fechas son inclusivas.
+
+=========================================================================
+
+REGLAS DE ACCOUNT
+=========================================================================
+
+La cuenta utilizada en una línea:
+
+debe existir.
+
+debe pertenecer al mismo ChartOfAccounts.
+
+debe estar activa.
+
+debe tener:
+
+postable = true
+
+Una cuenta agrupadora:
+
+postable = false
+
+no puede recibir movimientos contables.
+
+=========================================================================
+
+EJEMPLO VÁLIDO
+=========================================================================
+
+ChartOfAccounts:
+
+COL-LOCAL
+
+FiscalPeriod:
+
+2026-01
+
+AccountingDate:
+
+2026-01-15
+
+JournalEntry:
+
+documentNumber = JE-000001
+
+description = "Venta de contado"
+
+Lines:
+
+1
+Account: 110505
+Debit: 1000.00
+Credit: 0.00
+
+2
+Account: 413505
+Debit: 0.00
+Credit: 1000.00
+
+Resultado:
+
+TOTAL DEBIT = 1000.00
+
+TOTAL CREDIT = 1000.00
+
+BALANCED = true
+
+STATUS = VALIDATED
+
+=========================================================================
+
+EJEMPLO INVÁLIDO
+=========================================================================
+
+Debit:
+
+1000.00
+
+Credit:
+
+900.00
+
+Resultado:
+
+BALANCED = false
+
+Debe rechazarse.
+
+=========================================================================
+
+EJEMPLO INVÁLIDO
+=========================================================================
+
+Una línea:
+
+debit = 500.00
+
+credit = 500.00
+
+Debe rechazarse porque una línea no puede representar simultáneamente
+un débito y un crédito.
+
+=========================================================================
+
+EJEMPLO INVÁLIDO
+=========================================================================
+
+Cuenta:
+
+postable = false
+
+Debe rechazarse.
+
+=========================================================================
+
+NO IMPLEMENTAR
+=========================================================================
+
+Posting
+
+General Ledger
+
+Ledger Entries
+
+Trial Balance
+
+Financial Statements
+
+Period Closing
+
+Reversal
+
+Document Cancellation
+
+Taxes
+
+Currency
+
+Exchange Rates
+
+Multi-Currency
+
+Cost Centers
+
+Profit Centers
+
+Dimensions
+
+Accounts Receivable
+
+Accounts Payable
+
+Bank Reconciliation
+
+Recurring Entries
+
+Approval Workflow
+
+AI Accounting
+
+=========================================================================
+
+NO GENERAR
+=========================================================================
+
+Controllers
+
+REST
+
+DTO
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede crear un JournalEntry en estado DRAFT.
+
+2. El JournalEntry debe pertenecer a un ChartOfAccounts.
+
+3. El JournalEntry debe pertenecer a un FiscalPeriod.
+
+4. El FiscalPeriod debe estar OPEN.
+
+5. La fecha contable debe pertenecer al FiscalPeriod.
+
+6. El JournalEntry debe contener al menos una línea.
+
+7. Cada línea debe tener una Account válida.
+
+8. La Account debe estar activa.
+
+9. La Account debe ser postable.
+
+10. Una línea solo puede contener débito o crédito.
+
+11. No se permiten valores negativos.
+
+12. No se permiten líneas con débito y crédito simultáneos.
+
+13. No se permiten líneas con ambos valores en cero.
+
+14. El total de débitos debe ser igual al total de créditos.
+
+15. Un JournalEntry balanceado puede pasar a VALIDATED.
+
+16. Un JournalEntry no balanceado debe ser rechazado.
+
+17. Un JournalEntry no puede pasar a POSTED en esta historia.
+
+18. No existe todavía lógica de General Ledger.
+
+19. No existe SQL nativo.
+
+20. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+JournalEntry pertenece exclusivamente al dominio:
+
+aurum-accounting
+
+No mover JournalEntry a:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El BusinessRuleEngine y ValidationEngine son infraestructura genérica.
+
+Las reglas específicas del asiento contable permanecen en:
+
+aurum-accounting
+
+=========================================================================
+
+ARQUITECTURA RESULTANTE
+=========================================================================
+
+ChartOfAccounts
+       │
+       ├───────────────┐
+       │               │
+       ▼               ▼
+    Account       FiscalPeriod
+       │               │
+       │               │
+       └───────┬───────┘
+               ▼
+        JournalEntry
+               │
+               ▼
+       JournalEntryLine
+               │
+               ▼
+        Debit / Credit
+               │
+               ▼
+          VALIDATED
+               │
+               ▼
+        [FUTURO POSTING]
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-004
+
+ACCOUNTING POSTING
+
+ACC-004 tomará un JournalEntry VALIDATED y realizará el primer
+movimiento contable real hacia el Ledger.
+
+=========================================================================

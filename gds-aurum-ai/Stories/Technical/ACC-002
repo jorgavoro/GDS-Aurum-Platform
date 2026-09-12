@@ -1,0 +1,806 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-002
+PERÍODO FISCAL — FISCAL PERIOD
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven construido sobre:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+La infraestructura común existente incluye:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El módulo funcional:
+
+aurum-accounting
+
+ya contiene la primera capacidad funcional:
+
+ChartOfAccounts
+Account
+AccountType
+AccountNature
+
+ACC-002 incorpora el concepto de período fiscal.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar la estructura necesaria para administrar períodos fiscales.
+
+Un período fiscal representa un intervalo de fechas dentro del cual
+pueden registrarse operaciones contables.
+
+El sistema debe permitir:
+
+- crear un período fiscal
+- identificarlo por año y número de período
+- establecer fecha inicial
+- establecer fecha final
+- asociarlo a un Plan de Cuentas
+- activar/cerrar un período
+- consultar períodos
+- determinar si una fecha pertenece a un período
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa:
+
+Journal Entry
+Journal Entry Line
+Posting
+Ledger
+Trial Balance
+Financial Statements
+Taxes
+Currency Revaluation
+
+La validación de si un documento puede contabilizarse dentro de un
+período será utilizada posteriormente por ACC-003.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts en esta historia.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben escribirse manualmente.
+
+Todos los constructores deben escribirse manualmente.
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FiscalPeriodStatus.java
+
+Crear enum.
+
+Valores:
+
+OPEN
+
+CLOSED
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FiscalPeriod.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_fiscal_period
+
+Campos:
+
+Long id
+
+Integer fiscalYear
+
+Integer periodNumber
+
+String name
+
+LocalDate startDate
+
+LocalDate endDate
+
+FiscalPeriodStatus status
+
+ChartOfAccounts chartOfAccounts
+
+Boolean active
+
+Restricciones:
+
+fiscalYear obligatorio
+
+periodNumber obligatorio
+
+name obligatorio
+
+startDate obligatorio
+
+endDate obligatorio
+
+status obligatorio
+
+chartOfAccounts obligatorio
+
+active obligatorio
+
+=========================================================================
+
+REGLAS DE FECHAS
+=========================================================================
+
+startDate debe ser menor o igual que endDate.
+
+periodNumber debe ser mayor o igual a 1.
+
+periodNumber debe ser menor o igual a 12.
+
+fiscalYear debe ser mayor que 0.
+
+Un período no puede solaparse con otro período del mismo
+ChartOfAccounts.
+
+Ejemplo:
+
+2026-01-01 → 2026-01-31
+
+no puede coexistir con:
+
+2026-01-15 → 2026-02-15
+
+para el mismo Plan de Cuentas.
+
+=========================================================================
+
+REGLAS DE ESTADO
+=========================================================================
+
+OPEN
+
+El período permite operaciones contables.
+
+CLOSED
+
+El período no permite nuevas operaciones contables.
+
+El cambio:
+
+OPEN → CLOSED
+
+está permitido.
+
+El cambio:
+
+CLOSED → OPEN
+
+NO se implementará todavía mediante una operación específica.
+
+No permitir que un período nuevo sea creado con estado CLOSED.
+
+Todo nuevo período debe comenzar:
+
+OPEN
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+FiscalPeriodRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<FiscalPeriod, Long>
+
+Métodos:
+
+List<FiscalPeriod> findByChartOfAccountsId(
+    Long chartOfAccountsId
+);
+
+Optional<FiscalPeriod> findByChartOfAccountsIdAndFiscalYearAndPeriodNumber(
+    Long chartOfAccountsId,
+    Integer fiscalYear,
+    Integer periodNumber
+);
+
+List<FiscalPeriod> findByChartOfAccountsIdAndStatus(
+    Long chartOfAccountsId,
+    FiscalPeriodStatus status
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalPeriodService.java
+
+Crear interfaz.
+
+Métodos:
+
+FiscalPeriod create(
+    Long chartOfAccountsId,
+    FiscalPeriod fiscalPeriod
+);
+
+Optional<FiscalPeriod> findById(
+    Long id
+);
+
+List<FiscalPeriod> findByChartOfAccounts(
+    Long chartOfAccountsId
+);
+
+Optional<FiscalPeriod> findByDate(
+    Long chartOfAccountsId,
+    LocalDate date
+);
+
+FiscalPeriod close(
+    Long id
+);
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalPeriodService.java
+
+Implementar:
+
+FiscalPeriodService
+
+Anotación:
+
+@Service
+
+Utilizar Constructor Injection.
+
+Dependencias:
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+=========================================================================
+
+REGLAS DEL MÉTODO create()
+=========================================================================
+
+1. fiscalPeriod no puede ser null.
+
+2. chartOfAccountsId no puede ser null.
+
+3. El ChartOfAccounts debe existir.
+
+4. fiscalYear no puede ser null.
+
+5. fiscalYear debe ser mayor que cero.
+
+6. periodNumber no puede ser null.
+
+7. periodNumber debe estar entre 1 y 12.
+
+8. name no puede ser null.
+
+9. name no puede estar vacío.
+
+10. startDate no puede ser null.
+
+11. endDate no puede ser null.
+
+12. startDate no puede ser posterior a endDate.
+
+13. No puede existir otro período con el mismo:
+
+    chartOfAccountsId
+    fiscalYear
+    periodNumber
+
+14. No puede existir solapamiento de fechas con otro período del
+    mismo ChartOfAccounts.
+
+15. status debe establecerse como OPEN independientemente del valor
+    recibido.
+
+16. active debe establecerse como true.
+
+=========================================================================
+
+REGLA DE SOLAPAMIENTO
+=========================================================================
+
+Para un mismo ChartOfAccounts:
+
+Período A:
+
+2026-01-01
+2026-01-31
+
+Período B:
+
+2026-02-01
+2026-02-28
+
+Válido.
+
+Pero:
+
+Período A:
+
+2026-01-01
+2026-01-31
+
+Período B:
+
+2026-01-15
+2026-02-15
+
+Inválido.
+
+Debe lanzar:
+
+IllegalArgumentException
+
+No utilizar SQL nativo.
+
+No utilizar EntityManager.
+
+=========================================================================
+
+REGLAS DEL MÉTODO findByDate()
+=========================================================================
+
+Debe localizar el período que contiene una fecha determinada.
+
+Ejemplo:
+
+startDate = 2026-01-01
+endDate   = 2026-01-31
+
+date = 2026-01-15
+
+Debe devolver el período.
+
+La fecha inicial y final son inclusivas.
+
+Una fecha fuera del intervalo debe devolver:
+
+Optional.empty()
+
+Solo debe considerar períodos del ChartOfAccounts solicitado.
+
+=========================================================================
+
+REGLAS DEL MÉTODO close()
+=========================================================================
+
+1. El id no puede ser null.
+
+2. El período debe existir.
+
+3. Si ya está CLOSED:
+
+   devolver el período sin realizar cambios.
+
+4. Cambiar:
+
+   status = CLOSED
+
+5. No eliminar el período.
+
+6. No modificar sus fechas.
+
+7. No modificar fiscalYear.
+
+8. No modificar periodNumber.
+
+9. No modificar ChartOfAccounts.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalPeriodValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    FiscalPeriod fiscalPeriod
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalPeriodValidator.java
+
+Implementar:
+
+FiscalPeriodValidator
+
+Validaciones:
+
+- fiscalPeriod no puede ser null
+- fiscalYear obligatorio
+- fiscalYear > 0
+- periodNumber obligatorio
+- periodNumber entre 1 y 12
+- startDate obligatorio
+- endDate obligatorio
+- startDate <= endDate
+- name obligatorio
+
+Si una validación falla:
+
+IllegalArgumentException
+
+No utilizar Bean Validation.
+
+No utilizar Spring Validation.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+FiscalPeriodRepositoryCustom.java
+
+Crear interfaz.
+
+Método:
+
+boolean existsOverlappingPeriod(
+    Long chartOfAccountsId,
+    LocalDate startDate,
+    LocalDate endDate
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository.impl
+
+Archivo:
+
+FiscalPeriodRepositoryCustomImpl.java
+
+Implementar:
+
+FiscalPeriodRepositoryCustom
+
+IMPORTANTE:
+
+En esta historia NO utilizar EntityManager.
+
+NO generar SQL manual.
+
+Por lo tanto, la implementación puede utilizar una solución basada
+en consultas derivadas de Spring Data o una estrategia equivalente
+que respete las restricciones del proyecto.
+
+Si la implementación personalizada requiere modificar el contrato
+del repository principal, hacerlo de forma compatible con Spring
+Data JPA.
+
+=========================================================================
+
+NOTA ARQUITECTÓNICA
+=========================================================================
+
+La detección de solapamientos es una regla de dominio.
+
+No debe depender de PostgreSQL.
+
+La solución debe funcionar independientemente del motor de base de
+datos siempre que Spring Data JPA pueda ejecutar la consulta.
+
+=========================================================================
+
+NO GENERAR
+=========================================================================
+
+Controllers
+
+REST
+
+DTO
+
+Mappers
+
+JournalEntry
+
+JournalEntryLine
+
+Posting
+
+Ledger
+
+TrialBalance
+
+FinancialStatements
+
+Taxes
+
+Currency
+
+Flyway
+
+SQL nativo
+
+Tests
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar exactamente NUEVE archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede crear un período fiscal.
+
+2. Todo nuevo período comienza OPEN.
+
+3. Todo nuevo período comienza ACTIVE.
+
+4. fiscalYear debe ser válido.
+
+5. periodNumber debe estar entre 1 y 12.
+
+6. startDate no puede ser posterior a endDate.
+
+7. No pueden existir períodos duplicados para el mismo Plan de
+   Cuentas, año y número de período.
+
+8. No pueden existir períodos con fechas solapadas para el mismo
+   Plan de Cuentas.
+
+9. Se puede buscar el período correspondiente a una fecha.
+
+10. Las fechas inicial y final son inclusivas.
+
+11. Se puede cerrar un período.
+
+12. Un período cerrado permanece CLOSED.
+
+13. No se elimina información al cerrar un período.
+
+14. No existe lógica de Journal Entry.
+
+15. No existe lógica de Posting.
+
+16. No existe SQL nativo.
+
+17. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+FiscalPeriod pertenece exclusivamente al dominio contable.
+
+No moverlo a:
+
+aurum-model
+aurum-engine
+aurum-framework
+aurum-metadata
+
+El concepto de período fiscal es una capacidad funcional de
+Accounting.
+
+La infraestructura genérica debe permanecer genérica.
+
+=========================================================================
+
+DEPENDENCIAS CON ACC-001
+=========================================================================
+
+FiscalPeriod utiliza:
+
+ChartOfAccounts
+
+por lo tanto:
+
+FiscalPeriod
+      │
+      ▼
+ChartOfAccounts
+      │
+      ▼
+Account
+
+El período fiscal NO pertenece directamente a Account.
+
+El Plan de Cuentas es el contexto contable al cual pertenecen los
+períodos.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-003
+
+JOURNAL ENTRY
+
+ACC-003 utilizará:
+
+ChartOfAccounts
+Account
+FiscalPeriod
+BusinessRuleEngine
+ValidationEngine
+
+para construir el primer documento contable real.
+
+=========================================================================

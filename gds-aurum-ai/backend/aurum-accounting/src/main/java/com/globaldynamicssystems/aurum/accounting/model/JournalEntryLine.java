@@ -1,6 +1,11 @@
 package com.globaldynamicssystems.aurum.accounting.model;
 
+<<<<<<< HEAD
 import com.globaldynamicssystems.aurum.model.AuditableEntity;
+=======
+import com.globaldynamicssystems.aurum.framework.entity.AuditableEntity;
+import jakarta.persistence.CascadeType;
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,9 +14,18 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+<<<<<<< HEAD
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
+=======
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
 
 @Entity
 @Table(name = "gds_journal_entry_line")
@@ -41,6 +55,17 @@ public class JournalEntryLine extends AuditableEntity {
     @JoinColumn(name = "journal_entry_id", nullable = false)
     private JournalEntry journalEntry;
 
+<<<<<<< HEAD
+=======
+    @OneToMany(
+        mappedBy = "journalEntryLine",
+        cascade = CascadeType.ALL,
+        orphanRemoval = true,
+        fetch = FetchType.LAZY
+    )
+    private List<JournalEntryLineDimension> dimensions = new ArrayList<>();
+
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
     public JournalEntryLine() {
     }
 
@@ -110,4 +135,15 @@ public class JournalEntryLine extends AuditableEntity {
     public void setJournalEntry(JournalEntry journalEntry) {
         this.journalEntry = journalEntry;
     }
+<<<<<<< HEAD
+=======
+
+    public List<JournalEntryLineDimension> getDimensions() {
+        return dimensions;
+    }
+
+    public void setDimensions(List<JournalEntryLineDimension> dimensions) {
+        this.dimensions = dimensions;
+    }
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
 }

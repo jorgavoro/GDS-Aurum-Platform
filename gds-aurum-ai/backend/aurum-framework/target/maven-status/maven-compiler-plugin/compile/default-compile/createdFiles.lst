@@ -1,0 +1,16 @@
+com\globaldynamicssystems\aurum\framework\api\response\PageResponse.class
+com\globaldynamicssystems\aurum\framework\entity\AuditableEntity$AuditableEntityBuilder.class
+com\globaldynamicssystems\aurum\framework\entity\AuditableEntity.class
+com\globaldynamicssystems\aurum\framework\api\response\ApiResponse.class
+com\globaldynamicssystems\aurum\framework\service\BaseService.class
+com\globaldynamicssystems\aurum\framework\api\response\ApiResponse$ApiResponseBuilder.class
+com\globaldynamicssystems\aurum\framework\entity\BaseEntity.class
+com\globaldynamicssystems\aurum\framework\api\response\ErrorResponse.class
+com\globaldynamicssystems\aurum\framework\api\response\PagedResult$PagedResultBuilder.class
+com\globaldynamicssystems\aurum\framework\api\response\PagedResult.class
+com\globaldynamicssystems\aurum\framework\service\impl\BaseServiceImpl.class
+com\globaldynamicssystems\aurum\framework\api\response\PageResponse$PageResponseBuilder.class
+com\globaldynamicssystems\aurum\framework\entity\BaseEntity$BaseEntityBuilder.class
+com\globaldynamicssystems\aurum\framework\repository\BaseRepository.class
+com\globaldynamicssystems\aurum\framework\api\response\ErrorResponse$ErrorResponseBuilder.class
+com\globaldynamicssystems\aurum\framework\configuration\JpaConfiguration.class

@@ -14,4 +14,11 @@ public interface TrialBalanceService {
         Long fiscalPeriodId,
         boolean includeNonPostableAccounts
     );
+<<<<<<< HEAD
+=======
+    
+    TrialBalance generateTrialBalance(
+    		Long fiscalPeriodId
+    );
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
 }

@@ -1,0 +1,321 @@
+==========================================================================
+HISTORIA TÉCNICA: INF-004
+==========================================================================
+
+Proyecto Maven:
+aurum-metadata
+
+Objetivo:
+
+Construir el modelo de metadatos del ERP GDS Aurum AI.
+
+Este modelo será el corazón del framework y permitirá que los módulos
+(Contabilidad, Ventas, Inventario, Compras, etc.) sean construidos
+mediante metadatos y no mediante código repetitivo.
+
+El diseño debe ser completamente orientado a objetos y preparado para
+crecimiento.
+
+Utilizar:
+
+Java 21
+
+Spring Boot 3.5.x
+
+Jakarta Persistence
+
+Hibernate
+
+Lombok
+
+No generar código de ejemplo.
+
+No generar servicios.
+
+No generar controladores.
+
+No generar repositorios.
+
+Solo el modelo de dominio.
+
+==========================================================================
+
+ARCHIVO 1
+
+Proyecto Maven:
+aurum-metadata
+
+Paquete:
+
+com.globaldynamicssystems.aurum.metadata.model
+
+Archivo:
+
+EntityDefinition.java
+
+Descripción:
+
+Representa la definición de una entidad del ERP.
+
+Debe contener:
+
+UUID id
+
+String code
+
+String name
+
+String description
+
+String tableName
+
+String schemaName
+
+Boolean auditable
+
+Boolean active
+
+Boolean cacheable
+
+Boolean tenantAware
+
+Boolean companyAware
+
+List<FieldDefinition> fields
+
+Utilizar:
+
+@Entity
+
+@Table
+
+@OneToMany
+
+CascadeType.ALL
+
+FetchType.LAZY
+
+==========================================================================
+
+ARCHIVO 2
+
+Proyecto Maven:
+aurum-metadata
+
+Paquete:
+
+com.globaldynamicssystems.aurum.metadata.model
+
+Archivo:
+
+FieldDefinition.java
+
+Descripción:
+
+Representa la definición de un campo.
+
+Debe contener:
+
+UUID id
+
+String code
+
+String name
+
+String label
+
+String databaseColumn
+
+FieldType fieldType
+
+Integer length
+
+Integer precision
+
+Integer scale
+
+Boolean required
+
+Boolean unique
+
+Boolean searchable
+
+Boolean filterable
+
+Boolean sortable
+
+Boolean visible
+
+Boolean editable
+
+Integer displayOrder
+
+EntityDefinition entity
+
+Utilizar:
+
+@ManyToOne
+
+==========================================================================
+
+ARCHIVO 3
+
+Proyecto Maven:
+aurum-metadata
+
+Paquete:
+
+com.globaldynamicssystems.aurum.metadata.model
+
+Archivo:
+
+FieldType.java
+
+Descripción:
+
+Crear un enum.
+
+Debe contener al menos:
+
+STRING
+
+TEXT
+
+INTEGER
+
+LONG
+
+DECIMAL
+
+BOOLEAN
+
+DATE
+
+TIME
+
+DATETIME
+
+UUID
+
+EMAIL
+
+PHONE
+
+URL
+
+PASSWORD
+
+JSON
+
+ENUM
+
+REFERENCE
+
+MONEY
+
+PERCENTAGE
+
+BLOB
+
+==========================================================================
+
+ARCHIVO 4
+
+Proyecto Maven:
+aurum-metadata
+
+Paquete:
+
+com.globaldynamicssystems.aurum.metadata.model
+
+Archivo:
+
+RelationshipDefinition.java
+
+Descripción:
+
+Representa una relación entre entidades.
+
+Debe contener:
+
+UUID id
+
+String name
+
+RelationshipType relationshipType
+
+String mappedBy
+
+Boolean cascade
+
+Boolean orphanRemoval
+
+FetchType fetchType
+
+EntityDefinition sourceEntity
+
+EntityDefinition targetEntity
+
+Utilizar:
+
+@ManyToOne
+
+==========================================================================
+
+ARCHIVO 5
+
+Proyecto Maven:
+aurum-metadata
+
+Paquete:
+
+com.globaldynamicssystems.aurum.metadata.model
+
+Archivo:
+
+RelationshipType.java
+
+Descripción:
+
+Crear enum.
+
+Valores:
+
+ONE_TO_ONE
+
+ONE_TO_MANY
+
+MANY_TO_ONE
+
+MANY_TO_MANY
+
+==========================================================================
+
+REQUISITOS GENERALES
+
+Todas las entidades deben extender:
+
+com.globaldynamicssystems.aurum.framework.entity.AuditableEntity
+
+Utilizar Lombok.
+
+Utilizar UUID.
+
+No utilizar javax.*
+
+Solo jakarta.*
+
+Generar JavaDoc.
+
+Seguir principios SOLID.
+
+Preparar el modelo para futuras versiones del ERP.
+
+No generar clases adicionales.
+
+Si alguna dependencia hiciera falta,
+únicamente listarla al final bajo:
+
+DEPENDENCIAS PENDIENTES
+
+==========================================================================

@@ -13,6 +13,7 @@
  <packaging>jar</packaging>
  <name>aurum-accounting</name>
  <dependencies>
+<<<<<<< HEAD
         <!-- ================================================== -->
         <!-- Aurum Framework                                   -->
         <!-- ================================================== -->
@@ -52,5 +53,22 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
         </dependency>
+=======
+    <dependency>
+        <groupId>com.globaldynamicssystems</groupId>
+        <artifactId>aurum-core</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.globaldynamicssystems</groupId>
+        <artifactId>aurum-framework</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>com.globaldynamicssystems</groupId>
+        <artifactId>aurum-model</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+>>>>>>> c55744ccda4dad50a465c4a088ad5c74ef64f07e
  </dependencies>
 </project>

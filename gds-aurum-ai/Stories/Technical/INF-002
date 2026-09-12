@@ -1,0 +1,159 @@
+==========================================================================
+HISTORIA TÉCNICA: INF-002
+==========================================================================
+
+Proyecto Maven:
+aurum-framework
+
+Objetivo:
+
+Crear la infraestructura base de persistencia del framework GDS Aurum AI.
+
+Debe generarse código listo para producción utilizando Java 21,
+Spring Boot 3.5.x,
+Spring Data JPA,
+Hibernate 6,
+Jakarta EE 10.
+
+No generar código de ejemplo.
+
+Seguir principios SOLID.
+
+No utilizar código obsoleto.
+
+==========================================================================
+
+ARCHIVO 1
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+com.globaldynamicssystems.aurum.framework.repository
+
+Archivo:
+BaseRepository.java
+
+Descripción:
+
+Crear una interfaz genérica para todos los repositorios del ERP.
+
+Debe extender:
+
+JpaRepository<T, UUID>
+
+JpaSpecificationExecutor<T>
+
+Agregar:
+
+@NoRepositoryBean
+
+Debe utilizar genéricos:
+
+<T extends BaseEntity>
+
+No agregar métodos todavía.
+
+==========================================================================
+
+ARCHIVO 2
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+com.globaldynamicssystems.aurum.framework.service
+
+Archivo:
+BaseService.java
+
+Descripción:
+
+Crear una interfaz genérica para la capa de servicios.
+
+Debe utilizar:
+
+<T extends BaseEntity>
+
+Operaciones:
+
+save(T entity)
+
+update(T entity)
+
+findById(UUID id)
+
+findAll()
+
+delete(UUID id)
+
+exists(UUID id)
+
+count()
+
+Utilizar Optional donde corresponda.
+
+No agregar implementación.
+
+==========================================================================
+
+ARCHIVO 3
+
+Proyecto Maven:
+aurum-framework
+
+Paquete:
+com.globaldynamicssystems.aurum.framework.service.impl
+
+Archivo:
+BaseServiceImpl.java
+
+Descripción:
+
+Crear una clase abstracta.
+
+Debe implementar BaseService<T>.
+
+Debe recibir BaseRepository mediante constructor.
+
+Utilizar Constructor Injection.
+
+Implementar todos los métodos básicos delegando al repositorio.
+
+Agregar:
+
+@Transactional
+
+cuando corresponda.
+
+No agregar lógica de negocio.
+
+No utilizar EntityManager.
+
+==========================================================================
+
+REQUISITOS GENERALES
+
+Java 21
+
+Spring Boot 3.5.x
+
+Jakarta EE 10
+
+Spring Data JPA
+
+Hibernate
+
+Imports optimizados.
+
+No utilizar javax.*
+
+Solo jakarta.*
+
+No generar clases adicionales.
+
+Si alguna dependencia hiciera falta, únicamente listarla al final bajo:
+
+DEPENDENCIAS PENDIENTES
+
+==========================================================================
