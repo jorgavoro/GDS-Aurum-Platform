@@ -1,0 +1,881 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-001
+PLAN DE CUENTAS — CHART OF ACCOUNTS
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO DEL PROYECTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP empresarial Metadata Driven.
+
+La plataforma está construida sobre:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+La infraestructura común ya contiene:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+aurum-engine contiene capacidades genéricas como:
+
+Metadata Engine
+Validation Engine
+Dynamic Form Engine
+Dynamic Query Engine
+Business Rules Engine
+
+Esta historia comienza la implementación funcional del módulo:
+
+aurum-accounting
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar la primera capacidad funcional de Contabilidad:
+
+PLAN DE CUENTAS
+
+El Plan de Cuentas representa la estructura contable utilizada por
+una organización para clasificar sus operaciones financieras.
+
+El Plan de Cuentas debe permitir:
+
+- definir un catálogo contable
+- crear cuentas
+- establecer jerarquía padre/hijo
+- clasificar las cuentas
+- definir naturaleza débito/crédito
+- determinar si una cuenta acepta movimientos
+- activar/desactivar cuentas
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa todavía:
+
+Journal Entry
+Journal Entry Line
+Posting
+Fiscal Period
+Accounting Document
+Trial Balance
+General Ledger
+Accounts Receivable
+Accounts Payable
+Taxes
+Currency Revaluation
+Financial Statements
+
+Esta historia solamente construye la base del catálogo contable.
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar Field Injection.
+
+Utilizar Constructor Injection.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts en esta historia.
+
+No modificar otros módulos.
+
+No modificar pom.xml salvo que una dependencia realmente inexistente
+sea imprescindible.
+
+Todos los getters y setters deben escribirse manualmente.
+
+Todos los constructores deben escribirse manualmente.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountType.java
+
+Crear enum.
+
+Valores:
+
+ASSET
+
+LIABILITY
+
+EQUITY
+
+REVENUE
+
+EXPENSE
+
+OTHER
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountNature.java
+
+Crear enum.
+
+Valores:
+
+DEBIT
+
+CREDIT
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ChartOfAccounts.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_chart_of_accounts
+
+Campos:
+
+Long id
+String code
+String name
+String description
+Boolean active
+
+Relación:
+
+@OneToMany
+
+con:
+
+Account
+
+La relación debe utilizar:
+
+cascade = CascadeType.ALL
+
+fetch = FetchType.LAZY
+
+orphanRemoval = true
+
+Restricciones:
+
+code obligatorio
+
+code único
+
+name obligatorio
+
+active obligatorio
+
+No utilizar Lombok.
+
+Implementar manualmente:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+Account.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_account
+
+Campos:
+
+Long id
+
+String code
+
+String name
+
+String description
+
+AccountType accountType
+
+AccountNature nature
+
+Boolean active
+
+Boolean postable
+
+Integer level
+
+Account parent
+
+ChartOfAccounts chartOfAccounts
+
+Relaciones:
+
+@ManyToOne hacia ChartOfAccounts
+
+@ManyToOne auto-referenciada hacia Account para representar
+la jerarquía padre/hijo.
+
+La cuenta puede tener:
+
+parent = null
+
+cuando es una cuenta raíz.
+
+La cuenta puede tener:
+
+parent != null
+
+cuando pertenece a otra cuenta.
+
+Restricciones:
+
+code obligatorio
+
+name obligatorio
+
+accountType obligatorio
+
+nature obligatorio
+
+active obligatorio
+
+postable obligatorio
+
+level obligatorio
+
+chartOfAccounts obligatorio
+
+No utilizar Lombok.
+
+Implementar manualmente:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+ChartOfAccountsRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<ChartOfAccounts, Long>
+
+Métodos:
+
+Optional<ChartOfAccounts> findByCode(String code);
+
+boolean existsByCode(String code);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+AccountRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<Account, Long>
+
+Métodos:
+
+Optional<Account> findByChartOfAccountsIdAndCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+List<Account> findByChartOfAccountsId(Long chartOfAccountsId);
+
+List<Account> findByParentId(Long parentId);
+
+boolean existsByChartOfAccountsIdAndCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+ChartOfAccountsService.java
+
+Crear interfaz.
+
+Métodos:
+
+ChartOfAccounts create(
+    ChartOfAccounts chartOfAccounts
+);
+
+Optional<ChartOfAccounts> findByCode(
+    String code
+);
+
+List<ChartOfAccounts> findAll();
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultChartOfAccountsService.java
+
+Implementar:
+
+ChartOfAccountsService
+
+Debe utilizar Constructor Injection.
+
+Dependencia:
+
+ChartOfAccountsRepository
+
+Debe estar anotado con:
+
+@Service
+
+Reglas:
+
+create():
+
+- validar que el objeto no sea null
+- validar que code no sea null
+- validar que code no esté vacío
+- validar que name no sea null
+- validar que name no esté vacío
+- validar que no exista otro ChartOfAccounts con el mismo code
+
+Si el código ya existe:
+
+lanzar IllegalArgumentException
+
+No utilizar Bean Validation.
+
+No utilizar Spring Validation.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountService.java
+
+Crear interfaz.
+
+Métodos:
+
+Account create(
+    Long chartOfAccountsId,
+    Account account
+);
+
+Optional<Account> findByCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+List<Account> findByChartOfAccounts(
+    Long chartOfAccountsId
+);
+
+List<Account> findChildren(
+    Long parentId
+);
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountService.java
+
+Implementar:
+
+AccountService
+
+Debe utilizar Constructor Injection.
+
+Dependencias:
+
+AccountRepository
+
+ChartOfAccountsRepository
+
+Debe estar anotado:
+
+@Service
+
+Reglas para create():
+
+1. account no puede ser null.
+
+2. chartOfAccountsId no puede ser null.
+
+3. Debe verificar que el ChartOfAccounts exista.
+
+4. code no puede ser null.
+
+5. code no puede estar vacío.
+
+6. name no puede ser null.
+
+7. name no puede estar vacío.
+
+8. accountType no puede ser null.
+
+9. nature no puede ser null.
+
+10. active no puede ser null.
+
+11. postable no puede ser null.
+
+12. level no puede ser null.
+
+13. El código debe ser único dentro del ChartOfAccounts.
+
+14. Si parent no es null:
+
+    - el parent debe existir.
+    - el parent debe pertenecer al mismo ChartOfAccounts.
+    - el level de la cuenta debe ser coherente con la jerarquía.
+
+Para esta primera versión:
+
+Si parent != null:
+
+account.level debe ser igual a:
+
+parent.level + 1
+
+Si no se cumple:
+
+lanzar IllegalArgumentException.
+
+No permitir una cuenta hija perteneciente a otro Plan de Cuentas.
+
+=========================================================================
+
+REGLAS CONTABLES INICIALES
+=========================================================================
+
+La entidad Account debe representar únicamente la estructura del
+catálogo.
+
+NO debe registrar saldos.
+
+NO debe registrar débitos.
+
+NO debe registrar créditos.
+
+NO debe registrar movimientos.
+
+NO debe contener lógica de contabilización.
+
+La diferencia entre:
+
+AccountType
+
+y
+
+AccountNature
+
+debe mantenerse.
+
+AccountType representa la clasificación contable:
+
+ASSET
+LIABILITY
+EQUITY
+REVENUE
+EXPENSE
+OTHER
+
+AccountNature representa la naturaleza normal:
+
+DEBIT
+CREDIT
+
+=========================================================================
+
+EJEMPLO CONCEPTUAL
+=========================================================================
+
+ChartOfAccounts:
+
+code = "COL-LOCAL"
+
+name = "Plan de Cuentas Colombia"
+
+active = true
+
+
+Account raíz:
+
+code = "1"
+
+name = "Activos"
+
+accountType = ASSET
+
+nature = DEBIT
+
+level = 1
+
+parent = null
+
+
+Cuenta hija:
+
+code = "11"
+
+name = "Disponible"
+
+accountType = ASSET
+
+nature = DEBIT
+
+level = 2
+
+parent = "1"
+
+
+Cuenta hija:
+
+code = "1105"
+
+name = "Caja"
+
+accountType = ASSET
+
+nature = DEBIT
+
+level = 3
+
+parent = "11"
+
+
+Cuenta de movimiento:
+
+code = "110505"
+
+name = "Caja General"
+
+accountType = ASSET
+
+nature = DEBIT
+
+level = 4
+
+postable = true
+
+=========================================================================
+
+REGLA IMPORTANTE SOBRE POSTABLE
+=========================================================================
+
+postable = true
+
+significa que la cuenta puede recibir movimientos contables.
+
+postable = false
+
+significa que la cuenta funciona como cuenta agrupadora.
+
+En esta historia NO implementar todavía la validación que impida
+contabilizar sobre una cuenta no postable.
+
+Eso pertenece al módulo Journal Entry.
+
+=========================================================================
+
+PERSISTENCIA
+=========================================================================
+
+Utilizar Spring Data JPA.
+
+No utilizar consultas SQL.
+
+No utilizar EntityManager.
+
+No crear scripts Flyway en esta historia.
+
+Las tablas JPA deben utilizar:
+
+gds_chart_of_accounts
+
+gds_account
+
+=========================================================================
+
+NO GENERAR
+=========================================================================
+
+Controllers
+
+REST
+
+DTO
+
+Mappers
+
+Journal Entry
+
+Journal Entry Line
+
+Posting
+
+Fiscal Period
+
+Ledger
+
+Trial Balance
+
+Financial Statements
+
+Taxes
+
+Currency
+
+Flyway
+
+SQL
+
+Tests
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+=========================================================================
+
+RESULTADO ESPERADO
+=========================================================================
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede crear un ChartOfAccounts.
+
+2. El código del ChartOfAccounts es único.
+
+3. Se puede crear una Account asociada a un ChartOfAccounts.
+
+4. El código de Account es único dentro del ChartOfAccounts.
+
+5. Se pueden crear cuentas raíz.
+
+6. Se pueden crear cuentas hijas.
+
+7. Una cuenta hija debe pertenecer al mismo ChartOfAccounts que su
+   cuenta padre.
+
+8. El nivel de una cuenta hija debe ser parent.level + 1.
+
+9. Se pueden consultar las cuentas de un Plan de Cuentas.
+
+10. Se pueden consultar las cuentas hijas de una cuenta.
+
+11. No existe todavía lógica de contabilización.
+
+12. No existe SQL escrito manualmente.
+
+13. No existe dependencia con Controllers o REST.
+
+14. El proyecto compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+Esta historia constituye el primer vertical funcional de
+aurum-accounting.
+
+No crear un framework alternativo dentro de Accounting.
+
+Utilizar la infraestructura existente de:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El módulo contable debe consumir la infraestructura común.
+
+No duplicar EntityDefinition, FieldDefinition, ValidationEngine,
+BusinessRuleEngine ni DynamicQueryEngine.
+
+=========================================================================

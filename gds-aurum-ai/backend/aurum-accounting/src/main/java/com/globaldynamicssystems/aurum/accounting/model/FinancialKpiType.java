@@ -1,0 +1,21 @@
+package com.globaldynamicssystems.aurum.accounting.model;
+
+public enum FinancialKpiType {
+    REVENUE,
+    EXPENSE,
+    NET_RESULT,
+    NET_MARGIN,
+    OPERATING_CASH_FLOW,
+    INVESTING_CASH_FLOW,
+    FINANCING_CASH_FLOW,
+    NET_CASH_FLOW,
+    CURRENT_RATIO,
+    QUICK_RATIO,
+    DEBT_RATIO,
+    DEBT_TO_EQUITY,
+    RETURN_ON_ASSETS,
+    RETURN_ON_EQUITY,
+    GROSS_MARGIN,
+    DATA_QUALITY_ERROR_COUNT,
+    DATA_QUALITY_WARNING_COUNT
+}

@@ -1,0 +1,1454 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-018
+ACCOUNT FINANCIAL ANALYSIS
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-014 implementó Analytical Reporting.
+
+ACC-015 implementó Profitability.
+
+ACC-016 implementó Financial Comparison.
+
+ACC-017 implementó comparación temporal:
+
+MONTH
+QUARTER
+YEAR
+YTD
+
+Hasta ahora el análisis se ha concentrado principalmente en:
+
+AnalyticalDimension
+
+y:
+
+Profitability.
+
+El siguiente nivel de análisis es:
+
+ACCOUNT
+
+Una organización necesita responder preguntas como:
+
+¿Cuánto Revenue generó esta cuenta?
+
+¿Cuánto Expense registró?
+
+¿Cuál es su saldo?
+
+¿Cómo evolucionó frente al período anterior?
+
+¿Qué porcentaje representa dentro de su grupo?
+
+¿Qué cuentas explican el movimiento financiero?
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un motor de análisis financiero por Account.
+
+El motor debe permitir analizar:
+
+ASSET
+
+LIABILITY
+
+EQUITY
+
+REVENUE
+
+EXPENSE
+
+a partir de:
+
+LedgerEntry
+
+y:
+
+Account.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+Account Financial Analysis es una operación de lectura.
+
+No debe:
+
+modificar Account
+
+modificar LedgerEntry
+
+crear saldos persistentes
+
+crear snapshots
+
+crear balances paralelos.
+
+=========================================================================
+
+FUENTE DE VERDAD
+=========================================================================
+
+LedgerEntry
+
+      ↓
+
+Account
+
+      ↓
+
+Account Financial Analysis
+
+      ↓
+
+Financial Metrics
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountFinancialAnalysis.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long accountId
+
+String accountCode
+
+String accountName
+
+AccountType accountType
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+BigDecimal debit
+
+BigDecimal credit
+
+BigDecimal balance
+
+BigDecimal revenue
+
+BigDecimal expense
+
+BigDecimal netResult
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLAS DE CÁLCULO
+=========================================================================
+
+balance:
+
+debit - credit
+
+=========================================================================
+
+REVENUE
+=========================================================================
+
+Si:
+
+AccountType == REVENUE
+
+revenue:
+
+credit - debit
+
+=========================================================================
+
+EXPENSE
+=========================================================================
+
+Si:
+
+AccountType == EXPENSE
+
+expense:
+
+debit - credit
+
+=========================================================================
+
+NET RESULT
+=========================================================================
+
+netResult:
+
+revenue - expense
+
+Para:
+
+ASSET
+
+LIABILITY
+
+EQUITY
+
+netResult:
+
+0
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountFinancialAnalysisReport.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String fiscalPeriodName
+
+List<AccountFinancialAnalysis> accounts
+
+BigDecimal totalDebit
+
+BigDecimal totalCredit
+
+BigDecimal totalBalance
+
+BigDecimal totalRevenue
+
+BigDecimal totalExpense
+
+BigDecimal totalNetResult
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA TOTAL NET RESULT
+=========================================================================
+
+totalNetResult:
+
+totalRevenue - totalExpense
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+No asumir que:
+
+totalBalance
+
+debe ser cero.
+
+El resultado dependerá del conjunto de cuentas solicitado.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+AccountFinancialAnalysisFilter.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+List<Long> accountIds
+
+List<AccountType> accountTypes
+
+String accountCodeFrom
+
+String accountCodeTo
+
+Boolean includeInactive
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLAS DEL FILTER
+=========================================================================
+
+chartOfAccountsId:
+
+obligatorio
+
+fiscalPeriodId:
+
+obligatorio
+
+accountIds:
+
+opcional
+
+accountTypes:
+
+opcional
+
+accountCodeFrom:
+
+opcional
+
+accountCodeTo:
+
+opcional
+
+includeInactive:
+
+default false
+
+=========================================================================
+
+REGLA DE FILTROS
+=========================================================================
+
+Si accountIds está informado:
+
+analizar únicamente esas cuentas.
+
+Si accountTypes está informado:
+
+analizar únicamente esos tipos.
+
+Si ambos están informados:
+
+deben cumplirse ambos filtros.
+
+Si ninguno está informado:
+
+analizar todas las cuentas del ChartOfAccounts.
+
+=========================================================================
+
+REGLA DE RANGO
+=========================================================================
+
+accountCodeFrom y accountCodeTo permiten seleccionar un rango.
+
+Ejemplo:
+
+510000
+
+hasta:
+
+519999
+
+No realizar ordenamiento lexicográfico incorrecto.
+
+El código debe compararse como String según la definición actual del
+modelo.
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountFinancialAnalysisService.java
+
+Crear interfaz.
+
+Métodos:
+
+AccountFinancialAnalysisReport analyze(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+AccountFinancialAnalysisReport analyze(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId,
+    List<Long> accountIds
+);
+
+AccountFinancialAnalysisReport analyze(
+    AccountFinancialAnalysisFilter filter
+);
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountFinancialAnalysisService.java
+
+Implementar:
+
+AccountFinancialAnalysisService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+AccountRepository
+
+LedgerEntryRepository
+
+FiscalPeriodRepository
+
+ChartOfAccountsRepository
+
+AccountFinancialAnalysisCalculator
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DE ANALYZE
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. fiscalPeriodId obligatorio.
+
+3. ChartOfAccounts debe existir.
+
+4. FiscalPeriod debe existir.
+
+5. FiscalPeriod debe pertenecer al ChartOfAccounts.
+
+6. Obtener las cuentas correspondientes.
+
+7. Obtener LedgerEntry del período.
+
+8. Agrupar por Account.
+
+9. Calcular:
+
+   debit
+
+   credit
+
+   balance
+
+   revenue
+
+   expense
+
+   netResult
+
+10. Construir AccountFinancialAnalysis.
+
+11. Ordenar por:
+
+    accountCode
+
+    ascendente.
+
+=========================================================================
+
+REGLA DE FUENTE DE DATOS
+=========================================================================
+
+Los valores financieros deben derivarse del:
+
+LedgerEntry
+
+No utilizar campos calculados de:
+
+Account
+
+como fuente de saldo.
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountFinancialAnalysisCalculator.java
+
+Crear interfaz.
+
+Métodos:
+
+BigDecimal calculateDebit(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateCredit(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateBalance(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateRevenue(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateExpense(
+    List<LedgerEntry> entries
+);
+
+BigDecimal calculateNetResult(
+    BigDecimal revenue,
+    BigDecimal expense
+);
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountFinancialAnalysisCalculator.java
+
+Implementar:
+
+AccountFinancialAnalysisCalculator
+
+No debe acceder a:
+
+Repository
+
+Database
+
+EntityManager
+
+JDBC
+
+=========================================================================
+
+REGLA DE CALCULATOR
+=========================================================================
+
+Debe funcionar únicamente con:
+
+List<LedgerEntry>
+
+=========================================================================
+
+CALCULATE DEBIT
+=========================================================================
+
+Sumar:
+
+LedgerEntry.debit
+
+=========================================================================
+
+CALCULATE CREDIT
+=========================================================================
+
+Sumar:
+
+LedgerEntry.credit
+
+=========================================================================
+
+CALCULATE BALANCE
+=========================================================================
+
+debit - credit
+
+=========================================================================
+
+CALCULATE REVENUE
+=========================================================================
+
+Considerar únicamente:
+
+AccountType.REVENUE
+
+Fórmula:
+
+credit - debit
+
+=========================================================================
+
+CALCULATE EXPENSE
+=========================================================================
+
+Considerar únicamente:
+
+AccountType.EXPENSE
+
+Fórmula:
+
+debit - credit
+
+=========================================================================
+
+CALCULATE NET RESULT
+=========================================================================
+
+revenue - expense
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+AccountFinancialAnalysisValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    AccountFinancialAnalysisReport report
+);
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultAccountFinancialAnalysisValidator.java
+
+Implementar:
+
+AccountFinancialAnalysisValidator
+
+Validar:
+
+1. report != null
+
+2. chartOfAccountsId != null
+
+3. fiscalPeriodId != null
+
+4. accounts != null
+
+5. totalDebit != null
+
+6. totalCredit != null
+
+7. totalBalance != null
+
+8. totalRevenue != null
+
+9. totalExpense != null
+
+10. totalNetResult != null
+
+11. totalBalance =
+    totalDebit - totalCredit
+
+12. totalNetResult =
+    totalRevenue - totalExpense
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Modificar:
+
+LedgerEntryRepository
+
+Agregar las consultas necesarias para obtener LedgerEntry por:
+
+chartOfAccounts
+
+fiscalPeriod
+
+account
+
+Las consultas deben utilizar:
+
+Spring Data JPA.
+
+No utilizar:
+
+SQL nativo.
+
+=========================================================================
+
+REGLA DE AGRUPACIÓN
+=========================================================================
+
+Los movimientos deben agruparse por:
+
+accountId
+
+No agrupar únicamente por:
+
+accountCode
+
+=========================================================================
+
+REGLA DE ACCOUNT
+=========================================================================
+
+Account pertenece a:
+
+ChartOfAccounts
+
+Por tanto:
+
+Account A
+
+de:
+
+ChartOfAccounts A
+
+no puede aparecer en:
+
+ChartOfAccounts B
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Account:
+
+510505
+
+Name:
+
+Software Development Expense
+
+Type:
+
+EXPENSE
+
+Ledger:
+
+Debit 5000
+
+Debit 3000
+
+Credit 500
+
+Resultado:
+
+Debit:
+
+8000
+
+Credit:
+
+500
+
+Balance:
+
+7500
+
+Expense:
+
+7500
+
+Revenue:
+
+0
+
+NetResult:
+
+-7500
+
+=========================================================================
+
+EJEMPLO REVENUE
+=========================================================================
+
+Account:
+
+410505
+
+Name:
+
+Software Services Revenue
+
+Type:
+
+REVENUE
+
+Ledger:
+
+Credit 20000
+
+Credit 10000
+
+Debit 1000
+
+Resultado:
+
+Debit:
+
+1000
+
+Credit:
+
+30000
+
+Balance:
+
+-29000
+
+Revenue:
+
+29000
+
+Expense:
+
+0
+
+NetResult:
+
+29000
+
+=========================================================================
+
+REGLA SOBRE BALANCE
+=========================================================================
+
+Para:
+
+REVENUE
+
+un balance negativo puede ser normal.
+
+No modificar:
+
+debit - credit
+
+para adaptarlo a la presentación de Revenue.
+
+=========================================================================
+
+REGLA SOBRE ACCOUNT TYPES
+=========================================================================
+
+ASSET:
+
+Debit/Credit/Balance
+
+LIABILITY:
+
+Debit/Credit/Balance
+
+EQUITY:
+
+Debit/Credit/Balance
+
+REVENUE:
+
+Debit/Credit/Balance/Revenue/NetResult
+
+EXPENSE:
+
+Debit/Credit/Balance/Expense/NetResult
+
+=========================================================================
+
+ANÁLISIS POR TIPO
+=========================================================================
+
+Debe ser posible solicitar:
+
+REVENUE
+
+y obtener únicamente cuentas:
+
+AccountType.REVENUE
+
+Debe ser posible solicitar:
+
+EXPENSE
+
+y obtener únicamente:
+
+AccountType.EXPENSE
+
+=========================================================================
+
+ANÁLISIS POR RANGO
+=========================================================================
+
+Ejemplo:
+
+accountCodeFrom:
+
+400000
+
+accountCodeTo:
+
+499999
+
+Debe obtener las cuentas cuyo código pertenezca al rango definido.
+
+=========================================================================
+
+REGLA DE CUENTAS SIN MOVIMIENTOS
+=========================================================================
+
+Una cuenta existente en el ChartOfAccounts pero sin LedgerEntry
+durante el período:
+
+debe aparecer con:
+
+Debit = 0
+
+Credit = 0
+
+Balance = 0
+
+Revenue = 0
+
+Expense = 0
+
+NetResult = 0
+
+si está incluida en el conjunto de análisis.
+
+=========================================================================
+
+REGLA DE CUENTAS INACTIVAS
+=========================================================================
+
+Por defecto:
+
+includeInactive = false
+
+Las cuentas inactivas no deben aparecer en el análisis normal.
+
+Si:
+
+includeInactive = true
+
+pueden aparecer para análisis histórico.
+
+=========================================================================
+
+REGLA SOBRE FISCAL PERIOD
+=========================================================================
+
+El análisis puede ejecutarse sobre:
+
+OPEN
+
+o:
+
+CLOSED
+
+FiscalPeriod.
+
+Es una operación:
+
+READ ONLY
+
+=========================================================================
+
+REGLA SOBRE DIMENSIONES
+=========================================================================
+
+ACC-018 analiza la cuenta como dimensión contable.
+
+No eliminar la capacidad de filtrar posteriormente por:
+
+CostCenter
+
+ProfitCenter
+
+Project
+
+etc.
+
+Las dimensiones analíticas continúan perteneciendo a:
+
+JournalEntryLineDimension
+
+=========================================================================
+
+NO DUPLICAR MOVIMIENTOS
+=========================================================================
+
+Si una LedgerEntry tiene:
+
+CostCenter = IT
+
+ProfitCenter = SERVICES
+
+el análisis por Account debe contar:
+
+una única LedgerEntry.
+
+No multiplicar el importe por el número de dimensiones.
+
+=========================================================================
+
+REGLA SOBRE CURRENCY
+=========================================================================
+
+ACC-018 utiliza únicamente la moneda funcional/base definida por
+el modelo contable actual.
+
+No implementar:
+
+Multi-Currency
+
+FX Translation
+
+FX Revaluation
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+AccountBalance
+
+AccountSnapshot
+
+AccountFinancialSnapshot
+
+AccountKPI
+
+AccountTrend
+
+=========================================================================
+
+NO MODIFICAR
+
+ChartOfAccounts
+
+FiscalPeriod
+
+Account
+
+JournalEntry
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+LedgerEntry
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+AnalyticalDimensionValue
+
+CostCenter
+
+ProfitCenter
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Account Hierarchy Analysis
+
+Drill Down
+
+Drill Through
+
+Budget Comparison
+
+Forecast
+
+Variance Explanation
+
+AI Analysis
+
+Cash Flow
+
+Financial Ratios
+
+EBITDA
+
+EBIT
+
+Working Capital
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Se puede analizar una cuenta individual.
+
+2. Se pueden analizar múltiples cuentas.
+
+3. Se pueden analizar todas las cuentas de un ChartOfAccounts.
+
+4. Se puede filtrar por AccountType.
+
+5. Se puede filtrar por rango de códigos.
+
+6. Debit se calcula correctamente.
+
+7. Credit se calcula correctamente.
+
+8. Balance se calcula correctamente.
+
+9. Revenue se calcula correctamente.
+
+10. Expense se calcula correctamente.
+
+11. NetResult se calcula correctamente.
+
+12. Las cuentas sin movimientos aparecen con cero cuando corresponda.
+
+13. Las cuentas inactivas se excluyen por defecto.
+
+14. Las cuentas inactivas pueden consultarse explícitamente.
+
+15. El análisis funciona sobre períodos OPEN.
+
+16. El análisis funciona sobre períodos CLOSED.
+
+17. Una LedgerEntry con varias dimensiones no se duplica.
+
+18. LedgerEntry continúa siendo la fuente de verdad.
+
+19. No se almacenan saldos paralelos.
+
+20. No se modifica Account para almacenar saldos.
+
+21. No se modifica LedgerEntry.
+
+22. No existe SQL nativo.
+
+23. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+=========================================================================
+
+Account es una dimensión estructural del modelo contable.
+
+LedgerEntry es la fuente de verdad.
+
+AccountFinancialAnalysis es un READ MODEL.
+
+La arquitectura queda:
+
+                         LEDGER
+                           │
+                           ▼
+                         ACCOUNT
+                           │
+                           ▼
+                 ACCOUNT ANALYSIS
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+           DEBIT         CREDIT       BALANCE
+             │             │
+             └─────────────┼─────────────┘
+                           ▼
+                     REVENUE / EXPENSE
+                           │
+                           ▼
+                       NET RESULT
+
+=========================================================================
+
+INTEGRACIÓN CON EL RESTO DEL MVP
+=========================================================================
+
+ACC-014
+
+Analytical Reporting
+
+ACC-015
+
+Profitability
+
+ACC-016
+
+Comparison
+
+ACC-017
+
+Temporal Comparison
+
+ACC-018
+
+Account Financial Analysis
+
+Esto crea tres ejes de análisis:
+
+ACCOUNT
+DIMENSION
+TIME
+
+=========================================================================
+
+MODELO CONCEPTUAL
+
+=========================================================================
+
+                       FINANCIAL ANALYSIS
+                              │
+             ┌────────────────┼────────────────┐
+             ▼                ▼                ▼
+           ACCOUNT         DIMENSION          TIME
+             │                │                │
+             ▼                ▼                ▼
+          Account         CostCenter        Month
+          AccountType     ProfitCenter      Quarter
+                          Project           Year
+                                            YTD
+
+=========================================================================
+
+CAPACIDAD RESULTANTE
+=========================================================================
+
+Aurum podrá responder:
+
+"¿Cuánto gastamos en la cuenta 510505?"
+
+"¿Cuánto generó la cuenta 410505?"
+
+"¿Cuál fue el saldo de esta cuenta?"
+
+"¿Cómo evolucionó esta cuenta?"
+
+"¿Qué cuentas pertenecen a Revenue?"
+
+"¿Qué cuentas pertenecen a Expense?"
+
+Esto proporciona la base para la siguiente capa de análisis financiero.
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-019
+
+FINANCIAL RATIOS ENGINE
+
+Construir el motor de ratios financieros derivados de los estados
+contables y del Account Financial Analysis, incluyendo indicadores
+de liquidez, endeudamiento y rentabilidad.
+
+=========================================================================

@@ -1,0 +1,501 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-005
+BALANCE DE COMPROBACIÓN — TRIAL BALANCE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven construido sobre:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+Infraestructura existente:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El módulo aurum-accounting contiene:
+
+ChartOfAccounts
+Account
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+LedgerEntry
+
+El flujo contable construido hasta este punto es:
+
+ChartOfAccounts
+       ↓
+Account
+       ↓
+FiscalPeriod
+       ↓
+JournalEntry
+       ↓
+JournalEntryLine
+       ↓
+Validation
+       ↓
+VALIDATED
+       ↓
+Posting
+       ↓
+LedgerEntry
+       ↓
+POSTED
+
+ACC-005 incorpora el primer reporte financiero:
+
+TRIAL BALANCE
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Construir un servicio capaz de generar un Balance de Comprobación
+a partir de los movimientos registrados en LedgerEntry.
+
+El Balance de Comprobación debe mostrar, por cada cuenta:
+
+- código
+- nombre
+- naturaleza
+- total débitos
+- total créditos
+- saldo
+
+También debe proporcionar totales generales.
+
+=========================================================================
+
+PRINCIPIO CONTABLE
+=========================================================================
+
+Para un período fiscal determinado:
+
+TOTAL DÉBITOS DEL LEDGER
+debe ser igual a
+TOTAL CRÉDITOS DEL LEDGER
+
+Si:
+
+TOTAL DEBIT != TOTAL CREDIT
+
+el resultado debe indicar que existe una inconsistencia.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+Esta historia NO implementa:
+
+Balance Sheet
+
+Income Statement
+
+Cash Flow Statement
+
+Profit and Loss
+
+Closing
+
+Year End Closing
+
+Reversal
+
+Currency Revaluation
+
+Taxes
+
+Accounts Receivable
+
+Accounts Payable
+
+Cost Centers
+
+Profit Centers
+
+Multi-Currency
+
+Budget
+
+Forecast
+
+AI Financial Analysis
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* solamente cuando sea necesario.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben escribirse manualmente.
+
+Todos los constructores deben escribirse manualmente.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal para importes.
+
+NO utilizar double.
+
+NO utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+TrialBalanceLine.java
+
+Crear clase.
+
+NO debe ser entidad JPA.
+
+NO debe extender AuditableEntity.
+
+Representa una línea del Balance de Comprobación.
+
+Campos:
+
+Long accountId
+
+String accountCode
+
+String accountName
+
+AccountType accountType
+
+AccountNature nature
+
+BigDecimal debit
+
+BigDecimal credit
+
+BigDecimal balance
+
+Boolean postable
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+TrialBalance.java
+
+Crear clase.
+
+NO debe ser entidad JPA.
+
+Representa el resultado completo del Balance de Comprobación.
+
+Campos:
+
+Long chartOfAccountsId
+
+Long fiscalPeriodId
+
+String chartOfAccountsCode
+
+String fiscalPeriodName
+
+List<TrialBalanceLine> lines
+
+BigDecimal totalDebit
+
+BigDecimal totalCredit
+
+BigDecimal totalBalance
+
+Boolean balanced
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+REGLA DE totalBalance
+=========================================================================
+
+totalBalance debe calcularse como:
+
+totalDebit - totalCredit
+
+Utilizar:
+
+BigDecimal.subtract()
+
+No utilizar double.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+TrialBalanceService.java
+
+Crear interfaz.
+
+Métodos:
+
+TrialBalance generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId
+);
+
+TrialBalance generate(
+    Long chartOfAccountsId,
+    Long fiscalPeriodId,
+    boolean includeNonPostableAccounts
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultTrialBalanceService.java
+
+Implementar:
+
+TrialBalanceService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+ChartOfAccountsRepository
+
+FiscalPeriodRepository
+
+AccountRepository
+
+LedgerEntryRepository
+
+Debe utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DEL MÉTODO generate()
+=========================================================================
+
+1. chartOfAccountsId no puede ser null.
+
+2. fiscalPeriodId no puede ser null.
+
+3. El ChartOfAccounts debe existir.
+
+4. El FiscalPeriod debe existir.
+
+5. El FiscalPeriod debe pertenecer al ChartOfAccounts.
+
+6. Obtener las cuentas pertenecientes al ChartOfAccounts.
+
+7. Obtener los LedgerEntry pertenecientes al FiscalPeriod.
+
+8. Agrupar los movimientos por Account.
+
+9. Calcular:
+
+   totalDebit
+
+   totalCredit
+
+   balance
+
+10. Construir una TrialBalanceLine por cuenta.
+
+11. Calcular los totales generales.
+
+12. Determinar si el TrialBalance está balanceado.
+
+=========================================================================
+
+REGLA DE AGRUPACIÓN
+=========================================================================
+
+Para cada Account:
+
+totalDebit =
+SUM(LedgerEntry.debit)
+
+totalCredit =
+SUM(LedgerEntry.credit)
+
+balance =
+totalDebit - totalCredit
+
+No utilizar saldos almacenados en Account.
+
+El saldo debe derivarse exclusivamente del Ledger.
+
+=========================================================================
+
+INCLUIR CUENTAS SIN MOVIMIENTO
+=========================================================================
+
+Por defecto:
+
+includeNonPostableAccounts = false
+
+El resultado debe incluir las cuentas postable.
+
+Las cuentas sin movimientos deben aparecer con:
+
+debit = 0
+credit = 0
+balance = 0
+
+Esto permite que el Balance de Comprobación represente el catálogo
+completo de cuentas de movimiento.
+
+=========================================================================
+
+CUENTAS NO POSTABLE
+=========================================================================
+
+Si:
+
+includeNonPostableAccounts = false
+
+las cuentas:
+
+postable = false
+
+no deben aparecer.
+
+Si:
+
+includeNonPostableAccounts = true
+
+deben incluirse.
+
+IMPORTANTE:
+
+No calcular movimientos de cuentas no postable directamente.
+
+Si una cuenta no postable tiene LedgerEntry debido a una inconsistencia
+de datos, el servicio debe poder detectarlo.
+
+=========================================================================
+
+ORDEN DEL RESULTADO
+=========================================================================
+
+Las líneas deben ordenarse por:
+
+account.code
+
+ascendente.
+
+Ejemplo:
+
+110505
+110510
+111005
+130505
+413505

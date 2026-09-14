@@ -1,0 +1,2136 @@
+=========================================================================
+HISTORIA DE USUARIO: IAM-003
+AUTHORIZATION ENGINE
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1 - IAM
+
+MÓDULO
+
+aurum-identity
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+IAM-001 creó:
+
+User
+ExternalIdentity
+UserStatus
+
+IAM-002 creó:
+
+Role
+Permission
+UserRole
+RolePermission
+
+y definió el modelo:
+
+USER
+  ↓
+ROLE
+  ↓
+PERMISSION
+  ↓
+CAPABILITY + RESOURCE + ACTION
+  ↓
+SCOPE
+
+Sin embargo, Aurum todavía no puede responder de manera centralizada:
+
+"¿Puede este usuario ejecutar esta operación?"
+
+IAM-003 implementa el:
+
+AUTHORIZATION ENGINE.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Crear un motor de autorización capaz de evaluar una solicitud de
+seguridad y producir una decisión:
+
+ALLOW
+
+o
+
+DENY
+
+La decisión debe considerar:
+
+User
+
+Capability
+
+Resource
+
+Action
+
+Scope
+
+y el contexto de ejecución.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+AUTHENTICATION
+
+responde:
+
+"¿Quién eres?"
+
+AUTHORIZATION
+
+responde:
+
+"¿Qué puedes hacer?"
+
+IAM-003 implementa únicamente:
+
+AUTHORIZATION.
+
+=========================================================================
+
+NO CONFUNDIR
+=========================================================================
+
+Authentication:
+
+User → Identity Provider → Authenticated User
+
+Authorization:
+
+Authenticated User → Permission → ALLOW / DENY
+
+=========================================================================
+
+ARQUITECTURA
+=========================================================================
+
+                         REQUEST
+                            │
+                            ▼
+                    SECURITY CONTEXT
+                            │
+                            ▼
+                  AUTHORIZATION ENGINE
+                            │
+             ┌──────────────┼──────────────┐
+             ▼              ▼              ▼
+           USER         PERMISSION       SCOPE
+             │              │              │
+             └──────────────┼──────────────┘
+                            ▼
+                     AUTHORIZATION
+                        DECISION
+                       /        \
+                      ▼          ▼
+                   ALLOW        DENY
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* únicamente cuando corresponda.
+
+Utilizar Spring.
+
+Utilizar Constructor Injection.
+
+Java 21.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear JWT.
+
+No crear OAuth2.
+
+No crear OIDC.
+
+No crear Google Login.
+
+No crear Microsoft Login.
+
+No crear AuthenticationProvider.
+
+No crear SecurityFilter.
+
+No implementar Tenant todavía.
+
+No implementar Company Context completo todavía.
+
+=========================================================================
+
+PAQUETE BASE
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity
+
+=========================================================================
+
+PAQUETE AUTHORIZATION
+=========================================================================
+
+com.globaldynamicssystems.aurum.identity.authorization
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+AuthorizationDecision.java
+
+Crear enum.
+
+Valores:
+
+ALLOW
+
+DENY
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+AuthorizationReason.java
+
+Crear enum.
+
+Valores:
+
+AUTHORIZED
+
+USER_NOT_FOUND
+
+USER_DISABLED
+
+USER_LOCKED
+
+NO_ROLE
+
+NO_PERMISSION
+
+CAPABILITY_MISMATCH
+
+RESOURCE_MISMATCH
+
+ACTION_MISMATCH
+
+SCOPE_MISMATCH
+
+PERMISSION_DISABLED
+
+INVALID_REQUEST
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+AuthorizationRequest.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long userId
+
+String capability
+
+String resource
+
+PermissionAction action
+
+PermissionScopeType scopeType
+
+Map<String, Object> context
+
+=========================================================================
+
+CONSTRUCTORES
+
+=========================================================================
+
+Constructor vacío.
+
+Constructor completo.
+
+=========================================================================
+
+GETTERS / SETTERS
+
+=========================================================================
+
+Todos manuales.
+
+No Lombok.
+
+=========================================================================
+
+EJEMPLO
+=========================================================================
+
+userId:
+
+100
+
+capability:
+
+ACCOUNTING
+
+resource:
+
+JOURNAL_ENTRY
+
+action:
+
+POST
+
+scopeType:
+
+COMPANY
+
+context:
+
+companyId = 10
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+AuthorizationResult.java
+
+Crear clase.
+
+Campos:
+
+AuthorizationDecision decision
+
+AuthorizationReason reason
+
+String message
+
+Long userId
+
+String permissionCode
+
+=========================================================================
+
+CONSTRUCTORES
+
+=========================================================================
+
+Constructor vacío.
+
+Constructor completo.
+
+=========================================================================
+
+GETTERS / SETTERS
+
+=========================================================================
+
+Todos manuales.
+
+=========================================================================
+
+EJEMPLO ALLOW
+=========================================================================
+
+decision:
+
+ALLOW
+
+reason:
+
+AUTHORIZED
+
+userId:
+
+100
+
+permissionCode:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+=========================================================================
+
+EJEMPLO DENY
+=========================================================================
+
+decision:
+
+DENY
+
+reason:
+
+NO_PERMISSION
+
+message:
+
+User does not have permission:
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+AuthorizationService.java
+
+Crear interfaz.
+
+Método:
+
+AuthorizationResult authorize(
+    AuthorizationRequest request
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+DefaultAuthorizationService.java
+
+Implementar:
+
+AuthorizationService
+
+Anotación:
+
+@Service
+
+=========================================================================
+
+DEPENDENCIAS
+
+=========================================================================
+
+UserRepository
+
+UserRoleRepository
+
+RoleRepository
+
+RolePermissionRepository
+
+PermissionRepository
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+FLUJO
+
+=========================================================================
+
+authorize(request)
+
+        ↓
+
+validate request
+
+        ↓
+
+find User
+
+        ↓
+
+validate User status
+
+        ↓
+
+find User Roles
+
+        ↓
+
+find Role Permissions
+
+        ↓
+
+match Permission
+
+        ↓
+
+validate Scope
+
+        ↓
+
+ALLOW / DENY
+
+=========================================================================
+
+REGLA 1
+=========================================================================
+
+Si request == null:
+
+DENY
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA 2
+=========================================================================
+
+Si userId == null:
+
+DENY
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA 3
+=========================================================================
+
+Si capability está vacío:
+
+DENY
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA 4
+=========================================================================
+
+Si resource está vacío:
+
+DENY
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA 5
+=========================================================================
+
+Si action == null:
+
+DENY
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA 6
+=========================================================================
+
+Si scopeType == null:
+
+DENY
+
+reason:
+
+INVALID_REQUEST
+
+=========================================================================
+
+REGLA 7
+=========================================================================
+
+Si User no existe:
+
+DENY
+
+reason:
+
+USER_NOT_FOUND
+
+=========================================================================
+
+REGLA 8
+=========================================================================
+
+Si User.status == DISABLED:
+
+DENY
+
+reason:
+
+USER_DISABLED
+
+=========================================================================
+
+REGLA 9
+=========================================================================
+
+Si User.status == LOCKED:
+
+DENY
+
+reason:
+
+USER_LOCKED
+
+=========================================================================
+
+REGLA 10
+=========================================================================
+
+Si User.status == DELETED:
+
+DENY
+
+reason:
+
+USER_DISABLED
+
+=========================================================================
+
+REGLA 11
+=========================================================================
+
+Si User no posee roles:
+
+DENY
+
+reason:
+
+NO_ROLE
+
+=========================================================================
+
+REGLA 12
+=========================================================================
+
+Buscar permisos asociados a todos los roles del usuario.
+
+=========================================================================
+
+REGLA 13
+=========================================================================
+
+El Permission debe cumplir:
+
+capability == request.capability
+
+=========================================================================
+
+REGLA 14
+=========================================================================
+
+El Permission debe cumplir:
+
+resource == request.resource
+
+=========================================================================
+
+REGLA 15
+=========================================================================
+
+El Permission debe cumplir:
+
+action == request.action
+
+=========================================================================
+
+REGLA 16
+=========================================================================
+
+El Permission debe cumplir:
+
+scopeType == request.scopeType
+
+=========================================================================
+
+REGLA 17
+=========================================================================
+
+Permission.enabled debe ser:
+
+true
+
+=========================================================================
+
+REGLA 18
+=========================================================================
+
+Si existe al menos un Permission válido:
+
+ALLOW
+
+reason:
+
+AUTHORIZED
+
+=========================================================================
+
+REGLA 19
+=========================================================================
+
+Si no existe Permission coincidente:
+
+DENY
+
+reason:
+
+NO_PERMISSION
+
+=========================================================================
+
+NORMALIZACIÓN
+=========================================================================
+
+Antes de comparar:
+
+capability
+
+resource
+
+deben normalizarse:
+
+trim
+
+uppercase
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+Request:
+
+accounting
+
+journal_entry
+
+POST
+
+debe compararse como:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+=========================================================================
+
+PERMISSION CODE
+=========================================================================
+
+El Authorization Engine NO debe depender únicamente de:
+
+permission.code.
+
+Debe comparar sus componentes:
+
+capability
+
+resource
+
+action
+
+scopeType
+
+=========================================================================
+
+RAZÓN
+
+=========================================================================
+
+El code:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+es una representación conveniente.
+
+La decisión debe utilizar los campos estructurados.
+
+=========================================================================
+
+SCOPE ENGINE
+=========================================================================
+
+IAM-003 introduce solamente:
+
+Scope Type Evaluation.
+
+No implementa todavía:
+
+Tenant membership
+
+Company membership
+
+Cost Center authorization
+
+Project authorization
+
+=========================================================================
+
+REGLA MVP
+=========================================================================
+
+Si:
+
+request.scopeType == GLOBAL
+
+Permission.scopeType == GLOBAL
+
+→ ALLOW
+
+=========================================================================
+
+REGLA COMPANY
+=========================================================================
+
+Si:
+
+request.scopeType == COMPANY
+
+Permission.scopeType == COMPANY
+
+→ continuar evaluación.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+En MVP 1, el contexto COMPANY debe contener:
+
+companyId
+
+pero la validación de pertenencia del usuario a la compañía todavía
+no se implementará.
+
+Por tanto:
+
+scopeType = COMPANY
+
+significa que el permiso está diseñado para operar en ámbito de
+compañía.
+
+La validación:
+
+"¿pertenece este usuario a esta compañía?"
+
+será implementada posteriormente con:
+
+Company Context.
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+AuthorizationPolicy.java
+
+Crear interfaz.
+
+Método:
+
+boolean supports(
+    AuthorizationRequest request
+);
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+GlobalScopeAuthorizationPolicy.java
+
+Implementar:
+
+AuthorizationPolicy
+
+=========================================================================
+
+RESPONSABILIDAD
+
+=========================================================================
+
+Evaluar:
+
+GLOBAL
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+CompanyScopeAuthorizationPolicy.java
+
+Implementar:
+
+AuthorizationPolicy
+
+=========================================================================
+
+RESPONSABILIDAD
+
+=========================================================================
+
+Evaluar:
+
+COMPANY
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+La política COMPANY debe validar únicamente la estructura necesaria
+para MVP.
+
+No implementar todavía:
+
+CompanyRepository.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+AuthorizationPolicyChain.java
+
+Crear clase.
+
+Responsabilidad:
+
+ejecutar las policies disponibles.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Esto prepara la arquitectura para:
+
+GLOBAL
+
+TENANT
+
+COMPANY
+
+BUSINESS_UNIT
+
+COST_CENTER
+
+PROJECT
+
+WAREHOUSE
+
+sin convertir:
+
+DefaultAuthorizationService
+
+en un bloque gigantesco de:
+
+if / else.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El AuthorizationService debe delegar la evaluación de Scope a:
+
+AuthorizationPolicy.
+
+=========================================================================
+
+NO CREAR
+
+=========================================================================
+
+if scope == GLOBAL
+
+if scope == COMPANY
+
+if scope == TENANT
+
+dentro del núcleo del AuthorizationService.
+
+=========================================================================
+
+ARCHIVO 11
+=========================================================================
+
+AuthorizationException.java
+
+Extender:
+
+RuntimeException.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Una decisión normal de DENY:
+
+NO es una excepción.
+
+Debe devolver:
+
+AuthorizationResult.
+
+=========================================================================
+
+AuthorizationException
+
+se utilizará únicamente para:
+
+errores técnicos inesperados.
+
+=========================================================================
+
+DIFERENCIA
+
+=========================================================================
+
+DENY:
+
+resultado esperado.
+
+Exception:
+
+error técnico.
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+User no tiene POST:
+
+AuthorizationResult:
+
+DENY
+
+NO:
+
+throw AuthorizationException.
+
+=========================================================================
+
+SECURITY CONTEXT
+=========================================================================
+
+IAM-003 debe preparar:
+
+SecurityContext
+
+pero NO implementarlo completamente.
+
+=========================================================================
+
+ARCHIVO 12
+=========================================================================
+
+SecurityContext.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long userId
+
+String username
+
+Long tenantId
+
+Long companyId
+
+Set<String> roles
+
+Set<String> permissions
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+tenantId y companyId pueden ser:
+
+null
+
+en IAM-003.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+SecurityContext representa el contexto de seguridad de una ejecución.
+
+No representa:
+
+UserEntity.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No agregar:
+
+password
+
+token
+
+refreshToken
+
+accessToken
+
+=========================================================================
+
+ARCHIVO 13
+=========================================================================
+
+SecurityContextFactory.java
+
+Crear interfaz.
+
+Método:
+
+SecurityContext create(
+    Long userId
+);
+
+=========================================================================
+
+ARCHIVO 14
+=========================================================================
+
+DefaultSecurityContextFactory.java
+
+Implementar:
+
+SecurityContextFactory
+
+Dependencias:
+
+UserRepository
+
+UserRoleRepository
+
+RolePermissionRepository
+
+=========================================================================
+
+RESPONSABILIDAD
+
+=========================================================================
+
+Construir:
+
+SecurityContext
+
+a partir del usuario y sus permisos.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+SecurityContext debe incluir:
+
+userId
+
+username
+
+roles
+
+permissions
+
+=========================================================================
+
+PERMISSION FORMAT
+
+=========================================================================
+
+permissions debe contener:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+etc.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+SecurityContext NO decide autorización.
+
+Solo representa el contexto.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+User
+
+ ↓
+
+SecurityContextFactory
+
+ ↓
+
+SecurityContext
+
+ ↓
+
+AuthorizationService
+
+ ↓
+
+AuthorizationResult
+
+=========================================================================
+
+INTEGRACIÓN CON AURUM ENGINE
+=========================================================================
+
+No modificar todavía:
+
+CapabilityExecutor.
+
+No modificar:
+
+CapabilityRegistry.
+
+No modificar:
+
+Capability.
+
+=========================================================================
+
+PREPARACIÓN FUTURA
+=========================================================================
+
+Posteriormente:
+
+CapabilityExecutor
+
+recibirá:
+
+SecurityContext
+
+y podrá solicitar:
+
+AuthorizationService.authorize(...)
+
+=========================================================================
+
+FLUJO FUTURO
+
+=========================================================================
+
+SecurityContext
+      │
+      ▼
+CapabilityExecutor
+      │
+      ▼
+AuthorizationService
+      │
+      ▼
+ALLOW
+      │
+      ▼
+Capability
+      │
+      ▼
+Accounting
+
+=========================================================================
+
+NO IMPLEMENTAR TODAVÍA
+
+=========================================================================
+
+Esta integración será una historia posterior.
+
+=========================================================================
+
+REGLA DE SEGURIDAD
+=========================================================================
+
+Por defecto:
+
+DENY.
+
+Nunca:
+
+ALLOW por ausencia de reglas.
+
+=========================================================================
+
+DEFAULT DENY
+=========================================================================
+
+Si no existe:
+
+Role
+
+Permission
+
+Scope válido
+
+el resultado debe ser:
+
+DENY.
+
+=========================================================================
+
+REGLA CRÍTICA
+=========================================================================
+
+No utilizar:
+
+"ADMIN = true"
+
+para saltarse autorización.
+
+=========================================================================
+
+SYSTEM_ADMIN
+=========================================================================
+
+El rol:
+
+SYSTEM_ADMIN
+
+NO tendrá bypass mágico.
+
+Sus permisos deben estar explícitamente asignados.
+
+=========================================================================
+
+NO IMPLEMENTAR WILDCARDS
+=========================================================================
+
+No soportar todavía:
+
+*
+
+ACCOUNTING.*
+
+*.JOURNAL_ENTRY.POST
+
+*
+
+=========================================================================
+
+RAZÓN
+
+=========================================================================
+
+Los wildcards complican la evaluación y pueden producir permisos
+excesivamente amplios.
+
+Se podrán incorporar posteriormente mediante una historia específica.
+
+=========================================================================
+
+NO IMPLEMENTAR DENY EXPLÍCITO
+=========================================================================
+
+IAM-003 solamente soporta:
+
+ALLOW
+
+o:
+
+DEFAULT DENY.
+
+No existe:
+
+EXPLICIT DENY
+
+todavía.
+
+=========================================================================
+
+REGLA DE PRECEDENCIA
+=========================================================================
+
+Si múltiples roles conceden el mismo permiso:
+
+ALLOW.
+
+Ejemplo:
+
+Role A:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+Role B:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+Resultado:
+
+ALLOW.
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No implementar todavía:
+
+Deny Override
+
+Priority
+
+Policy Ordering
+
+=========================================================================
+
+CASO 1
+=========================================================================
+
+User:
+
+100
+
+Role:
+
+ACCOUNTING_CLERK
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+Request:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+READ
+
+COMPANY
+
+Resultado:
+
+ALLOW
+
+=========================================================================
+
+CASO 2
+=========================================================================
+
+User:
+
+100
+
+Role:
+
+ACCOUNTING_CLERK
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.READ
+
+Request:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+COMPANY
+
+Resultado:
+
+DENY
+
+Reason:
+
+NO_PERMISSION
+
+=========================================================================
+
+CASO 3
+=========================================================================
+
+User:
+
+100
+
+Role:
+
+ACCOUNTING_SUPERVISOR
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+Request:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+COMPANY
+
+Resultado:
+
+ALLOW
+
+=========================================================================
+
+CASO 4
+=========================================================================
+
+User:
+
+100
+
+Role:
+
+ACCOUNTING_SUPERVISOR
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+scope:
+
+COMPANY
+
+Request:
+
+scope:
+
+GLOBAL
+
+Resultado:
+
+DENY
+
+Reason:
+
+SCOPE_MISMATCH
+
+=========================================================================
+
+CASO 5
+=========================================================================
+
+User:
+
+100
+
+status:
+
+DISABLED
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+Request:
+
+ACCOUNTING
+
+JOURNAL_ENTRY
+
+POST
+
+Resultado:
+
+DENY
+
+Reason:
+
+USER_DISABLED
+
+=========================================================================
+
+CASO 6
+=========================================================================
+
+User:
+
+100
+
+sin roles.
+
+Resultado:
+
+DENY
+
+Reason:
+
+NO_ROLE
+
+=========================================================================
+
+CASO 7
+=========================================================================
+
+Permission:
+
+ACCOUNTING.JOURNAL_ENTRY.POST
+
+enabled:
+
+false
+
+Resultado:
+
+DENY
+
+Reason:
+
+PERMISSION_DISABLED
+
+=========================================================================
+
+CASO 8
+=========================================================================
+
+Request:
+
+ACCOUNTING
+
+ACCOUNT
+
+READ
+
+GLOBAL
+
+Permission:
+
+ACCOUNTING
+
+ACCOUNT
+
+READ
+
+GLOBAL
+
+Resultado:
+
+ALLOW.
+
+=========================================================================
+
+CASO 9
+=========================================================================
+
+Request:
+
+SALES
+
+ORDER
+
+CREATE
+
+COMPANY
+
+User solo posee:
+
+ACCOUNTING.JOURNAL_ENTRY.CREATE
+
+Resultado:
+
+DENY
+
+Reason:
+
+NO_PERMISSION
+
+=========================================================================
+
+REGLA DE CAPABILITY
+=========================================================================
+
+Authorization Engine no necesita consultar:
+
+CapabilityMetadataService
+
+para determinar si existe la capability.
+
+La autorización evalúa permisos.
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+Capability Discovery y Authorization son responsabilidades diferentes.
+
+Discovery:
+
+"¿Existe ACCOUNTING?"
+
+Authorization:
+
+"¿Puede Juan ejecutar ACCOUNTING.JOURNAL_ENTRY.POST?"
+
+=========================================================================
+
+INTEGRACIÓN FUTURA
+=========================================================================
+
+El flujo completo será:
+
+CAPABILITY DISCOVERY
+        ↓
+CAPABILITY METADATA
+        ↓
+CAPABILITY SELECTION
+        ↓
+AUTHORIZATION
+        ↓
+CAPABILITY EXECUTION
+
+=========================================================================
+
+NO HACER TODAVÍA
+
+=========================================================================
+
+Capability Selection.
+
+AI Agent.
+
+Natural Language.
+
+LLM.
+
+=========================================================================
+
+PRUEBAS
+=========================================================================
+
+Crear pruebas unitarias para:
+
+AuthorizationService.
+
+=========================================================================
+
+MÍNIMO
+
+=========================================================================
+
+Debe existir test para:
+
+ALLOW con permiso válido.
+
+DENY sin permiso.
+
+DENY usuario inexistente.
+
+DENY usuario disabled.
+
+DENY usuario locked.
+
+DENY usuario deleted.
+
+DENY sin roles.
+
+DENY permission disabled.
+
+DENY capability mismatch.
+
+DENY resource mismatch.
+
+DENY action mismatch.
+
+DENY scope mismatch.
+
+ALLOW global scope.
+
+ALLOW company scope.
+
+=========================================================================
+
+PRUEBAS DE SECURITY CONTEXT
+=========================================================================
+
+Validar:
+
+User → SecurityContext
+
+incluyendo:
+
+userId
+
+username
+
+roles
+
+permissions.
+
+=========================================================================
+
+NO TESTEAR
+
+=========================================================================
+
+Google
+
+Microsoft
+
+JWT
+
+OAuth
+
+OIDC
+
+HTTP
+
+REST
+
+=========================================================================
+
+NO PERSISTIR
+=========================================================================
+
+No crear:
+
+AuthorizationDecisionEntity
+
+AuthorizationResultEntity
+
+SecurityContextEntity
+
+AuthorizationAuditEntity
+
+=========================================================================
+
+AUDITORÍA
+=========================================================================
+
+IAM-003 NO implementa todavía auditoría persistente.
+
+Posteriormente se podrá registrar:
+
+user
+
+timestamp
+
+capability
+
+resource
+
+action
+
+scope
+
+decision
+
+reason
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+No agregar logs que expongan:
+
+passwords
+
+tokens
+
+OAuth secrets
+
+PII innecesaria.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+=========================================================================
+
+1. Existe AuthorizationRequest.
+
+2. Existe AuthorizationResult.
+
+3. Existe AuthorizationDecision.
+
+4. Existe AuthorizationReason.
+
+5. Existe AuthorizationService.
+
+6. Existe DefaultAuthorizationService.
+
+7. Existe AuthorizationPolicy.
+
+8. Existe GlobalScopeAuthorizationPolicy.
+
+9. Existe CompanyScopeAuthorizationPolicy.
+
+10. Existe AuthorizationPolicyChain.
+
+11. Existe SecurityContext.
+
+12. Existe SecurityContextFactory.
+
+13. Un usuario puede ser autorizado mediante sus roles.
+
+14. Los permisos se obtienen a través de RolePermission.
+
+15. Capability debe coincidir.
+
+16. Resource debe coincidir.
+
+17. Action debe coincidir.
+
+18. ScopeType debe coincidir.
+
+19. Permission.enabled debe ser true.
+
+20. Usuario inexistente produce DENY.
+
+21. Usuario disabled produce DENY.
+
+22. Usuario locked produce DENY.
+
+23. Usuario deleted produce DENY.
+
+24. Usuario sin roles produce DENY.
+
+25. Ausencia de Permission produce DENY.
+
+26. Default policy es DENY.
+
+27. No existen bypass administrativos.
+
+28. No existen wildcards.
+
+29. No existe explicit DENY.
+
+30. No existe autenticación.
+
+31. No existe JWT.
+
+32. No existe OAuth2.
+
+33. No existe OIDC.
+
+34. No existe Google.
+
+35. No existe Microsoft.
+
+36. No existe REST.
+
+37. No existe Controller.
+
+38. No existe persistencia de AuthorizationResult.
+
+39. SecurityContext no contiene credenciales.
+
+40. No se utiliza Lombok.
+
+41. No se utiliza Reflection.
+
+42. El proyecto compila con Java 21.
+
+43. Las pruebas unitarias cubren ALLOW y DENY.
+
+=========================================================================
+
+RESULTADO ARQUITECTÓNICO
+=========================================================================
+
+                         USER
+                          │
+                          ▼
+                        ROLES
+                          │
+                          ▼
+                     PERMISSIONS
+                          │
+                          ▼
+                AUTHORIZATION ENGINE
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+        CAPABILITY     RESOURCE       ACTION
+             │            │            │
+             └────────────┼────────────┘
+                          ▼
+                         SCOPE
+                          │
+                          ▼
+                    ALLOW / DENY
+
+=========================================================================
+
+ARQUITECTURA IAM COMPLETADA HASTA ESTE PUNTO
+=========================================================================
+
+IAM-001
+
+IDENTITY MODEL
+
+        ↓
+
+IAM-002
+
+ROLE & PERMISSION MODEL
+
+        ↓
+
+IAM-003
+
+AUTHORIZATION ENGINE
+
+        ↓
+
+FUTURO
+
+AUTHENTICATION
+
+        ↓
+
+GOOGLE / MICROSOFT
+
+        ↓
+
+SECURITY CONTEXT
+
+        ↓
+
+AURUM ENGINE
+
+=========================================================================
+
+PRINCIPIO ESTRATÉGICO
+=========================================================================
+
+La autorización queda desacoplada de:
+
+Authentication.
+
+Business Logic.
+
+Accounting.
+
+Capability Implementation.
+
+Esto significa que:
+
+Accounting
+
+no necesita saber:
+
+cómo se autenticó el usuario.
+
+Y:
+
+Google
+
+no necesita saber:
+
+qué permisos tiene el usuario dentro de Aurum.
+
+El flujo correcto es:
+
+IDENTITY
+   ↓
+AUTHENTICATION
+   ↓
+SECURITY CONTEXT
+   ↓
+AUTHORIZATION
+   ↓
+CAPABILITY
+   ↓
+BUSINESS OPERATION
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+=========================================================================
+
+IAM-004
+
+SECURITY CONTEXT & APPLICATION ACCESS
+
+Integrar el contexto de seguridad con la ejecución de Aurum para que
+las operaciones de negocio y capabilities puedan recibir una identidad
+autenticada y un contexto de autorización sin acoplarse directamente
+al modelo JPA de User.
+
+Después de IAM-004 podremos comenzar propiamente con:
+
+AUTHENTICATION
+
+y posteriormente:
+
+IAM-005 — LOCAL AUTHENTICATION
+
+IAM-006 — GOOGLE OIDC
+
+IAM-007 — MICROSOFT OIDC
+
+=========================================================================

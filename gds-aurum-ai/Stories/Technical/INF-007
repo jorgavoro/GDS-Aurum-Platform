@@ -1,0 +1,264 @@
+=========================================================================
+HISTORIA TÉCNICA: INF-007
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+Versión:
+
+MVP 1
+
+Arquitectura
+
+Java 21
+
+Spring Boot 3.5.x
+
+PostgreSQL
+
+Hibernate 6
+
+Spring Data JPA
+
+Flyway
+
+Maven Multi Module
+
+DDD
+
+Clean Architecture
+
+Metadata Driven ERP
+
+=========================================================================
+
+CONTEXTO
+
+El módulo aurum-model contiene las entidades JPA del modelo de metadatos.
+
+El módulo aurum-engine contiene el motor de metadatos.
+
+Esta historia implementa la persistencia del modelo.
+
+Este módulo NO implementa lógica de negocio.
+
+=========================================================================
+
+REGLAS
+
+No utilizar javax.*
+
+Solo jakarta.*
+
+Constructor Injection únicamente.
+
+No Field Injection.
+
+No Reflection.
+
+No EntityManager.
+
+No JDBC.
+
+No SQL nativo.
+
+No modificar otros módulos.
+
+No crear archivos fuera de esta historia.
+
+Código listo para producción.
+
+JavaDoc obligatorio.
+
+=========================================================================
+
+PROYECTO MAVEN
+
+aurum-metadata
+
+=========================================================================
+
+ARCHIVO 1
+
+Paquete
+
+com.globaldynamicssystems.aurum.metadata.repository
+
+Archivo
+
+EntityDefinitionRepository.java
+
+Crear una interfaz.
+
+Extender:
+
+BaseRepository<EntityDefinition>
+
+Agregar:
+
+Optional<EntityDefinition> findByCode(String code);
+
+boolean existsByCode(String code);
+
+=========================================================================
+
+ARCHIVO 2
+
+Paquete
+
+com.globaldynamicssystems.aurum.metadata.repository
+
+Archivo
+
+FieldDefinitionRepository.java
+
+Crear una interfaz.
+
+Extender:
+
+BaseRepository<FieldDefinition>
+
+Agregar:
+
+List<FieldDefinition> findByEntityCode(String code);
+
+=========================================================================
+
+ARCHIVO 3
+
+Paquete
+
+com.globaldynamicssystems.aurum.metadata.repository
+
+Archivo
+
+RelationshipDefinitionRepository.java
+
+Crear una interfaz.
+
+Extender:
+
+BaseRepository<RelationshipDefinition>
+
+Agregar:
+
+List<RelationshipDefinition> findBySourceEntityCode(String code);
+
+=========================================================================
+
+ARCHIVO 4
+
+Paquete
+
+com.globaldynamicssystems.aurum.metadata.service
+
+Archivo
+
+MetadataPersistenceService.java
+
+Crear una interfaz.
+
+Declarar:
+
+EntityDefinition save(EntityDefinition entity);
+
+Optional<EntityDefinition> findByCode(String code);
+
+List<EntityDefinition> findAll();
+
+void delete(String code);
+
+=========================================================================
+
+ARCHIVO 5
+
+Paquete
+
+com.globaldynamicssystems.aurum.metadata.service.impl
+
+Archivo
+
+DefaultMetadataPersistenceService.java
+
+Implementar MetadataPersistenceService.
+
+Debe utilizar Constructor Injection.
+
+Depender únicamente de:
+
+EntityDefinitionRepository
+
+No utilizar EntityManager.
+
+Debe estar anotada con:
+
+@Service
+
+@Transactional
+
+=========================================================================
+
+ARCHIVO 6
+
+Paquete
+
+com.globaldynamicssystems.aurum.metadata.bootstrap
+
+Archivo
+
+MetadataInitializer.java
+
+Crear un componente Spring.
+
+Debe implementar:
+
+ApplicationRunner
+
+Por ahora el método run() no debe cargar información.
+
+Simplemente registrar mediante logger:
+
+"Metadata module initialized."
+
+Utilizar:
+
+@Slf4j
+
+o, si el proyecto ya no utiliza Lombok, utilizar:
+
+private static final Logger logger =
+LoggerFactory.getLogger(MetadataInitializer.class);
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO
+
+Mappers
+
+Configuration
+
+Flyway
+
+SQL
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Generar exactamente seis archivos.
+
+Todos deben compilar con Java 21.
+
+No crear archivos adicionales.
+
+=========================================================================

@@ -1,0 +1,1159 @@
+# ACC-013 — Profit Center
+
+```text id="v1p8kx"
+=========================================================================
+HISTORIA DE USUARIO: ACC-013
+PROFIT CENTER — CENTROS DE BENEFICIO
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+ACC-011 introdujo CostCenter como dimensión analítica.
+
+ACC-012 evolucionó CostCenter hacia un Framework de Dimensiones
+Analíticas genérico.
+
+El modelo actual permite:
+
+JournalEntryLine
+       │
+       ├── Account
+       │
+       └── Analytical Dimensions
+              │
+              ├── COST_CENTER
+              ├── PROFIT_CENTER
+              ├── PROJECT
+              ├── BUSINESS_UNIT
+              ├── REGION
+              ├── CHANNEL
+              └── SEGMENT
+
+ACC-013 implementa la segunda dimensión analítica real:
+
+PROFIT CENTER
+
+Esta historia debe demostrar que una nueva dimensión puede agregarse
+sin modificar estructuralmente:
+
+JournalEntryLine
+
+ni crear:
+
+profitCenterId
+
+dentro de JournalEntryLine.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar ProfitCenter como una dimensión analítica que permita
+clasificar movimientos contables según una unidad responsable de
+generación de ingresos, costos o resultados.
+
+Ejemplos:
+
+SERVICES
+SOFTWARE
+CONSULTING
+LATAM
+NORTH_AMERICA
+DIGITAL_PRODUCTS
+
+Un ProfitCenter permite analizar:
+
+Revenue
+
+Expense
+
+Margin
+
+Profitability
+
+por unidad de negocio.
+
+=========================================================================
+
+PRINCIPIO FUNDAMENTAL
+=========================================================================
+
+ProfitCenter no es una cuenta contable.
+
+ProfitCenter no reemplaza Account.
+
+ProfitCenter no reemplaza CostCenter.
+
+ProfitCenter es una dimensión analítica.
+
+Por tanto:
+
+Account
+    +
+Analytical Dimensions
+
+describe:
+
+qué ocurrió
+
+y:
+
+dónde / bajo qué unidad analítica ocurrió.
+
+=========================================================================
+
+ARQUITECTURA
+
+=========================================================================
+
+                    JOURNAL ENTRY
+                          │
+                          ▼
+                  JOURNAL ENTRY LINE
+                          │
+              ┌───────────┴───────────┐
+              ▼                       ▼
+           ACCOUNT               DIMENSIONS
+                                      │
+                         ┌────────────┴────────────┐
+                         ▼                         ▼
+                    COST_CENTER              PROFIT_CENTER
+                         │                         │
+                         └────────────┬────────────┘
+                                      ▼
+                                    POSTING
+                                      │
+                                      ▼
+                                    LEDGER
+                                      │
+                         ┌────────────┴────────────┐
+                         ▼                         ▼
+                  FINANCIAL REPORTS       ANALYTICAL REPORTS
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.*
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal.
+
+No utilizar double.
+
+No utilizar float.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+ProfitCenter.java
+
+Crear entidad JPA.
+
+Extender:
+
+AuditableEntity
+
+Tabla:
+
+gds_profit_center
+
+Campos:
+
+Long id
+
+String code
+
+String name
+
+String description
+
+CostCenterStatus status
+
+Boolean active
+
+ChartOfAccounts chartOfAccounts
+
+=========================================================================
+
+IMPORTANTE
+
+=========================================================================
+
+NO crear:
+
+ProfitCenterStatus
+
+Debe reutilizarse:
+
+CostCenterStatus
+
+porque:
+
+ACTIVE
+
+INACTIVE
+
+representan un estado transversal de una dimensión maestra.
+
+=========================================================================
+
+REGLAS DE PROFIT CENTER
+
+=========================================================================
+
+code:
+
+obligatorio
+
+name:
+
+obligatorio
+
+status:
+
+obligatorio
+
+active:
+
+obligatorio
+
+chartOfAccounts:
+
+obligatorio
+
+=========================================================================
+
+UNICIDAD
+
+=========================================================================
+
+El código debe ser único dentro del:
+
+ChartOfAccounts
+
+No es necesario que sea globalmente único.
+
+Ejemplo válido:
+
+ChartOfAccounts A:
+
+SERVICES
+
+ChartOfAccounts B:
+
+SERVICES
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+ProfitCenterRepository.java
+
+Crear interfaz.
+
+Extender:
+
+JpaRepository<ProfitCenter, Long>
+
+Métodos:
+
+Optional<ProfitCenter> findByChartOfAccountsIdAndCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+List<ProfitCenter> findByChartOfAccountsId(
+    Long chartOfAccountsId
+);
+
+List<ProfitCenter> findByChartOfAccountsIdAndStatus(
+    Long chartOfAccountsId,
+    CostCenterStatus status
+);
+
+boolean existsByChartOfAccountsIdAndCode(
+    Long chartOfAccountsId,
+    String code
+);
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+ProfitCenterService.java
+
+Crear interfaz.
+
+Métodos:
+
+ProfitCenter create(
+    Long chartOfAccountsId,
+    ProfitCenter profitCenter
+);
+
+Optional<ProfitCenter> findById(
+    Long id
+);
+
+List<ProfitCenter> findByChartOfAccounts(
+    Long chartOfAccountsId
+);
+
+void deactivate(
+    Long id
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultProfitCenterService.java
+
+Implementar:
+
+ProfitCenterService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+ProfitCenterRepository
+
+ChartOfAccountsRepository
+
+AnalyticalDimensionService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DE CREATE
+
+=========================================================================
+
+1. chartOfAccountsId obligatorio.
+
+2. ChartOfAccounts debe existir.
+
+3. profitCenter obligatorio.
+
+4. code obligatorio.
+
+5. name obligatorio.
+
+6. code debe ser único dentro del ChartOfAccounts.
+
+7. status inicial:
+
+   ACTIVE
+
+8. active inicial:
+
+   true
+
+9. Registrar el ProfitCenter en:
+
+   AnalyticalDimensionValue
+
+=========================================================================
+
+REGLA DE REGISTRO DE DIMENSIÓN
+
+=========================================================================
+
+Después de crear ProfitCenter:
+
+crear o recuperar:
+
+AnalyticalDimensionValue
+
+con:
+
+dimensionType = PROFIT_CENTER
+
+referenceId = profitCenter.id
+
+code = profitCenter.code
+
+name = profitCenter.name
+
+active = true
+
+=========================================================================
+
+REGLA DE IDEMPOTENCIA
+
+=========================================================================
+
+Si el:
+
+AnalyticalDimensionValue
+
+ya existe para:
+
+PROFIT_CENTER + profitCenter.id
+
+no crear otro.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+ProfitCenterValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    ProfitCenter profitCenter
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultProfitCenterValidator.java
+
+Implementar:
+
+ProfitCenterValidator
+
+Validar:
+
+1. ProfitCenter obligatorio.
+
+2. code obligatorio.
+
+3. name obligatorio.
+
+4. ChartOfAccounts obligatorio.
+
+5. status obligatorio.
+
+6. active obligatorio.
+
+=========================================================================
+
+REGLA DE DESACTIVACIÓN
+
+=========================================================================
+
+deactivate():
+
+1. ProfitCenter debe existir.
+
+2. status = INACTIVE
+
+3. active = false
+
+4. Actualizar:
+
+   AnalyticalDimensionValue.active = false
+
+No eliminar:
+
+ProfitCenter
+
+AnalyticalDimensionValue
+
+LedgerEntry
+
+JournalEntry
+
+=========================================================================
+
+REGLA HISTÓRICA
+
+=========================================================================
+
+Un ProfitCenter INACTIVE:
+
+NO puede utilizarse en nuevas operaciones.
+
+SÍ puede aparecer en:
+
+LedgerEntry históricos.
+
+SÍ puede consultarse.
+
+SÍ puede utilizarse en reportes históricos.
+
+=========================================================================
+
+INTEGRACIÓN CON ANALYTICAL DIMENSION FRAMEWORK
+
+=========================================================================
+
+NO modificar:
+
+JournalEntryLine
+
+para agregar:
+
+profitCenter
+
+La asociación debe realizarse mediante:
+
+JournalEntryLineDimension
+
+=========================================================================
+
+EJEMPLO
+
+=========================================================================
+
+JournalEntryLine:
+
+Account:
+
+410505
+
+Debit:
+
+0
+
+Credit:
+
+10000
+
+Dimensions:
+
+PROFIT_CENTER = SERVICES
+
+=========================================================================
+
+MODELO
+
+=========================================================================
+
+JournalEntryLine
+       │
+       ▼
+JournalEntryLineDimension
+       │
+       ▼
+AnalyticalDimensionValue
+       │
+       ├── type = PROFIT_CENTER
+       ├── referenceId = 25
+       ├── code = SERVICES
+       └── name = Software Services
+
+=========================================================================
+
+VALIDACIÓN
+
+=========================================================================
+
+DefaultJournalEntryValidator debe verificar:
+
+dimensionType == PROFIT_CENTER
+
+entonces:
+
+referenceId debe corresponder a un ProfitCenter existente.
+
+ProfitCenter debe:
+
+ACTIVE
+
+active = true
+
+pertenecer al mismo:
+
+ChartOfAccounts
+
+del JournalEntry.
+
+=========================================================================
+
+REGLA DE CROSS-CONTEXT
+
+=========================================================================
+
+No permitir:
+
+JournalEntry
+
+ChartOfAccounts:
+
+COA-001
+
+ProfitCenter:
+
+COA-002 / SERVICES
+
+Resultado:
+
+RECHAZADO
+
+=========================================================================
+
+POSTING
+
+=========================================================================
+
+No crear lógica especial:
+
+if profitCenter ...
+
+El Posting debe funcionar mediante el mecanismo genérico de:
+
+JournalEntryLineDimension
+
+Por tanto:
+
+JournalEntryLine
+       │
+       ▼
+Dimensions
+       │
+       ▼
+Posting
+       │
+       ▼
+LedgerEntry
+
+=========================================================================
+
+REGLA
+
+=========================================================================
+
+El LedgerEntry debe conservar:
+
+dimensionType
+
+referenceId
+
+code
+
+name
+
+correspondientes a la dimensión utilizada durante Posting.
+
+No depender de:
+
+ProfitCenter
+
+para reconstruir posteriormente el histórico.
+
+=========================================================================
+
+ANALYTICAL REPORTING
+
+=========================================================================
+
+El framework creado en ACC-012 ya permite consultar por:
+
+AnalyticalDimensionType
+
+referenceId
+
+Por tanto:
+
+NO crear:
+
+ProfitCenterLedgerService
+
+No duplicar servicios existentes.
+
+Utilizar:
+
+AnalyticalLedgerService
+
+=========================================================================
+
+EJEMPLO DE CONSULTA
+
+=========================================================================
+
+AnalyticalDimensionType:
+
+PROFIT_CENTER
+
+referenceId:
+
+25
+
+FiscalPeriod:
+
+2027-01
+
+Resultado:
+
+LedgerEntry 1:
+
+Revenue = 10000
+
+LedgerEntry 2:
+
+Expense = 3000
+
+=========================================================================
+
+RESULTADO
+
+=========================================================================
+
+Revenue:
+
+10000
+
+Expense:
+
+3000
+
+Balance:
+
+7000
+
+=========================================================================
+
+REGLA DE CÁLCULO
+
+=========================================================================
+
+Para análisis genérico:
+
+balance = debit - credit
+
+Para presentación de Revenue:
+
+revenue = credit - debit
+
+Para Expense:
+
+expense = debit - credit
+
+No crear una fórmula especial para ProfitCenter.
+
+=========================================================================
+
+ANÁLISIS DE RENTABILIDAD
+
+=========================================================================
+
+El framework debe permitir posteriormente obtener:
+
+Revenue
+Expense
+Margin
+
+por:
+
+ProfitCenter
+
+Pero ACC-013 no debe crear todavía un:
+
+ProfitabilityReport
+
+Ese reporte pertenece a una historia posterior.
+
+=========================================================================
+
+REGLA DE MULTIPLES DIMENSIONES
+
+=========================================================================
+
+Una JournalEntryLine puede tener simultáneamente:
+
+COST_CENTER = IT
+
+PROFIT_CENTER = SERVICES
+
+PROJECT = PROJECT-001
+
+Esto no representa tres movimientos.
+
+Representa:
+
+un movimiento
+
+con tres dimensiones analíticas.
+
+=========================================================================
+
+NO DUPLICAR IMPORTES
+
+=========================================================================
+
+Si:
+
+Debit = 10000
+
+y la línea tiene:
+
+CostCenter = IT
+ProfitCenter = SERVICES
+
+no generar:
+
+IT = 10000
+SERVICES = 10000
+
+como dos movimientos contables.
+
+Ambos apuntan al mismo:
+
+10000
+
+=========================================================================
+
+NO MODIFICAR
+
+Account
+
+ChartOfAccounts
+
+FiscalPeriod
+
+JournalEntryLine
+
+JournalEntryLineDimension
+
+AnalyticalDimensionValue
+
+LedgerEntry
+
+TrialBalance
+
+BalanceSheet
+
+IncomeStatement
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+ProfitabilityReport
+
+ProfitAndLossByProfitCenter
+
+CostAllocation
+
+ProfitAllocation
+
+DimensionAllocation
+
+DimensionWeighting
+
+DimensionSplitting
+
+ProfitCenterHierarchy
+
+Consolidation
+
+Intercompany
+
+Multi-Currency
+
+Budget
+
+Forecast
+
+AI Financial Analysis
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+=========================================================================
+
+Generar los archivos nuevos indicados y modificar únicamente los
+archivos existentes expresamente mencionados.
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede crear un ProfitCenter.
+
+2. El ProfitCenter pertenece a un ChartOfAccounts.
+
+3. El código es único dentro del ChartOfAccounts.
+
+4. Al crear ProfitCenter se registra su
+   AnalyticalDimensionValue.
+
+5. No se crean duplicados de la dimensión.
+
+6. Un ProfitCenter puede desactivarse.
+
+7. Al desactivarlo, su AnalyticalDimensionValue queda inactivo.
+
+8. Un ProfitCenter INACTIVE no puede utilizarse en nuevas operaciones.
+
+9. Los movimientos históricos permanecen intactos.
+
+10. JournalEntryLine no contiene un campo profitCenter.
+
+11. ProfitCenter se asocia mediante JournalEntryLineDimension.
+
+12. Posting conserva la dimensión.
+
+13. LedgerEntry conserva la dimensión.
+
+14. Se puede consultar Ledger por PROFIT_CENTER utilizando
+    AnalyticalLedgerService.
+
+15. No se duplican importes cuando una línea tiene varias dimensiones.
+
+16. CostCenter continúa funcionando.
+
+17. ProfitCenter funciona simultáneamente con CostCenter.
+
+18. Los reportes financieros globales no cambian.
+
+19. No se crea un servicio analítico específico para ProfitCenter.
+
+20. No existe SQL nativo.
+
+21. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRUEBA ARQUITECTÓNICA
+
+=========================================================================
+
+Antes de ACC-013:
+
+JournalEntryLine
+    │
+    ├── Account
+    └── Analytical Dimensions
+
+Después de ACC-013:
+
+JournalEntryLine
+    │
+    ├── Account
+    │
+    └── Analytical Dimensions
+           │
+           ├── COST_CENTER
+           └── PROFIT_CENTER
+
+La estructura de JournalEntryLine NO cambia.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+=========================================================================
+
+Agregar una nueva dimensión debe ser una operación de extensión,
+no una modificación estructural del núcleo transaccional.
+
+Si mañana se agrega:
+
+PROJECT
+
+no debe ser necesario modificar:
+
+JournalEntryLine
+
+PostingService
+
+LedgerEntry
+
+AnalyticalLedgerService
+
+El framework debe absorber la nueva dimensión.
+
+=========================================================================
+
+EVOLUCIÓN
+
+=========================================================================
+
+ACC-011
+
+CostCenter
+
+        ↓
+
+ACC-012
+
+Analytical Dimension Framework
+
+        ↓
+
+ACC-013
+
+ProfitCenter
+
+        ↓
+
+FUTURO
+
+Project
+
+BusinessUnit
+
+Region
+
+Channel
+
+Segment
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-014
+
+ANALYTICAL REPORTING
+
+Construir el primer motor de consultas y agregaciones analíticas
+utilizando dimensiones, permitiendo obtener Revenue, Expense y
+Balance por CostCenter y ProfitCenter sin duplicar la lógica
+financiera.
+
+=========================================================================
+```
+
+**Hito de ACC-013:** si esta historia compila y funciona sin agregar `profitCenter` a `JournalEntryLine`, entonces **ACC-012 realmente cumplió su objetivo arquitectónico**. Esa es la prueba que nos interesa; no simplemente tener otra entidad funcionando.

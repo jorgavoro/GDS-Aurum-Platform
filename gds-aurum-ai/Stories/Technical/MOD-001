@@ -1,0 +1,360 @@
+==========================================================================
+HISTORIA TÉCNICA: MOD-001
+==========================================================================
+
+Proyecto Maven:
+
+aurum-model
+
+Objetivo:
+
+Construir el modelo de dominio compartido del ERP GDS Aurum AI.
+
+Este módulo contendrá exclusivamente los modelos JPA compartidos
+utilizados por aurum-engine, aurum-metadata y los módulos de negocio.
+
+Debe generar código listo para producción.
+
+Utilizar:
+
+Java 21
+
+Spring Boot 3.5.x
+
+Jakarta Persistence
+
+Hibernate 6
+
+Lombok
+
+No generar código de ejemplo.
+
+No generar servicios.
+
+No generar repositorios.
+
+No generar controladores.
+
+==========================================================================
+
+ARCHIVO 1
+
+Proyecto Maven:
+
+aurum-model
+
+Paquete:
+
+com.globaldynamicssystems.aurum.model.metadata
+
+Archivo:
+
+FieldType.java
+
+Crear un enum con los siguientes valores:
+
+STRING
+TEXT
+INTEGER
+LONG
+DECIMAL
+BOOLEAN
+DATE
+TIME
+DATETIME
+UUID
+EMAIL
+PHONE
+URL
+PASSWORD
+JSON
+ENUM
+REFERENCE
+MONEY
+PERCENTAGE
+BLOB
+
+==========================================================================
+
+ARCHIVO 2
+
+Proyecto Maven:
+
+aurum-model
+
+Paquete:
+
+com.globaldynamicssystems.aurum.model.metadata
+
+Archivo:
+
+RelationshipType.java
+
+Crear un enum.
+
+Valores:
+
+ONE_TO_ONE
+ONE_TO_MANY
+MANY_TO_ONE
+MANY_TO_MANY
+
+==========================================================================
+
+ARCHIVO 3
+
+Proyecto Maven:
+
+aurum-model
+
+Paquete:
+
+com.globaldynamicssystems.aurum.model.metadata
+
+Archivo:
+
+EntityDefinition.java
+
+Debe extender:
+
+com.globaldynamicssystems.aurum.framework.entity.AuditableEntity
+
+Anotaciones:
+
+@Entity
+
+@Table(name="md_entity")
+
+@Getter
+
+@Setter
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+@Builder
+
+Campos:
+
+UUID id
+
+String code
+
+String name
+
+String description
+
+String tableName
+
+String schemaName
+
+Boolean active
+
+Boolean auditable
+
+Boolean cacheable
+
+Boolean tenantAware
+
+Boolean companyAware
+
+@OneToMany(
+mappedBy="entity",
+cascade=CascadeType.ALL,
+fetch=FetchType.LAZY)
+
+List<FieldDefinition> fields
+
+==========================================================================
+
+ARCHIVO 4
+
+Proyecto Maven:
+
+aurum-model
+
+Paquete:
+
+com.globaldynamicssystems.aurum.model.metadata
+
+Archivo:
+
+FieldDefinition.java
+
+Debe extender:
+
+AuditableEntity
+
+Anotaciones:
+
+@Entity
+
+@Table(name="md_field")
+
+@Getter
+
+@Setter
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+@Builder
+
+Campos:
+
+UUID id
+
+String code
+
+String name
+
+String label
+
+String databaseColumn
+
+FieldType fieldType
+
+Integer length
+
+Integer precision
+
+Integer scale
+
+Boolean required
+
+Boolean unique
+
+Boolean searchable
+
+Boolean filterable
+
+Boolean sortable
+
+Boolean visible
+
+Boolean editable
+
+Integer displayOrder
+
+@ManyToOne(fetch=FetchType.LAZY)
+
+@JoinColumn(name="entity_id")
+
+EntityDefinition entity
+
+==========================================================================
+
+ARCHIVO 5
+
+Proyecto Maven:
+
+aurum-model
+
+Paquete:
+
+com.globaldynamicssystems.aurum.model.metadata
+
+Archivo:
+
+RelationshipDefinition.java
+
+Debe extender:
+
+AuditableEntity
+
+Anotaciones:
+
+@Entity
+
+@Table(name="md_relationship")
+
+@Getter
+
+@Setter
+
+@NoArgsConstructor
+
+@AllArgsConstructor
+
+@Builder
+
+Campos:
+
+UUID id
+
+String name
+
+RelationshipType relationshipType
+
+String mappedBy
+
+Boolean cascade
+
+Boolean orphanRemoval
+
+@Enumerated(EnumType.STRING)
+
+FetchType fetchType
+
+@ManyToOne(fetch=FetchType.LAZY)
+
+@JoinColumn(name="source_entity_id")
+
+EntityDefinition sourceEntity
+
+@ManyToOne(fetch=FetchType.LAZY)
+
+@JoinColumn(name="target_entity_id")
+
+EntityDefinition targetEntity
+
+==========================================================================
+
+REQUISITOS
+
+Utilizar exclusivamente:
+
+jakarta.persistence.*
+
+Nunca utilizar:
+
+javax.persistence.*
+
+Todos los UUID deben utilizar:
+
+java.util.UUID
+
+Todos los imports deben quedar optimizados.
+
+No generar lógica de negocio.
+
+No generar constructores personalizados.
+
+No generar métodos helper.
+
+No generar equals().
+
+No generar hashCode().
+
+No generar toString().
+
+No generar servicios.
+
+No generar repositories.
+
+No generar DTO.
+
+No generar controladores.
+
+Las entidades deben quedar listas para ser utilizadas por Hibernate.
+
+==========================================================================
+
+Si alguna dependencia faltara,
+únicamente listar al final:
+
+DEPENDENCIAS PENDIENTES
+
+==========================================================================

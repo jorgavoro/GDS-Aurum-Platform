@@ -1,0 +1,1115 @@
+=========================================================================
+HISTORIA DE USUARIO: ACC-006
+CIERRE DE PERÍODO FISCAL — ACCOUNTING PERIOD CLOSING
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+VERSIÓN
+
+MVP 1
+
+MÓDULO
+
+aurum-accounting
+
+=========================================================================
+
+CONTEXTO
+=========================================================================
+
+GDS Aurum AI Platform es un ERP Metadata Driven.
+
+Stack:
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+Maven Multi Module
+DDD
+Clean Architecture
+
+Infraestructura existente:
+
+aurum-framework
+aurum-model
+aurum-engine
+aurum-metadata
+
+El módulo aurum-accounting contiene actualmente:
+
+ChartOfAccounts
+Account
+FiscalPeriod
+JournalEntry
+JournalEntryLine
+LedgerEntry
+
+El flujo contable construido hasta ahora es:
+
+ChartOfAccounts
+       ↓
+Account
+       ↓
+FiscalPeriod
+       ↓
+JournalEntry
+       ↓
+JournalEntryLine
+       ↓
+Validation
+       ↓
+VALIDATED
+       ↓
+Posting
+       ↓
+LedgerEntry
+       ↓
+POSTED
+       ↓
+Trial Balance
+
+ACC-006 incorpora el cierre formal de un período fiscal.
+
+=========================================================================
+
+OBJETIVO
+=========================================================================
+
+Implementar el mecanismo mediante el cual un FiscalPeriod pasa de:
+
+OPEN
+
+a:
+
+CLOSED
+
+Un período CLOSED no puede recibir nuevas operaciones contables.
+
+El cierre debe garantizar que:
+
+- no existan inconsistencias contables básicas
+- no queden JournalEntry pendientes de validación
+- no existan documentos en estado DRAFT
+- el período tenga información contable consistente
+- después del cierre no puedan realizarse nuevos postings
+
+=========================================================================
+
+REGLA FUNDAMENTAL
+=========================================================================
+
+OPEN:
+
+Permite operaciones contables.
+
+CLOSED:
+
+No permite nuevas operaciones contables.
+
+El cambio permitido en esta historia es:
+
+OPEN → CLOSED
+
+No se implementará:
+
+CLOSED → OPEN
+
+La reapertura de períodos será una funcionalidad posterior y deberá
+ser una operación explícita y auditada.
+
+=========================================================================
+
+IMPORTANTE
+=========================================================================
+
+ACC-006 NO implementa todavía:
+
+Year End Closing
+
+Retained Earnings
+
+Profit and Loss Closing
+
+Opening Balances
+
+Carry Forward
+
+Fiscal Year Closing
+
+Reversal
+
+Period Reopening
+
+Currency Revaluation
+
+Taxes
+
+Multi-Currency
+
+Financial Statements
+
+Budget
+
+Forecast
+
+=========================================================================
+
+REGLAS DE ARQUITECTURA
+=========================================================================
+
+No utilizar Lombok.
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Utilizar jakarta.* cuando corresponda.
+
+No utilizar EntityManager directamente.
+
+No utilizar JDBC.
+
+No utilizar SQL nativo.
+
+No crear Controllers.
+
+No crear REST.
+
+No crear DTO REST.
+
+No crear Flyway scripts.
+
+No modificar otros módulos.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Utilizar Constructor Injection.
+
+Utilizar BigDecimal para valores monetarios.
+
+=========================================================================
+
+PROYECTO MAVEN
+=========================================================================
+
+aurum-accounting
+
+=========================================================================
+
+ARCHIVO 1
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalPeriodClosingService.java
+
+Crear interfaz.
+
+Métodos:
+
+FiscalPeriod close(
+    Long fiscalPeriodId
+);
+
+boolean canClose(
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 2
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalPeriodClosingService.java
+
+Implementar:
+
+FiscalPeriodClosingService
+
+Anotación:
+
+@Service
+
+Dependencias:
+
+FiscalPeriodRepository
+
+JournalEntryRepository
+
+LedgerEntryRepository
+
+TrialBalanceService
+
+FiscalPeriodClosingValidator
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+REGLAS DEL MÉTODO close()
+=========================================================================
+
+1. fiscalPeriodId no puede ser null.
+
+2. El FiscalPeriod debe existir.
+
+3. El período debe estar OPEN.
+
+4. Debe ejecutarse la validación de cierre.
+
+5. Si la validación falla:
+
+   NO cerrar el período.
+
+6. Si la validación es correcta:
+
+   status = CLOSED
+
+7. Guardar el FiscalPeriod.
+
+8. La operación debe ser transaccional.
+
+Utilizar:
+
+@Transactional
+
+=========================================================================
+
+REGLA DE IDEMPOTENCIA
+=========================================================================
+
+Si el período ya está CLOSED:
+
+NO modificarlo.
+
+NO crear registros adicionales.
+
+La operación debe fallar con:
+
+IllegalStateException
+
+Mensaje claro indicando que el período ya está cerrado.
+
+=========================================================================
+
+ARCHIVO 3
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalPeriodClosingValidator.java
+
+Crear interfaz.
+
+Método:
+
+void validate(
+    FiscalPeriod fiscalPeriod
+);
+
+=========================================================================
+
+ARCHIVO 4
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalPeriodClosingValidator.java
+
+Implementar:
+
+FiscalPeriodClosingValidator
+
+Dependencias:
+
+JournalEntryRepository
+
+LedgerEntryRepository
+
+TrialBalanceService
+
+Utilizar Constructor Injection.
+
+=========================================================================
+
+VALIDACIONES DE CIERRE
+=========================================================================
+
+El período debe cumplir:
+
+1. FiscalPeriod no puede ser null.
+
+2. FiscalPeriod debe estar OPEN.
+
+3. No debe existir JournalEntry en estado:
+
+   DRAFT
+
+   asociado al período.
+
+4. No debe existir JournalEntry en estado:
+
+   VALIDATED
+
+   asociado al período.
+
+5. Todos los JournalEntry que estén POSTED deben tener sus
+   LedgerEntry correspondientes.
+
+6. El Trial Balance del período debe estar balanceado.
+
+=========================================================================
+
+IMPORTANTE SOBRE JOURNAL ENTRY
+=========================================================================
+
+Un período no puede cerrarse si existen:
+
+DRAFT
+
+o:
+
+VALIDATED
+
+JournalEntry.
+
+Ejemplo:
+
+FiscalPeriod 2026-01
+
+JournalEntry:
+
+JE-000001 → POSTED
+JE-000002 → POSTED
+JE-000003 → DRAFT
+
+Resultado:
+
+CLOSE = REJECTED
+
+Porque existe un documento pendiente.
+
+=========================================================================
+
+REGLA SOBRE LEDGER
+=========================================================================
+
+Todo JournalEntry POSTED debe tener LedgerEntry.
+
+Si existe:
+
+JournalEntry.status = POSTED
+
+pero:
+
+LedgerEntry count = 0
+
+el cierre debe fallar.
+
+Esto representa una inconsistencia de integridad.
+
+=========================================================================
+
+REGLA SOBRE TRIAL BALANCE
+=========================================================================
+
+Antes de cerrar:
+
+TrialBalance debe estar:
+
+balanced = true
+
+Es decir:
+
+totalDebit == totalCredit
+
+Si:
+
+totalDebit != totalCredit
+
+el cierre debe fallar.
+
+=========================================================================
+
+ARCHIVO 5
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+FiscalPeriodClosingRepository.java
+
+Crear interfaz.
+
+No debe ser entidad.
+
+No debe utilizar EntityManager.
+
+Debe representar una abstracción para futuras consultas específicas
+de cierre.
+
+Método:
+
+boolean existsOpenJournalEntries(
+    Long fiscalPeriodId
+);
+
+=========================================================================
+
+ARCHIVO 6
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.exception
+
+Archivo:
+
+FiscalPeriodClosingException.java
+
+Crear:
+
+public class FiscalPeriodClosingException
+        extends RuntimeException
+
+Constructores:
+
+FiscalPeriodClosingException(String message)
+
+FiscalPeriodClosingException(
+    String message,
+    Throwable cause
+)
+
+=========================================================================
+
+ARCHIVO 7
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.model
+
+Archivo:
+
+FiscalPeriodClosingResult.java
+
+Crear clase.
+
+NO es entidad JPA.
+
+Campos:
+
+Long fiscalPeriodId
+
+boolean successful
+
+boolean balanced
+
+boolean hasDraftEntries
+
+boolean hasValidatedEntries
+
+boolean hasPostingInconsistencies
+
+String message
+
+Debe contener:
+
+constructor vacío
+
+constructor completo
+
+getters
+
+setters
+
+No utilizar Lombok.
+
+=========================================================================
+
+ARCHIVO 8
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service
+
+Archivo:
+
+FiscalPeriodClosingCheckService.java
+
+Crear interfaz.
+
+Método:
+
+FiscalPeriodClosingResult check(
+    Long fiscalPeriodId
+);
+
+Este servicio debe realizar las comprobaciones sin modificar el estado
+del período.
+
+=========================================================================
+
+ARCHIVO 9
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.service.impl
+
+Archivo:
+
+DefaultFiscalPeriodClosingCheckService.java
+
+Implementar:
+
+FiscalPeriodClosingCheckService
+
+Dependencias:
+
+FiscalPeriodRepository
+
+JournalEntryRepository
+
+LedgerEntryRepository
+
+TrialBalanceService
+
+Debe utilizar Constructor Injection.
+
+Debe:
+
+1. Obtener FiscalPeriod.
+
+2. Verificar existencia.
+
+3. Verificar estado.
+
+4. Buscar JournalEntry pendientes.
+
+5. Verificar JournalEntry POSTED.
+
+6. Verificar existencia de LedgerEntry.
+
+7. Generar Trial Balance.
+
+8. Determinar si está balanceado.
+
+9. Construir FiscalPeriodClosingResult.
+
+Este servicio NO debe modificar el FiscalPeriod.
+
+=========================================================================
+
+ARCHIVO 10
+=========================================================================
+
+Paquete:
+
+com.globaldynamicssystems.aurum.accounting.repository
+
+Archivo:
+
+FiscalPeriodClosingQueryRepository.java
+
+Crear interfaz.
+
+Métodos:
+
+long countDraftEntries(
+    Long fiscalPeriodId
+);
+
+long countValidatedEntries(
+    Long fiscalPeriodId
+);
+
+long countPostedEntries(
+    Long fiscalPeriodId
+);
+
+long countPostedEntriesWithoutLedger(
+    Long fiscalPeriodId
+);
+
+Estas operaciones deben utilizar mecanismos estándar de Spring Data.
+
+No utilizar SQL nativo.
+
+No utilizar EntityManager.
+
+=========================================================================
+
+=========================================================================
+
+REGLA DE CIERRE
+=========================================================================
+
+Un período puede cerrarse únicamente cuando:
+
+status == OPEN
+
+AND
+
+draftEntries == 0
+
+AND
+
+validatedEntries == 0
+
+AND
+
+postingInconsistencies == 0
+
+AND
+
+trialBalance.balanced == true
+
+=========================================================================
+
+EJEMPLO VÁLIDO
+=========================================================================
+
+FiscalPeriod:
+
+2026-01
+
+Status:
+
+OPEN
+
+JournalEntries:
+
+JE-000001 → POSTED
+JE-000002 → POSTED
+
+Ledger:
+
+completo
+
+Trial Balance:
+
+Debit = 10000.00
+Credit = 10000.00
+
+Resultado:
+
+canClose = true
+
+close():
+
+status = CLOSED
+
+=========================================================================
+
+EJEMPLO INVÁLIDO — DRAFT
+=========================================================================
+
+FiscalPeriod:
+
+2026-01
+
+JournalEntries:
+
+JE-000001 → POSTED
+JE-000002 → DRAFT
+
+Resultado:
+
+canClose = false
+
+El período permanece:
+
+OPEN
+
+=========================================================================
+
+EJEMPLO INVÁLIDO — VALIDATED
+=========================================================================
+
+FiscalPeriod:
+
+2026-01
+
+JournalEntries:
+
+JE-000001 → VALIDATED
+
+Resultado:
+
+canClose = false
+
+El período permanece:
+
+OPEN
+
+=========================================================================
+
+EJEMPLO INVÁLIDO — LEDGER
+=========================================================================
+
+JournalEntry:
+
+JE-000001 → POSTED
+
+Ledger:
+
+0 registros
+
+Resultado:
+
+canClose = false
+
+El período permanece:
+
+OPEN
+
+=========================================================================
+
+EJEMPLO INVÁLIDO — TRIAL BALANCE
+=========================================================================
+
+Trial Balance:
+
+Debit = 10000.00
+
+Credit = 9999.00
+
+Resultado:
+
+canClose = false
+
+El período permanece:
+
+OPEN
+
+=========================================================================
+
+COMPORTAMIENTO DESPUÉS DEL CIERRE
+=========================================================================
+
+Una vez que:
+
+FiscalPeriod.status = CLOSED
+
+deben quedar bloqueadas las operaciones que dependan de ese período.
+
+En particular:
+
+JournalEntry creation
+JournalEntry validation
+Posting
+
+deben rechazar operaciones contra el período cerrado.
+
+ACC-006 no debe duplicar esa lógica.
+
+La infraestructura existente debe consultar:
+
+FiscalPeriod.status
+
+y rechazar operaciones cuando:
+
+status == CLOSED
+
+=========================================================================
+
+NO REABRIR
+=========================================================================
+
+No implementar:
+
+reopen()
+
+No implementar:
+
+open()
+
+No implementar:
+
+forceOpen()
+
+No permitir modificar directamente el estado de CLOSED a OPEN
+mediante el servicio de cierre.
+
+=========================================================================
+
+AUDITORÍA
+=========================================================================
+
+El cambio de estado del FiscalPeriod debe utilizar la infraestructura
+de auditoría existente de:
+
+AuditableEntity
+
+No crear un mecanismo de auditoría paralelo.
+
+=========================================================================
+
+TRANSACCIONALIDAD
+=========================================================================
+
+El método:
+
+close()
+
+debe ser transaccional.
+
+La secuencia debe ser:
+
+validate
+   ↓
+change status
+   ↓
+save
+
+Si ocurre una excepción:
+
+rollback
+
+El período debe permanecer:
+
+OPEN
+
+=========================================================================
+
+NO MODIFICAR
+
+ChartOfAccounts
+
+Account
+
+JournalEntryLine
+
+LedgerEntry
+
+TrialBalanceLine
+
+TrialBalance
+
+AccountBalanceService
+
+PostingService
+
+=========================================================================
+
+NO IMPLEMENTAR
+
+Year End Closing
+
+Opening Balances
+
+Retained Earnings
+
+Profit and Loss Closing
+
+Reversal
+
+Period Reopening
+
+Fiscal Year Closing
+
+Taxes
+
+Currency
+
+Multi-Currency
+
+Cost Centers
+
+Profit Centers
+
+Budget
+
+Forecast
+
+Financial Statements
+
+=========================================================================
+
+NO GENERAR
+
+Controllers
+
+REST
+
+DTO REST
+
+Mappers
+
+Flyway
+
+SQL nativo
+
+EntityManager
+
+JDBC
+
+Angular
+
+React
+
+Vue
+
+JavaScript
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Generar exactamente DIEZ archivos.
+
+Todos deben pertenecer al proyecto Maven:
+
+aurum-accounting
+
+No crear archivos adicionales.
+
+No modificar otros módulos.
+
+No modificar pom.xml.
+
+No utilizar Lombok.
+
+Todos los getters y setters deben ser manuales.
+
+Todos los constructores deben ser manuales.
+
+Debe compilar con Java 21.
+
+=========================================================================
+
+CRITERIOS DE ACEPTACIÓN
+
+1. Se puede verificar si un período puede cerrarse.
+
+2. Un período OPEN puede pasar a CLOSED si todas las validaciones
+   son correctas.
+
+3. Un período con JournalEntry DRAFT no puede cerrarse.
+
+4. Un período con JournalEntry VALIDATED no puede cerrarse.
+
+5. Un JournalEntry POSTED debe tener LedgerEntry.
+
+6. El Trial Balance debe estar balanceado.
+
+7. Un período CLOSED no puede volver a OPEN mediante este servicio.
+
+8. El cierre es transaccional.
+
+9. Si falla la validación, el período permanece OPEN.
+
+10. Después del cierre, no deben permitirse nuevos postings en el
+    período.
+
+11. No se crean saldos paralelos.
+
+12. No se modifica Account.
+
+13. No se modifica LedgerEntry.
+
+14. No existe SQL nativo.
+
+15. El módulo compila correctamente con Java 21.
+
+=========================================================================
+
+PRINCIPIO DE DISEÑO
+
+FiscalPeriod controla la ventana temporal de operación.
+
+El cierre no elimina información.
+
+El cierre no modifica el Ledger.
+
+El cierre no modifica las cuentas.
+
+El cierre solamente cambia el estado operativo del período.
+
+La información histórica permanece intacta.
+
+=========================================================================
+
+FLUJO CONTABLE ACTUALIZADO
+
+ChartOfAccounts
+       │
+       ▼
+Account
+       │
+       ▼
+FiscalPeriod
+       │
+       ├──────── OPEN
+       │           │
+       │           ▼
+       │      JournalEntry
+       │           │
+       │           ▼
+       │       VALIDATED
+       │           │
+       │           ▼
+       │        POSTING
+       │           │
+       │           ▼
+       │        Ledger
+       │           │
+       │           ▼
+       │     Trial Balance
+       │           │
+       │           ▼
+       │      CLOSING CHECK
+       │           │
+       │           ▼
+       └──────── CLOSED
+
+=========================================================================
+
+SIGUIENTE HISTORIA
+
+ACC-007
+
+FINANCIAL STATEMENTS
+
+Construir los primeros reportes financieros derivados del Ledger:
+
+- Balance Sheet
+- Income Statement
+
+Estos reportes deben consumir información contable existente y no
+crear una segunda fuente de verdad.
+
+=========================================================================

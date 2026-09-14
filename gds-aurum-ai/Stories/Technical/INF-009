@@ -1,0 +1,244 @@
+=========================================================================
+HISTORIA TÉCNICA: INF-009
+=========================================================================
+
+PROYECTO
+
+GDS Aurum AI Platform
+
+Versión
+
+MVP 1
+
+Arquitectura
+
+Java 21
+Spring Boot 3.5.x
+PostgreSQL
+Hibernate 6
+Spring Data JPA
+DDD
+Clean Architecture
+Metadata Driven ERP
+
+=========================================================================
+
+CONTEXTO
+
+El módulo aurum-model contiene las entidades del modelo de metadatos.
+
+Cada EntityDefinition posee múltiples FieldDefinition.
+
+El objetivo del Form Engine es transformar dichas definiciones
+en un formulario dinámico que posteriormente será consumido por
+la aplicación Web (Angular/React/Vue).
+
+En esta historia NO se generan componentes HTML.
+
+Solo el modelo del formulario.
+
+=========================================================================
+
+REGLAS
+
+No utilizar Reflection.
+
+No utilizar javax.*
+
+Solo jakarta.*
+
+No utilizar Spring MVC.
+
+No generar Controllers.
+
+No generar DTO REST.
+
+No generar SQL.
+
+No generar Repositories.
+
+No generar Tests.
+
+No utilizar Lombok.
+
+Todos los constructores,
+getters y setters deben escribirse manualmente.
+
+=========================================================================
+
+PROYECTO MAVEN
+
+aurum-engine
+
+=========================================================================
+
+ARCHIVO 1
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.form
+
+Archivo
+
+FormDefinition.java
+
+Representa un formulario completo.
+
+Campos
+
+String entityCode
+
+String title
+
+List<FormField> fields
+
+=========================================================================
+
+ARCHIVO 2
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.form
+
+Archivo
+
+FormField.java
+
+Representa un control visual.
+
+Campos
+
+String code
+
+String label
+
+FieldType fieldType
+
+Boolean required
+
+Boolean visible
+
+Boolean editable
+
+Integer order
+
+=========================================================================
+
+ARCHIVO 3
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.form
+
+Archivo
+
+FormBuilder.java
+
+Crear interfaz.
+
+Método
+
+FormDefinition build(EntityDefinition entityDefinition);
+
+=========================================================================
+
+ARCHIVO 4
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.form.impl
+
+Archivo
+
+DefaultFormBuilder.java
+
+Implementar FormBuilder.
+
+Debe utilizar Constructor Injection.
+
+Debe recorrer todos los FieldDefinition
+y convertirlos en FormField.
+
+Debe ordenar por displayOrder.
+
+=========================================================================
+
+ARCHIVO 5
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.form
+
+Archivo
+
+FieldRenderer.java
+
+Crear interfaz.
+
+Método
+
+boolean supports(FieldType fieldType);
+
+FormField render(FieldDefinition fieldDefinition);
+
+=========================================================================
+
+ARCHIVO 6
+
+Paquete
+
+com.globaldynamicssystems.aurum.engine.form.impl
+
+Archivo
+
+DefaultFieldRenderer.java
+
+Implementar FieldRenderer.
+
+Debe soportar todos los FieldType.
+
+Debe construir FormField.
+
+No generar HTML.
+
+No generar JSON.
+
+=========================================================================
+
+NO GENERAR
+
+Angular
+
+React
+
+Vue
+
+HTML
+
+Javascript
+
+REST
+
+Controllers
+
+Repositories
+
+SQL
+
+Tests
+
+=========================================================================
+
+RESULTADO ESPERADO
+
+Generar exactamente seis archivos.
+
+Todos compilando.
+
+Java 21.
+
+Sin Lombok.
+
+Sin clases adicionales.
+
+=========================================================================
